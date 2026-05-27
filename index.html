@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IQC บันทึกผล HPV DNA Test — ร.พ.พระจอมเกล้า เพชรบุรี</title>
+<title>Dashboard — ห้องปฏิบัติการ ร.พ.พระจอมเกล้า เพชรบุรี</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -12,511 +12,491 @@
   --mint:#d5f0e3;--mint-dark:#1e6b40;
   --peach:#fdebd5;--peach-dark:#a05020;
   --sky:#ddeeff;--sky-dark:#1a5a8a;
-  --red-bg:#fee8ed;--red-txt:#a0203a;
+  --purple-light:#f0ebff;--purple-dark:#5b3fa0;--purple-mid:#c5b0f0;
+  --gold-light:#fff8e0;--gold-dark:#8a6000;--gold-mid:#f0d060;
   --text:#2d2028;--text2:#7a606a;--text3:#b09aa0;
   --bg:#fdf8f9;--card:#ffffff;
   --border:#eedde4;--border2:#f4c8d4;
-  --radius:12px;--radius-sm:8px;
-  --shadow:0 2px 12px rgba(180,80,100,.07);
+  --radius:14px;--radius-sm:9px;
+  --shadow:0 2px 16px rgba(180,80,100,.08);
+  --shadow-hover:0 6px 28px rgba(180,80,100,.16);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
-.page-header{background:linear-gradient(135deg,#f8d0dc,#fce4ec,#fdf0f4);padding:1.5rem 2rem;border-bottom:1px solid var(--border2)}
-.header-row{display:flex;align-items:center;gap:12px;margin-bottom:4px}
-.logo-circle{width:42px;height:42px;background:var(--rose);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:white;font-size:20px}
-.page-header h1{font-size:17px;font-weight:700;color:var(--rose-dark)}
-.page-header .sub{font-size:11px;color:var(--rose);margin-left:54px}
-.form-id{float:right;font-size:11px;font-weight:600;background:white;color:var(--rose);padding:4px 12px;border-radius:99px;border:1px solid var(--border2)}
-.container{max-width:900px;margin:0 auto;padding:1.5rem 1.5rem 3rem}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1rem;box-shadow:var(--shadow)}
-.card-title{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:14px;display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.6px}
-.icon-box{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.ib-rose{background:var(--rose-light)} .ib-sky{background:var(--sky)} .ib-mint{background:var(--mint)} .ib-peach{background:var(--peach)}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-@media(max-width:680px){.g4,.g5{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
-.field{display:flex;flex-direction:column;gap:3px}
-label{font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.2px}
-input,select,textarea{font-family:'Sarabun',sans-serif;font-size:13px;padding:7px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--blush);color:var(--text);transition:border .2s,box-shadow .2s;width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--rose-mid);box-shadow:0 0 0 3px rgba(244,160,184,.15);background:white}
-textarea{resize:vertical;min-height:60px}
-.machine-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rose-light);color:var(--rose-dark);font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;border:1px solid var(--border2);margin-bottom:14px}
-.ctrl-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;margin-bottom:12px;letter-spacing:.3px}
-.badge-pos{background:#fdeaee;color:#b0405c;border:1px solid #f4b0c0}
-.badge-neg{background:#e5f2ff;color:#1a5a8a;border:1px solid #aad0f0}
-/* ── TARGET TABLE ── */
-.ctrl-table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:13px}
-.ctrl-table th{background:var(--blush);padding:8px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--text2);border:1px solid var(--border);letter-spacing:.3px}
-.ctrl-table td{padding:8px 10px;border:1px solid var(--border);vertical-align:middle}
-.ctrl-table td input{padding:5px 8px;font-size:13px;background:white}
-.ctrl-table tr:nth-child(even) td{background:#fdf6f8}
-.flag-note{font-size:11px;color:var(--text3);background:var(--peach);border:1px solid #f0d0b0;border-radius:6px;padding:6px 10px;margin-top:8px}
-/* ── RESULT BADGE ── */
-.rb{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 12px;border-radius:99px;transition:all .3s;white-space:nowrap}
-.acc{background:#d5f0e3;color:#1e6b40;border:1px solid #a0d8b8}
-.unacc{background:#fee8ed;color:#a0203a;border:1px solid #f4a0b0}
-.pend{background:#f0eded;color:#9a8a8e;border:1px solid #e0d8da}
-.sr{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
-/* ── VALIDITY RULES BOX ── */
-.rules-box{background:#f5f0ff;border:1px solid #d0c0f0;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;font-size:12px;color:#4a3080}
-.rules-box ul{margin-left:16px}
-.rules-box li{margin-bottom:3px}
-/* ── SUMMARY ── */
-.sum-card{background:linear-gradient(135deg,#fde8f0,#fdf4f8);border:1.5px solid var(--rose-mid)}
-.sum-items{display:flex;gap:14px;flex-wrap:wrap}
-.sum-item{flex:1;min-width:130px}
-.sum-label{font-size:10px;color:var(--text3);margin-bottom:5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
-/* ── BATCH VALIDITY ── */
-.batch-box{display:flex;align-items:center;gap:12px;background:var(--blush);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 16px;margin-top:12px}
-.batch-label{font-size:12px;font-weight:600;color:var(--text2)}
-/* ── LINK ── */
-.lr{display:flex;gap:8px;align-items:flex-end}
-.lr input{flex:1}
-.lbtn{white-space:nowrap;font-size:12px;font-weight:500;padding:7px 14px;border:1px solid var(--rose-mid);background:var(--rose-light);color:var(--rose-dark);border-radius:var(--radius-sm);cursor:pointer;transition:background .2s;flex-shrink:0}
-.lbtn:hover{background:var(--pink)}
-/* ── BUTTONS ── */
-.action-row{display:flex;gap:10px;justify-content:flex-end;margin-top:1.5rem;flex-wrap:wrap}
-.btn-save{background:var(--rose);color:white;border:none;border-radius:var(--radius-sm);padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Sarabun',sans-serif;transition:background .2s}
-.btn-save:hover{background:var(--rose-dark)}
-.btn-clr{background:white;color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 20px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif}
-.btn-clr:hover{background:var(--blush)}
-.btn-print{background:white;color:var(--sky-dark);border:1px solid #aad0f0;border-radius:var(--radius-sm);padding:10px 20px;font-size:14px;cursor:pointer;font-family:'Sarabun',sans-serif}
-.toast{display:none;background:#d5f0e3;color:#1e6b40;border-radius:var(--radius-sm);padding:12px;font-size:13px;font-weight:500;margin-top:12px;border:1px solid #a0d8b8;text-align:center}
-.divider{height:1px;background:var(--border);margin:12px 0}
-.ref-note{font-size:11px;color:var(--text3);font-style:italic;margin-top:6px}
-@media print{.action-row{display:none}.page-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+
+/* ── HEADER ── */
+.page-header{
+  background:linear-gradient(135deg,#f8d0dc 0%,#fce4ec 50%,#fdf0f8 100%);
+  padding:2rem 2.5rem 1.8rem;
+  border-bottom:1px solid var(--border2);
+  position:relative;
+  overflow:hidden;
+}
+.page-header::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:220px;height:220px;border-radius:50%;
+  background:rgba(201,104,126,.08);
+}
+.page-header::after{
+  content:'';position:absolute;bottom:-40px;left:20%;
+  width:140px;height:140px;border-radius:50%;
+  background:rgba(244,160,184,.06);
+}
+.header-inner{position:relative;z-index:1;max-width:960px;margin:0 auto}
+.header-top{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.logo-wrap{
+  width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,var(--rose),var(--rose-dark));
+  display:flex;align-items:center;justify-content:center;
+  font-size:26px;flex-shrink:0;
+  box-shadow:0 4px 14px rgba(139,58,82,.25);
+}
+.header-texts h1{font-size:20px;font-weight:700;color:var(--rose-dark);line-height:1.3}
+.header-texts .sub{font-size:12px;color:var(--rose);margin-top:2px}
+.header-meta{
+  display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;
+}
+.meta-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.7);color:var(--text2);
+  font-size:11px;font-weight:600;padding:4px 12px;
+  border-radius:99px;border:1px solid var(--border2);
+  backdrop-filter:blur(4px);
+}
+#live-time{font-weight:700;color:var(--rose-dark)}
+
+/* ── CONTAINER ── */
+.container{max-width:960px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* ── SECTION TITLE ── */
+.section-title{
+  font-size:11px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.8px;
+  margin-bottom:14px;margin-top:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── STAT STRIP ── */
+.stat-strip{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+  margin-bottom:2rem;
+}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1rem 1.2rem;
+  box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;
+}
+.stat-card .s-icon{font-size:24px;margin-bottom:4px}
+.stat-card .s-val{font-size:26px;font-weight:700;line-height:1}
+.stat-card .s-lbl{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.3px}
+.sc-rose{border-left:3px solid var(--rose)}.sc-rose .s-val{color:var(--rose-dark)}
+.sc-sky{border-left:3px solid #5aaced}.sc-sky .s-val{color:var(--sky-dark)}
+.sc-mint{border-left:3px solid #58c890}.sc-mint .s-val{color:var(--mint-dark)}
+.sc-gold{border-left:3px solid #e0b030}.sc-gold .s-val{color:var(--gold-dark)}
+
+/* ── MODULE GRID ── */
+.module-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:16px;margin-bottom:2rem;
+}
+.module-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.4rem 1.6rem;
+  box-shadow:var(--shadow);cursor:pointer;
+  transition:transform .2s,box-shadow .2s,border-color .2s;
+  text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:10px;
+  position:relative;overflow:hidden;
+}
+.module-card::before{
+  content:'';position:absolute;top:0;right:0;
+  width:80px;height:80px;border-radius:50%;
+  transform:translate(30px,-30px);opacity:.12;
+  transition:opacity .2s;
+}
+.module-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover)}
+.module-card:hover::before{opacity:.2}
+
+/* card accent colors */
+.mc-rose{border-top:3px solid var(--rose)}.mc-rose::before{background:var(--rose)}
+.mc-sky{border-top:3px solid #5aaced}.mc-sky::before{background:#5aaced}
+.mc-mint{border-top:3px solid #58c890}.mc-mint::before{background:#58c890}
+.mc-purple{border-top:3px solid #9b7ae0}.mc-purple::before{background:#9b7ae0}
+.mc-peach{border-top:3px solid #e8844a}.mc-peach::before{background:#e8844a}
+.mc-gold{border-top:3px solid #e0b030}.mc-gold::before{background:#e0b030}
+
+.mc-head{display:flex;align-items:flex-start;gap:12px}
+.mc-icon-box{
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+}
+.mc-rose .mc-icon-box{background:var(--rose-light)}
+.mc-sky .mc-icon-box{background:var(--sky)}
+.mc-mint .mc-icon-box{background:var(--mint)}
+.mc-purple .mc-icon-box{background:var(--purple-light)}
+.mc-peach .mc-icon-box{background:var(--peach)}
+.mc-gold .mc-icon-box{background:var(--gold-light)}
+
+.mc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.3}
+.mc-desc{font-size:12px;color:var(--text2);line-height:1.5}
+.mc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.mc-tag{
+  font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;
+  letter-spacing:.3px;
+}
+.tag-rose{background:var(--rose-light);color:var(--rose-dark)}
+.tag-sky{background:var(--sky);color:var(--sky-dark)}
+.tag-mint{background:var(--mint);color:var(--mint-dark)}
+.tag-purple{background:var(--purple-light);color:var(--purple-dark)}
+.tag-peach{background:var(--peach);color:var(--peach-dark)}
+.tag-gold{background:var(--gold-light);color:var(--gold-dark)}
+.tag-gray{background:#f0eded;color:#7a7a8a}
+
+.mc-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:auto;padding-top:10px;border-top:1px solid var(--border);
+  font-size:11px;color:var(--text3);
+}
+.mc-arrow{
+  width:26px;height:26px;border-radius:50%;
+  background:var(--blush);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:background .2s,transform .2s;
+}
+.module-card:hover .mc-arrow{background:var(--rose-light);transform:translateX(3px)}
+
+/* coming-soon overlay */
+.coming-soon{
+  position:relative;pointer-events:none;opacity:.55;
+}
+.cs-badge{
+  position:absolute;top:10px;right:10px;z-index:2;
+  font-size:10px;font-weight:700;padding:3px 10px;
+  border-radius:99px;background:#f0eded;color:#9a8a8e;
+  border:1px solid #e0d8da;letter-spacing:.4px;
+}
+
+/* ── QUICK LINKS ── */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:2rem}
+.qlink{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:.8rem 1rem;
+  display:flex;align-items:center;gap:10px;
+  text-decoration:none;color:var(--text);
+  transition:background .18s,border-color .18s,transform .18s;
+  box-shadow:0 1px 6px rgba(180,80,100,.05);
+}
+.qlink:hover{background:var(--rose-light);border-color:var(--rose-mid);transform:translateY(-2px)}
+.qlink-icon{font-size:18px;flex-shrink:0}
+.qlink-text{font-size:12px;font-weight:600;color:var(--text2);line-height:1.3}
+
+/* ── NOTICE BANNER ── */
+.notice{
+  background:linear-gradient(135deg,var(--gold-light),#fffbf0);
+  border:1px solid var(--gold-mid);border-radius:var(--radius-sm);
+  padding:.9rem 1.2rem;display:flex;align-items:flex-start;gap:10px;
+  margin-bottom:2rem;font-size:12.5px;color:var(--gold-dark);
+}
+.notice-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+
+/* ── FOOTER ── */
+.page-footer{
+  text-align:center;font-size:11px;color:var(--text3);
+  padding:1.5rem;border-top:1px solid var(--border);
+  background:var(--blush);
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .stat-strip{grid-template-columns:1fr 1fr}
+  .page-header{padding:1.4rem 1.2rem}
+  .header-texts h1{font-size:16px}
+  .container{padding:1.2rem 1rem 3rem}
+}
 </style>
 </head>
 <body>
 
+<!-- ══════════ HEADER ══════════ -->
 <div class="page-header">
-  <span class="form-id">F-CP-68040</span>
-  <div class="header-row">
-    <div class="logo-circle">🧬</div>
-    <div>
-      <h1>บันทึกผล Internal Quality Control (IQC) — HPV DNA Test</h1>
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="logo-wrap">🏥</div>
+      <div class="header-texts">
+        <h1>ห้องปฏิบัติการเทคนิคการแพทย์</h1>
+        <div class="sub">โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; Laboratory Information Dashboard</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="meta-chip">📅 <span id="live-date">—</span></span>
+      <span class="meta-chip">⏰ <span id="live-time">—</span></span>
+      <span class="meta-chip">🔬 cobas® 6800 / SN1376</span>
+      <span class="meta-chip">📍 งานพยาธิวิทยาคลินิก</span>
     </div>
   </div>
-  <div class="sub">โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; cobas® HPV / cobas® 6800/SN1376</div>
 </div>
 
+<!-- ══════════ MAIN ══════════ -->
 <div class="container">
 
-  <!-- ข้อมูลทั่วไป -->
-  <div class="card">
-    <div class="card-title"><span class="icon-box ib-rose">📋</span> ข้อมูลทั่วไป</div>
-    <div class="machine-tag">🖥️ cobas® 6800/SN1376</div>
-    <div class="g4" style="margin-bottom:12px">
-      <div class="field"><label>วันที่บันทึก</label><input type="date" id="rec-date"></div>
-      <div class="field"><label>เวลา</label><input type="time" id="rec-time"></div>
-      <div class="field"><label>ผู้บันทึก</label><input type="text" placeholder="ชื่อ-สกุล"></div>
-      <div class="field"><label>Run no. / Batch</label><input type="text" id="batch-no" placeholder="RUN-2025-001"></div>
+  <!-- STAT STRIP -->
+  <div class="stat-strip">
+    <div class="stat-card sc-rose">
+      <div class="s-icon">🧬</div>
+      <div class="s-val">1</div>
+      <div class="s-lbl">แบบฟอร์ม IQC ที่ใช้งาน</div>
     </div>
-    <div class="g3">
-      <div class="field"><label>Test Type</label>
-        <select id="test-type" onchange="toggleTestType()">
-          <option value="HPV-HR">HPV-HR (High Risk)</option>
-          <option value="HPV-GT">HPV-GT (Genotyping: 16/18)</option>
-        </select>
+    <div class="stat-card sc-sky">
+      <div class="s-icon">📊</div>
+      <div class="s-val">HPV</div>
+      <div class="s-lbl">การทดสอบที่ครอบคลุม</div>
+    </div>
+    <div class="stat-card sc-mint">
+      <div class="s-icon">✅</div>
+      <div class="s-val">cobas®</div>
+      <div class="s-lbl">ระบบ / Platform</div>
+    </div>
+    <div class="stat-card sc-gold">
+      <div class="s-icon">🏆</div>
+      <div class="s-val" id="year-stat">2569</div>
+      <div class="s-lbl">ปีงบประมาณปัจจุบัน</div>
+    </div>
+  </div>
+
+  <!-- NOTICE -->
+  <div class="notice">
+    <span class="notice-icon">💡</span>
+    <div>
+      <strong>เลือกแบบฟอร์มหรือโมดูลที่ต้องการ</strong> — Dashboard นี้รวมทุกเครื่องมือที่ใช้ในงานประกันคุณภาพห้องปฏิบัติการ
+      อัปเดตล่าสุด: พ.ค. 2569 &nbsp;|&nbsp; หากพบปัญหาการใช้งานกรุณาแจ้ง IT ห้องแล็บ
+    </div>
+  </div>
+
+  <!-- ── MODULE: IQC ── -->
+  <div class="section-title">📋 Internal Quality Control (IQC)</div>
+  <div class="module-grid">
+
+    <!-- HPV IQC -->
+    <a href="IQC_cobas_HPV .html" class="module-card mc-rose">
+      <div class="mc-head">
+        <div class="mc-icon-box">🧬</div>
+        <div>
+          <div class="mc-title">IQC — HPV DNA Test</div>
+          <div class="mc-desc">บันทึกผล Internal QC สำหรับ cobas® HPV<br>ทั้ง Positive Control และ Negative Control</div>
+        </div>
       </div>
-      <div class="field"><label>อุณหภูมิห้อง (°C)</label><input type="number" placeholder="22" step="0.1"></div>
-      <div class="field"><label>ความชื้น (%RH)</label><input type="number" placeholder="55"></div>
-    </div>
-  </div>
-
-  <!-- Lot Numbers -->
-  <div class="card">
-    <div class="card-title"><span class="icon-box ib-peach">🏷️</span> Lot number &amp; วันหมดอายุ Reagent</div>
-    <div class="g3" style="margin-bottom:12px">
-      <div class="field"><label>Lot no. HPV (+) Positive Control</label><input type="text" placeholder="LOT-PC-2024-01"></div>
-      <div class="field"><label>วันหมดอายุ Positive Control</label><input type="date"></div>
-      <div></div>
-    </div>
-    <div class="g3" style="margin-bottom:12px">
-      <div class="field"><label>Lot no. cobas® Buffer Negative Control</label><input type="text" placeholder="LOT-NC-2024-01"></div>
-      <div class="field"><label>วันหมดอายุ Negative Control</label><input type="date"></div>
-      <div></div>
-    </div>
-    <div class="divider"></div>
-    <div class="g2">
-      <div class="field"><label>Lot no. Reagent Kit</label><input type="text" placeholder="LOT-KIT-2024-01"></div>
-      <div class="field"><label>วันหมดอายุ Reagent Kit</label><input type="date"></div>
-    </div>
-    <p class="ref-note">* ตามข้อกำหนด cobas® 6800/SN1376: ต้องรัน Positive Control และ Negative Control ทุก batch ของ result type ที่ request (HPV-HR หรือ HPV-GT)</p>
-  </div>
-
-  <!-- HPV POSITIVE CONTROL -->
-  <div class="card">
-    <div class="ctrl-badge badge-pos">＋ HPV Positive Control [HPV (+) C]</div>
-    <div class="rules-box">
-      <strong>เกณฑ์การอ่านผล HPV Positive Control:</strong>
-      <ul>
-        <li>✅ <strong>Valid (Acceptable)</strong> — ค่า Ct &lt; 39 ทุก Target (Other HR / HPV16 / HPV18)</li>
-        <li>❌ <strong>Invalid (Unacceptable)</strong> — ค่า Ct ≥ 39 หรือมี Flag ปรากฏ</li>
-        <li>หาก Positive Control Invalid → <strong>ต้อง repeat Positive Control และ samples ที่เกี่ยวข้องทั้งหมด</strong></li>
-      </ul>
-    </div>
-
-    <!-- PC: 3 targets always shown -->
-    <table class="ctrl-table">
-      <thead>
-        <tr>
-          <th>Target</th>
-          <th>Ct value ที่อ่านได้</th>
-          <th style="text-align:center">เกณฑ์</th>
-          <th>Flags (ถ้ามี)</th>
-          <th style="text-align:center">ผลการประเมิน</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Target 1</strong><br><span style="font-size:11px;color:var(--text3)">Other HR HPV</span></td>
-          <td><input type="number" id="pc-t1-ct" placeholder="เช่น 35.20" step="0.01" oninput="evalPC()"></td>
-          <td style="text-align:center;font-size:12px;color:var(--rose-dark);font-weight:700;white-space:nowrap">Ct &lt; 39</td>
-          <td><input type="text" placeholder="Flag code"></td>
-          <td style="text-align:center"><span class="rb pend" id="pc-t1-rb">—</span></td>
-        </tr>
-        <tr>
-          <td><strong>Target 2</strong><br><span style="font-size:11px;color:var(--text3)">HPV 16</span></td>
-          <td><input type="number" id="pc-t2-ct" placeholder="เช่น 36.50" step="0.01" oninput="evalPC()"></td>
-          <td style="text-align:center;font-size:12px;color:var(--rose-dark);font-weight:700;white-space:nowrap">Ct &lt; 39</td>
-          <td><input type="text" placeholder="Flag code"></td>
-          <td style="text-align:center"><span class="rb pend" id="pc-t2-rb">—</span></td>
-        </tr>
-        <tr>
-          <td><strong>Target 3</strong><br><span style="font-size:11px;color:var(--text3)">HPV 18</span></td>
-          <td><input type="number" id="pc-t3-ct" placeholder="เช่น 37.10" step="0.01" oninput="evalPC()"></td>
-          <td style="text-align:center;font-size:12px;color:var(--rose-dark);font-weight:700;white-space:nowrap">Ct &lt; 39</td>
-          <td><input type="text" placeholder="Flag code"></td>
-          <td style="text-align:center"><span class="rb pend" id="pc-t3-rb">—</span></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="sr">
-      <span style="font-size:12px;color:var(--text2);font-weight:600">ผลการประเมิน Positive Control</span>
-      <span class="rb pend" id="pc-result">รอกรอกข้อมูล</span>
-    </div>
-  </div>
-
-  <!-- NEGATIVE CONTROL -->
-  <div class="card">
-    <div class="ctrl-badge badge-neg">− cobas® Buffer Negative Control [(−) Ctrl]</div>
-    <div class="rules-box" style="background:#e5f2ff;border-color:#aad0f0;color:#1a4070">
-      <strong>เกณฑ์การอ่านผล HPV Negative Control:</strong>
-      <ul>
-        <li>✅ <strong>Valid (Acceptable)</strong> — ทุก Target รายงานผล <strong>Negative</strong> (Other HR Negative / HPV 16 Negative / HPV 18 Negative)</li>
-        <li>❌ <strong>Invalid (Unacceptable)</strong> — Target ใดรายงานผล Positive หรือ Invalid</li>
-        <li>หาก Negative Control Invalid → <strong>ต้อง repeat controls ทั้งหมด และ samples ที่เกี่ยวข้องทั้งหมด</strong></li>
-      </ul>
-    </div>
-
-    <!-- NC: 3 targets, all must be Negative -->
-    <table class="ctrl-table">
-      <thead>
-        <tr>
-          <th>Target</th>
-          <th>ผลที่อ่านได้จาก cobas</th>
-          <th style="text-align:center">เกณฑ์</th>
-          <th>Flags (ถ้ามี)</th>
-          <th style="text-align:center">ผลการประเมิน</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Target 1</strong><br><span style="font-size:11px;color:var(--text3)">Other HR HPV</span></td>
-          <td><select id="nc-t1" onchange="evalNC()">
-            <option value="">— เลือก —</option>
-            <option value="neg">Other HR HPV Negative</option>
-            <option value="pos">Other HR HPV Positive</option>
-            <option value="invalid">Invalid</option>
-          </select></td>
-          <td style="text-align:center;font-size:12px;color:var(--sky-dark);font-weight:700">Negative</td>
-          <td><input type="text" placeholder="Flag code"></td>
-          <td style="text-align:center"><span class="rb pend" id="nc-t1-rb">—</span></td>
-        </tr>
-        <tr>
-          <td><strong>Target 2</strong><br><span style="font-size:11px;color:var(--text3)">HPV 16</span></td>
-          <td><select id="nc-t2" onchange="evalNC()">
-            <option value="">— เลือก —</option>
-            <option value="neg">HPV 16 Negative</option>
-            <option value="pos">HPV 16 Positive</option>
-            <option value="invalid">Invalid</option>
-          </select></td>
-          <td style="text-align:center;font-size:12px;color:var(--sky-dark);font-weight:700">Negative</td>
-          <td><input type="text" placeholder="Flag code"></td>
-          <td style="text-align:center"><span class="rb pend" id="nc-t2-rb">—</span></td>
-        </tr>
-        <tr>
-          <td><strong>Target 3</strong><br><span style="font-size:11px;color:var(--text3)">HPV 18</span></td>
-          <td><select id="nc-t3" onchange="evalNC()">
-            <option value="">— เลือก —</option>
-            <option value="neg">HPV 18 Negative</option>
-            <option value="pos">HPV 18 Positive</option>
-            <option value="invalid">Invalid</option>
-          </select></td>
-          <td style="text-align:center;font-size:12px;color:var(--sky-dark);font-weight:700">Negative</td>
-          <td><input type="text" placeholder="Flag code"></td>
-          <td style="text-align:center"><span class="rb pend" id="nc-t3-rb">—</span></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="sr">
-      <span style="font-size:12px;color:var(--text2);font-weight:600">ผลการประเมิน Negative Control</span>
-      <span class="rb pend" id="nc-result">รอกรอกข้อมูล</span>
-    </div>
-  </div>
-
-  <!-- BATCH VALIDITY SUMMARY -->
-  <div class="card sum-card">
-    <div class="card-title"><span class="icon-box ib-rose">📊</span> สรุปผล Batch Validity</div>
-    <div class="sum-items" style="margin-bottom:14px">
-      <div class="sum-item">
-        <div class="sum-label">Positive Control</div>
-        <span class="rb pend" id="sum-pc" style="font-size:12px;padding:4px 14px">—</span>
+      <div class="mc-tags">
+        <span class="mc-tag tag-rose">cobas® 6800</span>
+        <span class="mc-tag tag-rose">HPV 16/18/Other HR</span>
+        <span class="mc-tag tag-gray">F-CP-68040</span>
       </div>
-      <div class="sum-item">
-        <div class="sum-label">Negative Control</div>
-        <span class="rb pend" id="sum-nc" style="font-size:12px;padding:4px 14px">—</span>
+      <div class="mc-footer">
+        <span>บันทึกผลทุก Batch run</span>
+        <div class="mc-arrow">→</div>
       </div>
-      <div class="sum-item">
-        <div class="sum-label">ผลรวม Batch</div>
-        <span class="rb pend" id="sum-ov" style="font-size:15px;padding:6px 20px;font-weight:700">—</span>
+    </a>
+
+    <!-- Placeholder: Chemistry QC -->
+    <div class="module-card mc-sky coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">⚗️</div>
+        <div>
+          <div class="mc-title">IQC — Chemistry</div>
+          <div class="mc-desc">บันทึกผล QC สำหรับเครื่องเคมีคลินิก<br>(Cobas c501 / c702)</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-sky">Chemistry</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer">
+        <span>—</span>
+        <div class="mc-arrow">→</div>
       </div>
     </div>
-    <div id="action-required" style="display:none" class="flag-note" id="action-txt">
-      ⚠️ <strong>การดำเนินการที่ต้องทำ:</strong> <span id="action-detail"></span>
-    </div>
-    <p class="ref-note">* cobas® 6800/SN1376: Batch valid เมื่อไม่มี flag สำหรับ controls ทั้งสอง หาก batch invalid ต้อง repeat ทั้ง batch</p>
-  </div>
 
-  <!-- หมายเหตุ & ลิงค์ -->
-  <div class="card">
-    <div class="card-title"><span class="icon-box ib-sky">🔗</span> หมายเหตุ &amp; ลิงค์ใบบันทึก Online</div>
-    <div class="field" style="margin-bottom:12px">
-      <label>หมายเหตุ / การดำเนินการแก้ไข (Corrective Action)</label>
-      <textarea placeholder="กรอกรายละเอียดหากผลไม่ผ่านเกณฑ์ flag code ที่พบ หรือข้อสังเกตอื่นๆ..."></textarea>
-    </div>
-    <div class="field">
-      <label>ลิงค์ใบบันทึก Online (F-CP-68040)</label>
-      <div class="lr">
-        <input type="url" id="flink" placeholder="https://docs.google.com/forms/d/...">
-        <button class="lbtn" onclick="openLink()">🔗 เปิดฟอร์ม Online</button>
+    <!-- Placeholder: Hematology QC -->
+    <div class="module-card mc-mint coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">🩸</div>
+        <div>
+          <div class="mc-title">IQC — Hematology</div>
+          <div class="mc-desc">บันทึกผล QC สำหรับเครื่องนับเม็ดเลือด<br>(CBC / Diff)</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-mint">Hematology</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer">
+        <span>—</span>
+        <div class="mc-arrow">→</div>
       </div>
     </div>
+
   </div>
 
-  <!-- ลงนาม -->
-  <div class="card">
-    <div class="card-title"><span class="icon-box ib-mint">✍️</span> ลงนาม</div>
-    <div class="g3">
-      <div class="field"><label>ผู้บันทึกผล</label><input type="text" placeholder="ชื่อ-สกุล"></div>
-      <div class="field"><label>ผู้ตรวจสอบ</label><input type="text" placeholder="ชื่อ-สกุล"></div>
-      <div class="field"><label>วันที่ตรวจสอบ</label><input type="date"></div>
+  <!-- ── MODULE: Inventory ── -->
+  <div class="section-title">📦 Inventory & Reagent Management</div>
+  <div class="module-grid">
+
+    <!-- Inventory 2026 -->
+    <a href="INVENTORY _2026.xlsx" class="module-card mc-gold">
+      <div class="mc-head">
+        <div class="mc-icon-box">📦</div>
+        <div>
+          <div class="mc-title">Inventory 2026</div>
+          <div class="mc-desc">ตารางควบคุมสต็อกน้ำยา สารเคมี และวัสดุสิ้นเปลือง<br>ห้องปฏิบัติการ ประจำปี 2569</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-gold">Reagent Stock</span>
+        <span class="mc-tag tag-gold">2026 / 2569</span>
+        <span class="mc-tag tag-gray">Excel</span>
+      </div>
+      <div class="mc-footer">
+        <span>อัปเดตสต็อกน้ำยาและวัสดุ</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </a>
+
+    <!-- Placeholder: Reagent Expiry -->
+    <div class="module-card mc-peach coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">📅</div>
+        <div>
+          <div class="mc-title">Reagent Expiry Tracker</div>
+          <div class="mc-desc">ติดตามวันหมดอายุของน้ำยาและสารควบคุม<br>แจ้งเตือนล่วงหน้า 30 วัน</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-peach">Expiry Alert</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer">
+        <span>—</span>
+        <div class="mc-arrow">→</div>
+      </div>
     </div>
+
   </div>
 
-  <div class="action-row">
-    <button class="btn-print" onclick="window.print()">🖨️ พิมพ์</button>
-    <button class="btn-clr" onclick="clrForm()">ล้างข้อมูล</button>
-    <button class="btn-save" onclick="saveForm()">💾 บันทึกข้อมูล</button>
+  <!-- ── MODULE: EQC / Docs ── -->
+  <div class="section-title">🗂️ เอกสารและประกันคุณภาพ</div>
+  <div class="module-grid">
+
+    <div class="module-card mc-purple coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">📊</div>
+        <div>
+          <div class="mc-title">EQC / PT Summary</div>
+          <div class="mc-desc">สรุปผล External Quality Control<br>และ Proficiency Testing รายปี</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-purple">EQC</span>
+        <span class="mc-tag tag-purple">PT</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer">
+        <span>—</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="module-card mc-sky coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">📝</div>
+        <div>
+          <div class="mc-title">Maintenance Log</div>
+          <div class="mc-desc">บันทึกการบำรุงรักษาเครื่องมือ<br>Preventive / Corrective Maintenance</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-sky">Maintenance</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer">
+        <span>—</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="module-card mc-mint coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">📄</div>
+        <div>
+          <div class="mc-title">SOP & Document Library</div>
+          <div class="mc-desc">คลังเอกสาร SOP, Work Instruction<br>และแบบฟอร์มมาตรฐาน</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-mint">SOP</span>
+        <span class="mc-tag tag-mint">Documents</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer">
+        <span>—</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </div>
+
   </div>
-  <div class="toast" id="toast">✅ บันทึกข้อมูลเข้า Google Sheet เรียบร้อยแล้ว</div>
-  <div class="toast" id="toast-err" style="display:none;background:#fee8ed;color:#a0203a;border-color:#f4a0b0">❌ บันทึกไม่สำเร็จ กรุณาลองใหม่</div>
+
+  <!-- ── QUICK LINKS ── -->
+  <div class="section-title">⚡ Quick Access</div>
+  <div class="quick-grid">
+    <a href="IQC_cobas_HPV .html" class="qlink">
+      <span class="qlink-icon">🧬</span>
+      <span class="qlink-text">IQC HPV<br>บันทึกผลใหม่</span>
+    </a>
+    <a href="IQC_COBAS_HPV.xlsx" class="qlink">
+      <span class="qlink-icon">📊</span>
+      <span class="qlink-text">IQC HPV<br>ข้อมูล Excel</span>
+    </a>
+    <a href="INVENTORY _2026.xlsx" class="qlink">
+      <span class="qlink-icon">📦</span>
+      <span class="qlink-text">Inventory<br>2026</span>
+    </a>
+    <a href="#" class="qlink" style="opacity:.45;pointer-events:none">
+      <span class="qlink-icon">📋</span>
+      <span class="qlink-text">IQC Chemistry<br><em style="font-weight:400">เร็วๆ นี้</em></span>
+    </a>
+    <a href="#" class="qlink" style="opacity:.45;pointer-events:none">
+      <span class="qlink-icon">🩸</span>
+      <span class="qlink-text">IQC Hematology<br><em style="font-weight:400">เร็วๆ นี้</em></span>
+    </a>
+  </div>
+
+</div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<div class="page-footer">
+  ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp;
+  Laboratory Dashboard v1.0 &nbsp;·&nbsp; 2026
 </div>
 
 <script>
-// Set today
-const d=new Date();
-document.getElementById('rec-date').value=d.toISOString().split('T')[0];
-document.getElementById('rec-time').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-
-function toggleTestType(){ resetResults(); }
-
-// PC: Ct < 39 = Valid for all 3 targets
-function evalPC(){
-  const targets=[['pc-t1-ct','pc-t1-rb'],['pc-t2-ct','pc-t2-rb'],['pc-t3-ct','pc-t3-rb']];
-  let allValid=true; let anyFilled=false;
-  targets.forEach(([ctId,rbId])=>{
-    const ct=parseFloat(document.getElementById(ctId).value);
-    const rb=document.getElementById(rbId);
-    if(!isNaN(ct)){
-      anyFilled=true;
-      if(ct<39){sb(rb,'✓ Valid (Ct='+ct.toFixed(2)+')','acc');}
-      else{sb(rb,'✗ Invalid (Ct='+ct.toFixed(2)+')','unacc');allValid=false;}
-    } else {sb(rb,'—','pend'); if(anyFilled) allValid=false;}
-  });
-  const res=document.getElementById('pc-result');
-  if(!anyFilled) sb(res,'รอกรอกข้อมูล','pend');
-  else if(allValid) sb(res,'✓ Valid — Acceptable','acc');
-  else sb(res,'✗ Invalid — Unacceptable','unacc');
-  updateSummary();
+// Live clock + date
+function updateClock(){
+  const now = new Date();
+  const th = new Intl.DateTimeFormat('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric',calendar:'buddhist'});
+  const tm = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('live-date').textContent = th.format(now);
+  document.getElementById('live-time').textContent = tm;
+  // Buddhist year for stat
+  const be = now.getFullYear() + 543;
+  document.getElementById('year-stat').textContent = be;
 }
-
-// NC: all 3 targets must be Negative
-function evalNC(){
-  const targets=[['nc-t1','nc-t1-rb'],['nc-t2','nc-t2-rb'],['nc-t3','nc-t3-rb']];
-  let allNeg=true; let anyFilled=false;
-  targets.forEach(([selId,rbId])=>{
-    const v=document.getElementById(selId).value;
-    const rb=document.getElementById(rbId);
-    if(v){
-      anyFilled=true;
-      if(v==='neg'){sb(rb,'✓ Negative','acc');}
-      else{sb(rb,'✗ '+( v==='pos'?'Positive':'Invalid'),'unacc');allNeg=false;}
-    } else {sb(rb,'—','pend'); if(anyFilled) allNeg=false;}
-  });
-  const res=document.getElementById('nc-result');
-  if(!anyFilled) sb(res,'รอกรอกข้อมูล','pend');
-  else if(allNeg) sb(res,'✓ Valid — Acceptable','acc');
-  else sb(res,'✗ Invalid — Unacceptable','unacc');
-  updateSummary();
-}
-
-
-
-
-
-function updateSummary(){
-  const pc=document.getElementById('pc-result');
-  const nc=document.getElementById('nc-result');
-  const spc=document.getElementById('sum-pc');
-  const snc=document.getElementById('sum-nc');
-  const sov=document.getElementById('sum-ov');
-  const act=document.getElementById('action-required');
-  const actD=document.getElementById('action-detail');
-
-  const pcCls=pc.className.split(' ')[1];
-  const ncCls=nc.className.split(' ')[1];
-  spc.textContent=pc.textContent; spc.className='rb '+pcCls;
-  snc.textContent=nc.textContent; snc.className='rb '+ncCls;
-
-  const pcDone=pcCls==='acc'||pcCls==='unacc';
-  const ncDone=ncCls==='acc'||ncCls==='unacc';
-
-  if(!pcDone||!ncDone){sb(sov,'—','pend');act.style.display='none';return;}
-
-  if(pcCls==='acc'&&ncCls==='acc'){
-    sb(sov,'✓ Batch Valid','acc');
-    act.style.display='none';
-  } else {
-    sb(sov,'✗ Batch Invalid','unacc');
-    act.style.display='block';
-    let msg='';
-    if(pcCls==='unacc'&&ncCls==='unacc') msg='Positive และ Negative Control Invalid → Repeat testing ทั้ง batch ทั้งหมด';
-    else if(pcCls==='unacc') msg='Positive Control Invalid → Repeat testing Positive Control และ samples ที่เกี่ยวข้องทั้งหมด';
-    else msg='Negative Control Invalid → Repeat testing controls ทั้งหมด และ samples ที่เกี่ยวข้องทั้งหมด';
-    actD.textContent=msg;
-  }
-}
-
-function sb(el,txt,cls){el.textContent=txt;el.className='rb '+cls;}
-
-function openLink(){
-  const u=document.getElementById('flink').value.trim();
-  if(u)window.open(u,'_blank');
-  else alert('กรุณากรอก URL ของฟอร์มก่อน');
-}
-
-function resetResults(){
-  ['pc-result','nc-result','sum-pc','sum-nc','sum-ov',
-   'pc-t1-rb','pc-t2-rb','pc-t3-rb',
-   'nc-t1-rb','nc-t2-rb','nc-t3-rb'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){
-      el.textContent=id.startsWith('sum')||id.includes('-rb')?'—':'รอกรอกข้อมูล';
-      el.className='rb pend';
-    }
-  });
-  document.getElementById('action-required').style.display='none';
-}
-
-async function saveForm(){
-  const btn = document.querySelector('.btn-save');
-  const toast = document.getElementById('toast');
-  const toastErr = document.getElementById('toast-err');
-
-  // Collect all data
-  const getVal = id => { const el=document.getElementById(id); return el ? el.value : ''; };
-  const getTxt = id => { const el=document.getElementById(id); return el ? el.textContent : ''; };
-
-  const data = {
-    date:        getVal('rec-date'),
-    time:        getVal('rec-time'),
-    recorder:    document.querySelectorAll('.card:last-of-type input[type=text]')[0]?.value || '',
-    batchNo:     getVal('batch-no'),
-    testType:    getVal('test-type'),
-    temp:        document.querySelectorAll('input[type=number]')[0]?.value || '',
-    humidity:    document.querySelectorAll('input[type=number]')[1]?.value || '',
-    lotPC:       document.querySelectorAll('.g3 input[type=text]')[0]?.value || '',
-    expPC:       document.querySelectorAll('.g3 input[type=date]')[0]?.value || '',
-    lotNC:       document.querySelectorAll('.g3 input[type=text]')[1]?.value || '',
-    expNC:       document.querySelectorAll('.g3 input[type=date]')[1]?.value || '',
-    lotKit:      document.querySelectorAll('.g2 input[type=text]')[0]?.value || '',
-    expKit:      document.querySelectorAll('.g2 input[type=date]')[2]?.value || '',
-    pcT1Ct:      getVal('pc-t1-ct'),
-    pcT1Result:  getTxt('pc-t1-rb'),
-    pcT2Ct:      getVal('pc-t2-ct'),
-    pcT2Result:  getTxt('pc-t2-rb'),
-    pcT3Ct:      getVal('pc-t3-ct'),
-    pcT3Result:  getTxt('pc-t3-rb'),
-    pcOverall:   getTxt('pc-result'),
-    ncT1Val:     getVal('nc-t1'),
-    ncT1Result:  getTxt('nc-t1-rb'),
-    ncT2Val:     getVal('nc-t2'),
-    ncT2Result:  getTxt('nc-t2-rb'),
-    ncT3Val:     getVal('nc-t3'),
-    ncT3Result:  getTxt('nc-t3-rb'),
-    ncOverall:   getTxt('nc-result'),
-    batchResult: getTxt('sum-ov'),
-    remark:      document.querySelector('textarea')?.value || '',
-    verifier:    document.querySelectorAll('input[placeholder="ชื่อ-สกุล"]')[1]?.value || '',
-    verifyDate:  document.querySelectorAll('.g3 input[type=date]')[0]?.value || '',
-  };
-
-  // Validate required fields
-  if(!data.date || !data.recorder || !data.batchNo){
-    alert('กรุณากรอกวันที่, ผู้บันทึก และ Run no. ก่อนบันทึก');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = '⏳ กำลังบันทึก...';
-
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwA7DDStd0JHsziyPO-czN6OeNUr5ang9soWxPdVpW4dnmCjHa9TZFFGwqENDART8Ul/exec';
-
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(data)
-    });
-    // no-cors means we can't read response, assume success
-    toast.style.display = 'block';
-    setTimeout(() => toast.style.display='none', 4000);
-  } catch(err) {
-    toastErr.style.display = 'block';
-    toastErr.textContent = '❌ บันทึกไม่สำเร็จ: ' + err.message;
-    setTimeout(() => toastErr.style.display='none', 5000);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '💾 บันทึกข้อมูล';
-  }
-}
-
-function clrForm(){
-  if(!confirm('ล้างข้อมูลทั้งหมด?'))return;
-  document.querySelectorAll('input[type="text"],input[type="number"],input[type="url"],textarea').forEach(el=>el.value='');
-  document.querySelectorAll('select').forEach(el=>{if(el.id!=='test-type')el.selectedIndex=0;});
-  resetResults();
-  const d=new Date();
-  document.getElementById('rec-date').value=d.toISOString().split('T')[0];
-  document.getElementById('rec-time').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-}
+updateClock();
+setInterval(updateClock,1000);
 </script>
 </body>
 </html>
