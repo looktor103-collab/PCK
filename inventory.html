@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inventory 2026 — ร.พ.พระจอมเกล้า เพชรบุรี</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --rose:#c9687e;--rose-light:#fde8f0;--rose-mid:#f4a0b8;--rose-dark:#8b3a52;
+  --blush:#fdf6f8;
+  --mint:#d5f0e3;--mint-dark:#1e6b40;
+  --peach:#fdebd5;--peach-dark:#a05020;
+  --sky:#ddeeff;--sky-dark:#1a5a8a;
+  --purple-light:#f0ebff;--purple-dark:#5b3fa0;--purple-mid:#c5b0f0;
+  --gold-light:#fff8e0;--gold-dark:#8a6000;--gold-mid:#f0d060;
+  --red-bg:#fee8ed;--red-txt:#a0203a;
+  --text:#2d2028;--text2:#7a606a;--text3:#b09aa0;
+  --bg:#fdf8f9;--card:#ffffff;
+  --border:#eedde4;--border2:#f4c8d4;
+  --radius:14px;--radius-sm:9px;
+  --shadow:0 2px 16px rgba(180,80,100,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.page-header{
+  background:linear-gradient(135deg,#fff3d0 0%,#fce8a8 50%,#fff8e0 100%);
+  padding:1.4rem 2rem 1.2rem;border-bottom:2px solid #f0d080;
+  position:relative;overflow:hidden;
+}
+.page-header::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:rgba(200,150,20,.06)}
+.header-inner{position:relative;z-index:1;max-width:1100px;margin:0 auto}
+.header-top{display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+.back-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.8);color:var(--gold-dark);
+  font-size:12px;font-weight:600;padding:5px 12px;
+  border-radius:99px;border:1px solid var(--gold-mid);
+  text-decoration:none;transition:background .2s;flex-shrink:0;
+}
+.back-btn:hover{background:white}
+.logo-wrap{
+  width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(135deg,#e8a020,#b07010);
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(160,80,0,.25);
+}
+.header-texts h1{font-size:18px;font-weight:700;color:var(--gold-dark)}
+.header-texts .sub{font-size:11px;color:#a07010;margin-top:1px}
+.header-meta{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.meta-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.75);color:var(--text2);
+  font-size:11px;font-weight:600;padding:3px 10px;
+  border-radius:99px;border:1px solid var(--gold-mid);
+}
+#live-time{font-weight:700;color:var(--gold-dark)}
+.sync-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;padding:4px 12px;
+  border-radius:99px;cursor:pointer;transition:all .2s;border:1px solid transparent;
+}
+.sync-idle{background:#f0eded;color:#8a8a9a;border-color:#ddd}
+.sync-ok{background:#d5f0e3;color:#1e6b40;border-color:#90d0a8}
+.sync-ing{background:#ddeeff;color:#1a5a8a;border-color:#90c8e8;animation:pulse 1.2s infinite}
+.sync-err{background:#fee8ed;color:#a0203a;border-color:#f4a0b0}
+.sync-nourl{background:var(--gold-light);color:var(--gold-dark);border-color:var(--gold-mid)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* SETUP BANNER */
+.setup-banner{
+  background:linear-gradient(135deg,#fff8e0,#fffbef);
+  border:1.5px solid var(--gold-mid);border-radius:var(--radius-sm);
+  padding:1rem 1.4rem;margin-bottom:1.2rem;
+  display:flex;align-items:flex-start;gap:12px;
+}
+.setup-banner-icon{font-size:24px;flex-shrink:0}
+.setup-banner-body{flex:1}
+.setup-banner-title{font-size:14px;font-weight:700;color:var(--gold-dark);margin-bottom:3px}
+.setup-banner-sub{font-size:12px;color:var(--text2)}
+
+/* TABS */
+.tab-bar{
+  background:white;border-bottom:2px solid var(--border);
+  overflow-x:auto;white-space:nowrap;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+  padding:0 1.5rem;
+}
+.tab-bar::-webkit-scrollbar{height:3px}
+.tab-bar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.tab-item{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:.7rem 1rem;font-size:13px;font-weight:600;color:var(--text2);
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:color .2s,border-color .2s;user-select:none;
+}
+.tab-item:hover{color:var(--gold-dark)}
+.tab-item.active{color:var(--gold-dark);border-bottom-color:#d89010}
+.tab-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--gold-light);color:var(--gold-dark)}
+.tab-item.active .tab-badge{background:#d89010;color:white}
+
+/* CONTAINER */
+.container{max-width:1100px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:1.2rem}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:300px}
+.search-wrap input{
+  width:100%;padding:7px 11px 7px 34px;
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-family:'Sarabun',sans-serif;font-size:13px;
+  background:white;color:var(--text);transition:border .2s,box-shadow .2s;
+}
+.search-wrap input:focus{outline:none;border-color:var(--gold-mid);box-shadow:0 0 0 3px rgba(224,176,48,.15)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3);pointer-events:none}
+.filter-sel{
+  padding:7px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-family:'Sarabun',sans-serif;font-size:13px;background:white;color:var(--text);cursor:pointer;
+}
+.filter-sel:focus{outline:none;border-color:var(--gold-mid)}
+.toolbar-spacer{flex:1}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:var(--radius-sm);
+  font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid transparent;transition:all .2s;
+  white-space:nowrap;text-decoration:none;
+}
+.btn-gold{background:#d89010;color:white;border-color:#b07010}
+.btn-gold:hover{background:#b07010}
+.btn-outline{background:white;color:var(--text2);border-color:var(--border)}
+.btn-outline:hover{background:var(--gold-light);border-color:var(--gold-mid);color:var(--gold-dark)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:6px 10px}
+.btn-danger{background:var(--red-bg);color:var(--red-txt);border-color:#f4a0b0}
+.btn-danger:hover{background:#fcd0dc}
+.btn-mint{background:var(--mint);color:var(--mint-dark);border-color:#90c8a8}
+.btn-mint:hover{background:#bde8d0}
+.btn-sky{background:var(--sky);color:var(--sky-dark);border-color:#90c8e8}
+.btn-sky:hover{background:#c0ddf8}
+.btn-purple{background:var(--purple-light);color:var(--purple-dark);border-color:var(--purple-mid)}
+.btn-purple:hover{background:#e0d8f8}
+
+/* STAT STRIP */
+.stat-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:1.4rem}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1rem;box-shadow:var(--shadow)}
+.s-icon{font-size:20px;margin-bottom:3px}
+.s-val{font-size:22px;font-weight:700;line-height:1}
+.s-lbl{font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.3px;margin-top:2px}
+.sc-gold{border-left:3px solid #d89010}.sc-gold .s-val{color:var(--gold-dark)}
+.sc-sky{border-left:3px solid #5aaced}.sc-sky .s-val{color:var(--sky-dark)}
+.sc-mint{border-left:3px solid #58c890}.sc-mint .s-val{color:var(--mint-dark)}
+.sc-rose{border-left:3px solid var(--rose)}.sc-rose .s-val{color:var(--rose-dark)}
+.sc-peach{border-left:3px solid #e07840}.sc-peach .s-val{color:var(--peach-dark)}
+
+/* TABLE */
+.table-card{background:white;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.table-scroll{overflow-x:auto}
+.inv-table{width:100%;border-collapse:collapse;font-size:13px;min-width:880px}
+.inv-table thead tr{background:linear-gradient(135deg,#fff8e0,#fff0c0);border-bottom:2px solid #f0d060}
+.inv-table th{padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--gold-dark);letter-spacing:.3px;white-space:nowrap;cursor:pointer;user-select:none}
+.inv-table th:hover{background:rgba(220,160,0,.08)}
+.sort-icon{color:var(--text3);font-size:10px;margin-left:3px}
+.inv-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.inv-table tbody tr:last-child td{border-bottom:none}
+.inv-table tbody tr:hover td{background:#fffbef}
+.col-num{width:36px;color:var(--text3);font-size:12px;text-align:center}
+
+/* STATUS BADGES */
+.sbadge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.sb-order{background:var(--sky);color:var(--sky-dark);border:1px solid #90c8e8}
+.sb-approve{background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--purple-mid)}
+.sb-ship{background:var(--peach);color:var(--peach-dark);border:1px solid #e0c090}
+.sb-done{background:var(--mint);color:var(--mint-dark);border:1px solid #90c8a8}
+.sb-none{background:#f0eded;color:#8a8a9a;border:1px solid #ddd}
+
+/* CATEGORY CHIPS */
+.cchip{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.cc-hivvl{background:var(--sky);color:var(--sky-dark)}
+.cc-hpv{background:var(--rose-light);color:var(--rose-dark)}
+.cc-chem{background:var(--gold-light);color:var(--gold-dark)}
+.cc-hema{background:var(--mint);color:var(--mint-dark)}
+.cc-gen{background:#f0eded;color:#6a6a7a}
+.cc-other{background:var(--peach);color:var(--peach-dark)}
+
+.pbadge{display:inline-flex;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.pb-p0{background:#fff3cd;color:#856404;border:1px solid #ffd166}
+.pb-cd4{background:#cff4fc;color:#0c5460;border:1px solid #9ee}
+.pb-other{background:#f0eded;color:#7a7a8a;border:1px solid #ddd}
+
+.exp-ok{color:var(--text2)}
+.exp-warn{color:var(--peach-dark);font-weight:600}
+.exp-alert{color:var(--red-txt);font-weight:700}
+.item-cell{font-weight:600}
+.cost-cell{font-weight:600;color:var(--gold-dark);white-space:nowrap}
+.act-btns{display:flex;gap:5px;white-space:nowrap}
+
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:10px}
+.empty-msg{font-size:14px;font-weight:600;margin-bottom:5px;color:var(--text2)}
+.empty-sub{font-size:12px}
+
+.table-footer{
+  padding:.7rem 1.2rem;background:#fffcf0;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+  font-size:12px;color:var(--text2);
+}
+
+/* LOADING OVERLAY */
+.loading-overlay{
+  position:fixed;inset:0;background:rgba(255,255,255,.7);backdrop-filter:blur(3px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:500;opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.loading-overlay.show{opacity:1;pointer-events:auto}
+.spinner{
+  width:44px;height:44px;border:4px solid var(--border);
+  border-top-color:#d89010;border-radius:50%;
+  animation:spin .8s linear infinite;margin-bottom:12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{font-size:13px;font-weight:600;color:var(--gold-dark)}
+
+/* MODAL */
+.overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;padding:1rem;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.overlay.open{opacity:1;pointer-events:auto}
+.modal-box{
+  background:white;border-radius:var(--radius);width:100%;max-width:660px;
+  max-height:90vh;overflow-y:auto;
+  box-shadow:0 24px 64px rgba(0,0,0,.22);
+  transform:scale(.96) translateY(8px);transition:transform .2s;
+}
+.overlay.open .modal-box{transform:scale(1) translateY(0)}
+.modal-box-wide{max-width:820px}
+.modal-head{
+  padding:1.2rem 1.5rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(135deg,#fff8e0,white);
+  position:sticky;top:0;z-index:10;
+}
+.modal-title{font-size:15px;font-weight:700;color:var(--gold-dark)}
+.modal-close{
+  width:30px;height:30px;border-radius:50%;border:none;
+  background:var(--blush);cursor:pointer;font-size:16px;color:var(--text2);
+  display:flex;align-items:center;justify-content:center;transition:background .2s;
+}
+.modal-close:hover{background:var(--rose-light)}
+.modal-body{padding:1.4rem 1.5rem}
+.modal-foot{
+  padding:1rem 1.5rem;border-top:1px solid var(--border);
+  display:flex;justify-content:flex-end;gap:10px;
+  background:#fdf8f0;position:sticky;bottom:0;
+}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fgrid.g1{grid-template-columns:1fr}
+.fgrid.g3{grid-template-columns:1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.2px}
+.field input,.field select,.field textarea{
+  font-family:'Sarabun',sans-serif;font-size:13px;
+  padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:#fdf8f9;color:var(--text);transition:border .2s,box-shadow .2s;width:100%;
+}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--gold-mid);
+  box-shadow:0 0 0 3px rgba(224,176,48,.15);background:white;
+}
+.field textarea{resize:vertical;min-height:60px}
+.sec-div{
+  font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.6px;margin:14px 0 10px;
+  display:flex;align-items:center;gap:8px;
+}
+.sec-div::after{content:'';flex:1;height:1px;background:var(--border)}
+.tab-indicator{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--gold-light);color:var(--gold-dark);
+  font-size:12px;font-weight:700;padding:4px 12px;
+  border-radius:99px;border:1px solid var(--gold-mid);margin-bottom:14px;
+}
+
+/* CONFIRM */
+.confirm-box{
+  background:white;border-radius:var(--radius);padding:2rem 1.5rem;
+  width:340px;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.22);
+  transform:scale(.96);transition:transform .2s;
+}
+.overlay.open .confirm-box{transform:scale(1)}
+.confirm-icon{font-size:42px;margin-bottom:10px}
+.confirm-msg{font-size:15px;font-weight:700;margin-bottom:6px}
+.confirm-sub{font-size:12px;color:var(--text2);margin-bottom:20px}
+.confirm-btns{display:flex;gap:10px;justify-content:center}
+
+/* SETUP MODAL */
+.setup-step{
+  display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);
+}
+.setup-step:last-child{border-bottom:none}
+.step-num{
+  width:28px;height:28px;border-radius:50%;background:#d89010;color:white;
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:2px;
+}
+.step-body h4{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
+.step-body p{font-size:12px;color:var(--text2);margin-bottom:8px;line-height:1.6}
+.code-block{
+  background:#1e1e2e;color:#cdd6f4;font-size:11.5px;font-family:'Consolas','Monaco',monospace;
+  padding:12px 14px;border-radius:var(--radius-sm);overflow-x:auto;
+  white-space:pre;line-height:1.6;margin-bottom:8px;
+}
+.copy-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;padding:4px 12px;border-radius:99px;
+  background:var(--gold-light);color:var(--gold-dark);border:1px solid var(--gold-mid);
+  cursor:pointer;transition:background .2s;
+}
+.copy-btn:hover{background:#f0d840}
+.url-input-wrap{display:flex;gap:8px;margin-top:8px}
+.url-input-wrap input{
+  flex:1;font-family:'Sarabun',sans-serif;font-size:13px;
+  padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:#fdf8f9;transition:border .2s;
+}
+.url-input-wrap input:focus{outline:none;border-color:var(--gold-mid);background:white}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  display:flex;align-items:center;gap:10px;
+  background:white;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:.75rem 1.1rem;font-size:13px;font-weight:500;
+  box-shadow:0 4px 20px rgba(0,0,0,.12);
+  animation:slideIn .3s ease;min-width:230px;pointer-events:auto;
+}
+.toast.success{border-left:3px solid #58c890;color:var(--mint-dark)}
+.toast.error{border-left:3px solid var(--rose);color:var(--rose-dark)}
+.toast.info{border-left:3px solid #5aaced;color:var(--sky-dark)}
+@keyframes slideIn{from{transform:translateX(80px);opacity:0}to{transform:none;opacity:1}}
+
+.page-footer{text-align:center;font-size:11px;color:var(--text3);padding:1.5rem;border-top:1px solid var(--border);background:var(--blush)}
+
+@media(max-width:680px){
+  .page-header{padding:1rem}
+  .header-texts h1{font-size:15px}
+  .fgrid{grid-template-columns:1fr}
+  .fgrid.g3{grid-template-columns:1fr}
+  .stat-strip{grid-template-columns:1fr 1fr}
+  .toolbar{gap:6px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-msg" id="loadingMsg">กำลังโหลดข้อมูลจาก Google Sheets...</div>
+</div>
+
+<!-- HEADER -->
+<div class="page-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <a href="index.html" class="back-btn">← Dashboard</a>
+      <div class="logo-wrap">📦</div>
+      <div class="header-texts">
+        <h1>Inventory Management 2026</h1>
+        <div class="sub">ระบบควบคุมสต็อกน้ำยา สารเคมี และวัสดุสิ้นเปลือง — ห้องปฏิบัติการเทคนิคการแพทย์</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="meta-chip">📅 <span id="live-date">—</span></span>
+      <span class="meta-chip">⏰ <span id="live-time">—</span></span>
+      <span class="meta-chip">📊 ปีงบประมาณ 2569</span>
+      <span class="sync-chip sync-nourl" id="syncChip" onclick="openSetup()" title="คลิกเพื่อตั้งค่า">☁️ ยังไม่ได้เชื่อมต่อ Google Sheets</span>
+      <button class="btn btn-outline btn-sm" onclick="openSetup()" style="padding:3px 10px;font-size:11px">⚙️ ตั้งค่า</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar" id="tabBar"></div>
+
+<!-- MAIN -->
+<div class="container">
+  <div id="setupBanner"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="ค้นหารายการ..." oninput="onSearch(this.value)">
+    </div>
+    <select class="filter-sel" id="filterCat" onchange="onFilterCat(this.value)">
+      <option value="">หมวดหมู่ทั้งหมด</option>
+      <option>HIV VL</option><option>HPV</option><option>Chemistry</option>
+      <option>Hematology</option><option>General</option><option>Other</option>
+    </select>
+    <select class="filter-sel" id="filterStatus" onchange="onFilterStatus(this.value)">
+      <option value="">สถานะทั้งหมด</option>
+      <option>สั่งซื้อแล้ว</option><option>อนุมัติแล้ว</option>
+      <option>จัดส่งแล้ว</option><option>นำส่งแล้ว</option>
+    </select>
+    <span class="toolbar-spacer"></span>
+    <button class="btn btn-sky btn-sm" onclick="syncAll()" title="ดึงข้อมูลล่าสุดจาก Google Sheets">🔄 Sync</button>
+    <button class="btn btn-outline btn-sm" onclick="triggerImport()">📥 Import Excel</button>
+    <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export Excel</button>
+    <button class="btn btn-gold" onclick="openAddModal()">＋ เพิ่มรายการ</button>
+  </div>
+
+  <div class="stat-strip" id="statStrip"></div>
+
+  <div class="table-card">
+    <div class="table-scroll">
+      <table class="inv-table" id="mainTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer" id="tableFooter"></div>
+  </div>
+</div>
+
+<div class="page-footer">
+  ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp;
+  Inventory System v2.0 (Google Sheets) &nbsp;·&nbsp; 2026
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span class="modal-title" id="modalTitle">เพิ่มรายการสั่งซื้อ</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-indicator" id="modalTabLabel">📦 —</div>
+      <div class="fgrid g3">
+        <div class="field"><label>รายการสำคัญ</label><input type="text" id="f_priority" placeholder="เช่น P0, CD4"></div>
+        <div class="field"><label>วันที่สั่งซื้อ</label><input type="date" id="f_orderDate"></div>
+        <div class="field"><label>หมวดหมู่ *</label>
+          <select id="f_category">
+            <option value="">-- เลือก --</option>
+            <option>HIV VL</option><option>HPV</option><option>Chemistry</option>
+            <option>Hematology</option><option>General</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>รายการ (ชื่อสินค้า) *</label><input type="text" id="f_item" placeholder="ชื่อน้ำยา/วัสดุ"></div>
+        <div class="field"><label>สถานะ</label>
+          <select id="f_status">
+            <option value="">-- เลือก --</option>
+            <option>สั่งซื้อแล้ว</option><option>อนุมัติแล้ว</option>
+            <option>จัดส่งแล้ว</option><option>นำส่งแล้ว</option>
+          </select>
+        </div>
+      </div>
+      <div class="fgrid g3">
+        <div class="field"><label>จำนวน</label><input type="number" id="f_qty" min="0" step="1" placeholder="0"></div>
+        <div class="field"><label>วันหมดอายุ (EXP.)</label><input type="date" id="f_exp"></div>
+        <div class="field"><label>ถึงภายในวันที่</label><input type="date" id="f_dueDate"></div>
+      </div>
+      <div class="sec-div" id="ovSection">📋 ข้อมูล PO / งบประมาณ</div>
+      <div class="fgrid g3" id="ovFields">
+        <div class="field"><label>เลข PO</label><input type="text" id="f_po" placeholder="หมายเลข PO"></div>
+        <div class="field"><label>ค่าใช้จ่าย (บาท)</label><input type="number" id="f_cost" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>ผู้ติดต่อ</label><input type="text" id="f_contact" placeholder="ชื่อผู้ติดต่อ"></div>
+      </div>
+      <div class="sec-div" id="mnSection">📅 ข้อมูลรายเดือน</div>
+      <div class="fgrid" id="mnFields">
+        <div class="field"><label>RD (จำนวนที่รับ/หมายเหตุ)</label><input type="text" id="f_rd" placeholder="เช่น รับ 2 ค้าง 1"></div>
+        <div class="field"><label>ผู้ติดต่อ</label><input type="text" id="f_contact2" placeholder="ชื่อผู้ติดต่อ"></div>
+      </div>
+      <div class="fgrid g1">
+        <div class="field"><label>โน้ต / หมายเหตุ</label><textarea id="f_note" placeholder="บันทึกเพิ่มเติม..."></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveItem()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="overlay" id="delOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-msg">ลบรายการนี้?</div>
+    <div class="confirm-sub" id="delItemName">ยืนยันการลบ</div>
+    <div class="confirm-btns">
+      <button class="btn btn-outline" onclick="closeConfirm()">ยกเลิก</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">ลบ</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="overlay" id="setupOverlay">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-head">
+      <span class="modal-title">⚙️ ตั้งค่าเชื่อมต่อ Google Sheets</span>
+      <button class="modal-close" onclick="closeSetup()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>เปิด Google Sheet แล้วไปที่ Extensions → Apps Script</h4>
+          <p>เปิดลิงก์ Google Sheet ของคุณ แล้วคลิกเมนู <strong>Extensions</strong> → <strong>Apps Script</strong></p>
+          <a href="https://docs.google.com/spreadsheets/d/1MtyzPb0uHlTVpS18ib5k8SNibD02w95iSoHMofEK4AE/edit" target="_blank" class="btn btn-outline btn-sm">🔗 เปิด Google Sheet</a>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>คัดลอกโค้ดนี้ วางใน Script Editor (ลบโค้ดเดิมออกก่อน)</h4>
+          <button class="copy-btn" onclick="copyCode()">📋 คัดลอกโค้ด</button>
+          <div class="code-block" id="codeBlock">const SS_ID = '1MtyzPb0uHlTVpS18ib5k8SNibD02w95iSoHMofEK4AE';
+const ALL_TABS = ['overview','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function doGet(e) {
+  try {
+    const tab = e.parameter && e.parameter.tab;
+    const ss  = SpreadsheetApp.openById(SS_ID);
+    if (tab) {
+      return jsonOut({ ok:true, tab:tab, rows: readTab(ss, tab) });
+    }
+    const all = {};
+    ALL_TABS.forEach(t => { all[t] = readTab(ss, t); });
+    return jsonOut({ ok:true, data:all });
+  } catch(err) {
+    return jsonOut({ ok:false, error: err.toString() });
+  }
+}
+
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const ss   = SpreadsheetApp.openById(SS_ID);
+    if (body.action === 'save') {
+      writeTab(ss, body.tab, body.rows);
+      return jsonOut({ ok:true });
+    }
+    return jsonOut({ ok:false, error:'unknown action' });
+  } catch(err) {
+    return jsonOut({ ok:false, error: err.toString() });
+  }
+}
+
+function readTab(ss, tabName) {
+  const ws = ss.getSheetByName(tabName);
+  if (!ws || ws.getLastRow() < 2) return [];
+  const headers = ws.getRange(1,1,1,ws.getLastColumn()).getValues()[0].map(h=>h.toString());
+  const data    = ws.getRange(2,1,ws.getLastRow()-1,ws.getLastColumn()).getValues();
+  return data
+    .filter(r => r.some(c => c !== ''))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h,i) => { obj[h] = r[i] !== undefined ? String(r[i]) : ''; });
+      return obj;
+    });
+}
+
+function writeTab(ss, tabName, rows) {
+  let ws = ss.getSheetByName(tabName);
+  if (!ws) ws = ss.insertSheet(tabName);
+  ws.clearContents();
+  if (!rows || rows.length === 0) return;
+  const headers = Object.keys(rows[0]);
+  const vals = [headers, ...rows.map(r => headers.map(h => r[h] ?? ''))];
+  ws.getRange(1,1,vals.length,headers.length).setValues(vals);
+}
+
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Deploy เป็น Web App</h4>
+          <p>
+            คลิก <strong>Deploy</strong> → <strong>New deployment</strong> → เลือกประเภท <strong>Web app</strong><br>
+            ตั้งค่า: <strong>Execute as: Me</strong> | <strong>Who has access: Anyone</strong><br>
+            กด <strong>Deploy</strong> → คัดลอก <strong>Web app URL</strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="setup-step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>วาง Web App URL ด้านล่าง</h4>
+          <div class="url-input-wrap">
+            <input type="url" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/XXXXXX/exec">
+            <button class="btn btn-gold" onclick="saveScriptUrl()">💾 บันทึก URL</button>
+            <button class="btn btn-mint btn-sm" onclick="testConnection()">🧪 ทดสอบ</button>
+          </div>
+          <div id="testResult" style="margin-top:8px;font-size:12px;color:var(--text2)"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeSetup()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+<input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+const MONTHS = [
+  { key:'overview', label:'ภาพรวม', icon:'📊' },
+  { key:'JAN', label:'ม.ค.',  full:'มกราคม 2026',    num:1  },
+  { key:'FEB', label:'ก.พ.',  full:'กุมภาพันธ์ 2026', num:2  },
+  { key:'MAR', label:'มี.ค.', full:'มีนาคม 2026',    num:3  },
+  { key:'APR', label:'เม.ย.', full:'เมษายน 2026',    num:4  },
+  { key:'MAY', label:'พ.ค.',  full:'พฤษภาคม 2026',   num:5  },
+  { key:'JUN', label:'มิ.ย.', full:'มิถุนายน 2026',  num:6  },
+  { key:'JUL', label:'ก.ค.',  full:'กรกฎาคม 2026',   num:7  },
+  { key:'AUG', label:'ส.ค.',  full:'สิงหาคม 2026',   num:8  },
+  { key:'SEP', label:'ก.ย.',  full:'กันยายน 2026',   num:9  },
+  { key:'OCT', label:'ต.ค.',  full:'ตุลาคม 2026',    num:10 },
+  { key:'NOV', label:'พ.ย.',  full:'พฤศจิกายน 2026', num:11 },
+  { key:'DEC', label:'ธ.ค.',  full:'ธันวาคม 2026',   num:12 },
+];
+const STATUS_MAP = { 'สั่งซื้อแล้ว':'sb-order','อนุมัติแล้ว':'sb-approve','จัดส่งแล้ว':'sb-ship','นำส่งแล้ว':'sb-done' };
+const CAT_MAP    = { 'HIV VL':'cc-hivvl','HPV':'cc-hpv','Chemistry':'cc-chem','Hematology':'cc-hema','General':'cc-gen','Other':'cc-other' };
+const STORAGE_KEY_URL = 'inv2026_script_url';
+const STORAGE_KEY_PRE = 'inv2026_';
+
+// ═══════════════════════════════════════════════
+// DEFAULT DATA (pre-populated from Excel template)
+// ═══════════════════════════════════════════════
+const DEFAULT_DATA = {
+  overview:[
+    {id:'ov1',priority:'CD4',orderDate:'2025-12-01',category:'HIV VL',status:'นำส่งแล้ว',item:'Cobas omni pipette Tip',po:'1319237948',cost:'105702.09',qty:'447',exp:'',dueDate:'',contact:'',rd:'',note:'อ้างถึงบืล 1318665038'}
+  ],
+  JAN:[
+    {id:'j1',priority:'P0',orderDate:'2026-01-15',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'HIV-1 VL 192T',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'รับ 2 ค้าง 1',note:''},
+    {id:'j2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'MGP',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'2',note:''},
+    {id:'j3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'NHP NEG',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'0',note:''},
+    {id:'j4',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas HBV/HCV/HIV-1 control kit',qty:'6',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'3',note:''},
+    {id:'j5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas 6800/8800 lysis reagent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'10',note:''},
+    {id:'j6',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas 6800/8800 diluent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'10',note:''},
+    {id:'j7',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas wash reagent',qty:'10',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'10',note:''},
+    {id:'j8',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Solid waste bag',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'1',note:''},
+  ],
+  FEB:[
+    {id:'f1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'HIV-1 VL 192T',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'MGP',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'NHP NEG',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f4',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas HBV/HCV/HIV-1 control kit',qty:'8',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas 6800/8800 lysis reagent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f6',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas 6800/8800 diluent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f7',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas wash reagent',qty:'10',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f8',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Solid waste bag',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'f9',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni pipette Tip',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+  ],
+  MAR:[
+    {id:'m1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'HIV-1 VL 192T',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'m2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni Amplification plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'m3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni processing plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'m4',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Solid waste bag',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+  ],
+  APR:[
+    {id:'a1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'HIV-1 VL 192T',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'a2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni Amplification plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'a3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni processing plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'a4',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni pipette Tip',qty:'30',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'a5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'MGP',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+  ],
+  MAY:[
+    {id:'may1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'HIV-1 VL 192T',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'may2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni Amplification plate',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'may3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni processing plate',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'may4',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas omni pipette Tip',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'may5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'MGP',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'may6',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อแล้ว',item:'Cobas Omni secondary tube',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:'may7',priority:'',orderDate:'',category:'General',status:'สั่งซื้อแล้ว',item:'HP black laserjet toner cartridge',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+  ],
+  JUN:[],JUL:[],AUG:[],SEP:[],OCT:[],NOV:[],DEC:[]
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  tab:'overview', search:'', catFilter:'', statusFilter:'',
+  sortCol:'', sortDir:1, editId:null, editTab:null, delId:null,
+};
+
+// ═══════════════════════════════════════════════
+// SCRIPT URL CONFIG
+// ═══════════════════════════════════════════════
+function getScriptUrl(){ return localStorage.getItem(STORAGE_KEY_URL) || ''; }
+function setScriptUrl(url){ localStorage.setItem(STORAGE_KEY_URL, url.trim()); }
+
+// ═══════════════════════════════════════════════
+// LOCAL STORAGE (cache)
+// ═══════════════════════════════════════════════
+function getData(tab){
+  const raw = localStorage.getItem(STORAGE_KEY_PRE + tab);
+  if(raw) try{ return JSON.parse(raw); }catch(e){}
+  const d = DEFAULT_DATA[tab] || [];
+  saveLocal(tab, d);
+  return d;
+}
+function saveLocal(tab, arr){ localStorage.setItem(STORAGE_KEY_PRE + tab, JSON.stringify(arr)); }
+function genId(tab){ return tab+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS API
+// ═══════════════════════════════════════════════
+function setSyncStatus(status, msg){
+  const chip = document.getElementById('syncChip');
+  const map = {
+    idle:   ['sync-idle',   '☁️ ยังไม่ได้เชื่อมต่อ'],
+    nourl:  ['sync-nourl',  '⚙️ ยังไม่ได้ตั้งค่า URL — คลิกเพื่อตั้งค่า'],
+    ok:     ['sync-ok',     '✅ ซิงค์แล้ว'],
+    ing:    ['sync-ing',    '🔄 กำลังซิงค์...'],
+    err:    ['sync-err',    '❌ เกิดข้อผิดพลาด'],
+    offline:['sync-err',    '⚡ ออฟไลน์ (ใช้ cache)'],
+  };
+  const [cls, defaultMsg] = map[status] || map['idle'];
+  chip.className = 'sync-chip ' + cls;
+  chip.textContent = msg || defaultMsg;
+}
+
+async function loadFromGoogle(){
+  const url = getScriptUrl();
+  if(!url){ setSyncStatus('nourl'); renderSetupBanner(true); return; }
+  renderSetupBanner(false);
+  setSyncStatus('ing');
+  showLoading('กำลังโหลดข้อมูลจาก Google Sheets...');
+  try{
+    const res = await fetch(url, { redirect:'follow' });
+    const data = await res.json();
+    if(data.ok){
+      Object.keys(data.data).forEach(k => saveLocal(k, data.data[k]));
+      setSyncStatus('ok');
+      showToast('☁️ โหลดข้อมูลจาก Google Sheets แล้ว','success');
+    } else {
+      setSyncStatus('err', '❌ '+data.error);
+      showToast('⚠️ Sheets ตอบกลับผิดปกติ','error');
+    }
+  } catch(e){
+    setSyncStatus('offline');
+    showToast('⚡ ออฟไลน์ — ใช้ข้อมูล cache','info');
+  } finally { hideLoading(); render(); }
+}
+
+async function syncTab(tab){
+  const url = getScriptUrl();
+  if(!url) return;
+  const rows = getData(tab);
+  setSyncStatus('ing');
+  try{
+    const res = await fetch(url, {
+      method:'POST',
+      body: JSON.stringify({ action:'save', tab:tab, rows:rows }),
+      redirect:'follow',
+    });
+    const result = await res.json();
+    if(result.ok){ setSyncStatus('ok'); showToast('☁️ บันทึกลง Google Sheets แล้ว','success'); }
+    else          { setSyncStatus('err'); showToast('⚠️ บันทึกไม่สำเร็จ: '+result.error,'error'); }
+  } catch(e){
+    setSyncStatus('offline');
+    showToast('⚡ บันทึกใน cache — ออฟไลน์','info');
+  }
+}
+
+async function syncAll(){
+  const url = getScriptUrl();
+  if(!url){ openSetup(); return; }
+  showLoading('กำลังดึงข้อมูลล่าสุดจาก Google Sheets...');
+  await loadFromGoogle();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+function render(){ renderTabs(); renderStats(); renderTable(); }
+
+function renderSetupBanner(show){
+  const el = document.getElementById('setupBanner');
+  el.innerHTML = show ? `
+    <div class="setup-banner">
+      <div class="setup-banner-icon">☁️</div>
+      <div class="setup-banner-body">
+        <div class="setup-banner-title">ยังไม่ได้เชื่อมต่อ Google Sheets</div>
+        <div class="setup-banner-sub">ข้อมูลยังเก็บใน Browser เท่านั้น — ตั้งค่าเพื่อ Sync กับ Google Sheets ให้หลายคนใช้งานร่วมกันได้</div>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="openSetup()" style="flex-shrink:0">⚙️ ตั้งค่าเลย</button>
+    </div>` : '';
+}
+
+function renderTabs(){
+  document.getElementById('tabBar').innerHTML = MONTHS.map(m => {
+    const data = getData(m.key);
+    const cnt  = data.length;
+    const warn = data.some(r => expClass(r.exp) !== 'exp-ok');
+    const active = state.tab === m.key ? 'active' : '';
+    const badge  = cnt > 0 ? `<span class="tab-badge">${cnt}</span>` : '';
+    const wicon  = warn ? ' ⚠️' : '';
+    return `<span class="tab-item ${active}" onclick="switchTab('${m.key}')">${m.icon||'📅'} ${m.label} ${badge}${wicon}</span>`;
+  }).join('');
+}
+
+function renderStats(){
+  const data = getData(state.tab);
+  const total    = data.length;
+  const pending  = data.filter(r=>r.status==='สั่งซื้อแล้ว'||r.status==='อนุมัติแล้ว').length;
+  const done     = data.filter(r=>r.status==='นำส่งแล้ว'||r.status==='จัดส่งแล้ว').length;
+  const expiring = data.filter(r=>r.exp && expClass(r.exp)!=='exp-ok').length;
+  const budget   = data.reduce((s,r)=>(s+(parseFloat(r.cost)||0)),0);
+
+  const cards = [
+    { cls:'sc-gold',  icon:'📦', val:total,   lbl:'รายการทั้งหมด' },
+    { cls:'sc-sky',   icon:'🛒', val:pending, lbl:'รอดำเนินการ' },
+    { cls:'sc-mint',  icon:'✅', val:done,    lbl:'จัดส่ง/นำส่งแล้ว' },
+    { cls:'sc-rose',  icon:'⚠️', val:expiring,lbl:'ใกล้หมดอายุ' },
+    ...(state.tab==='overview'?[{ cls:'sc-peach', icon:'💰', val:budget.toLocaleString('th-TH',{maximumFractionDigits:0}), lbl:'ค่าใช้จ่าย (บาท)' }]:[]),
+  ];
+  document.getElementById('statStrip').innerHTML = cards.map(c=>`
+    <div class="stat-card ${c.cls}">
+      <div class="s-icon">${c.icon}</div>
+      <div class="s-val">${c.val}</div>
+      <div class="s-lbl">${c.lbl}</div>
+    </div>`).join('');
+}
+
+function renderTable(){
+  const isOv = state.tab === 'overview';
+  const cols = isOv
+    ? ['#','รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','เลข PO','ค่าใช้จ่าย','ผู้ติดต่อ','โน้ต','']
+    : ['#','รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','EXP.','ถึงภายในวันที่','RD','โน้ต',''];
+  const keys = isOv
+    ? ['','priority','orderDate','category','status','item','qty','po','cost','contact','note','']
+    : ['','priority','orderDate','category','status','item','qty','exp','dueDate','rd','note',''];
+
+  document.getElementById('tableHead').innerHTML = `<tr>${cols.map((c,i)=>{
+    if(!c) return '<th></th>';
+    const k=keys[i]; const si=state.sortCol===k?(state.sortDir===1?' ↑':' ↓'):'';
+    return `<th onclick="sortBy('${k}')">${c}<span class="sort-icon">${si}</span></th>`;
+  }).join('')}</tr>`;
+
+  let rows = getData(state.tab);
+  if(state.search){ const q=state.search.toLowerCase(); rows=rows.filter(r=>(r.item+r.category+r.status+r.priority+r.note+r.po).toLowerCase().includes(q)); }
+  if(state.catFilter)    rows=rows.filter(r=>r.category===state.catFilter);
+  if(state.statusFilter) rows=rows.filter(r=>r.status===state.statusFilter);
+  if(state.sortCol && state.sortCol!==''){
+    rows=[...rows].sort((a,b)=>{
+      const av=a[state.sortCol]||'',bv=b[state.sortCol]||'';
+      return state.sortDir*(av<bv?-1:av>bv?1:0);
+    });
+  }
+
+  const tbody = document.getElementById('tableBody');
+  if(!rows.length){
+    tbody.innerHTML=`<tr><td colspan="${cols.length}"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-msg">ไม่มีรายการ</div><div class="empty-sub">กด "+ เพิ่มรายการ" หรือกด "Sync" เพื่อโหลดจาก Google Sheets</div></div></td></tr>`;
+  } else {
+    tbody.innerHTML=rows.map((r,i)=>{
+      const sC=STATUS_MAP[r.status]||'sb-none';
+      const cC=CAT_MAP[r.category]||'cc-other';
+      const pC=r.priority==='P0'?'pb-p0':r.priority==='CD4'?'pb-cd4':'pb-other';
+      const pri  = r.priority ? `<span class="pbadge ${pC}">${esc(r.priority)}</span>` : '<span style="color:var(--text3)">—</span>';
+      const dt   = r.orderDate ? formatDate(r.orderDate) : '<span style="color:var(--text3)">—</span>';
+      const stat = r.status ? `<span class="sbadge ${sC}">${esc(r.status)}</span>` : '<span style="color:var(--text3)">—</span>';
+      const cat  = r.category ? `<span class="cchip ${cC}">${esc(r.category)}</span>` : '—';
+      const cost = r.cost&&parseFloat(r.cost)>0 ? `<span class="cost-cell">${parseFloat(r.cost).toLocaleString('th-TH',{maximumFractionDigits:2})}</span>` : '—';
+      const expC = r.exp ? `<span class="${expClass(r.exp)}">${formatDate(r.exp)}</span>` : '—';
+      const dueC = r.dueDate ? `<span class="${expClass(r.dueDate)}">${formatDate(r.dueDate)}</span>` : '—';
+      const extra = isOv
+        ? `<td>${esc(r.po||'—')}</td><td>${cost}</td><td>${esc(r.contact||'—')}</td>`
+        : `<td>${expC}</td><td>${dueC}</td><td>${esc(r.rd||'—')}</td>`;
+      return `<tr>
+        <td class="col-num">${i+1}</td>
+        <td>${pri}</td>
+        <td style="white-space:nowrap">${dt}</td>
+        <td>${cat}</td>
+        <td>${stat}</td>
+        <td><span class="item-cell">${esc(r.item)}</span></td>
+        <td style="text-align:center;font-weight:600">${r.qty||0}</td>
+        ${extra}
+        <td style="color:var(--text2);font-size:12px;max-width:160px">${esc(r.note||'—')}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-outline btn-sm btn-icon" onclick="openEditModal('${r.id}')" title="แก้ไข">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" onclick="askDelete('${r.id}')" title="ลบ">🗑️</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  const total=getData(state.tab).length;
+  const m=MONTHS.find(x=>x.key===state.tab);
+  document.getElementById('tableFooter').innerHTML=`
+    <span>📋 ${m?.full||m?.label||'ภาพรวม'} — รายการทั้งหมด <strong>${total}</strong> ${rows.length!==total?`(แสดง ${rows.length})`:''} รายการ</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 Sync</button>
+      <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') }
+function formatDate(d){
+  if(!d) return '—';
+  try{ const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',calendar:'buddhist'}); }catch(e){return d;}
+}
+function expClass(exp){
+  if(!exp) return 'exp-ok';
+  try{
+    const now=new Date();now.setHours(0,0,0,0);
+    const dt=new Date(exp);dt.setHours(0,0,0,0);
+    const days=Math.floor((dt-now)/86400000);
+    if(days<0) return 'exp-alert';
+    if(days<30) return 'exp-alert';
+    if(days<90) return 'exp-warn';
+    return 'exp-ok';
+  }catch(e){return 'exp-ok';}
+}
+function showLoading(msg){ document.getElementById('loadingMsg').textContent=msg||'กำลังโหลด...'; document.getElementById('loadingOverlay').classList.add('show'); }
+function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('show'); }
+
+// ═══════════════════════════════════════════════
+// TAB / FILTER / SORT
+// ═══════════════════════════════════════════════
+function switchTab(key){
+  state.tab=key; state.search=''; state.catFilter=''; state.statusFilter='';
+  document.getElementById('searchInput').value='';
+  document.getElementById('filterCat').value='';
+  document.getElementById('filterStatus').value='';
+  render(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function onSearch(v){state.search=v;renderTable();}
+function onFilterCat(v){state.catFilter=v;renderTable();}
+function onFilterStatus(v){state.statusFilter=v;renderTable();}
+function sortBy(col){
+  if(!col||col==='') return;
+  if(state.sortCol===col) state.sortDir*=-1;
+  else{state.sortCol=col;state.sortDir=1;}
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════
+// ADD / EDIT
+// ═══════════════════════════════════════════════
+function openAddModal(){
+  state.editId=null; state.editTab=state.tab;
+  fillModal(null);
+  document.getElementById('modalTitle').textContent='➕ เพิ่มรายการสั่งซื้อ';
+  const m=MONTHS.find(x=>x.key===state.tab);
+  document.getElementById('modalTabLabel').textContent=`📦 เพิ่มใน: ${m?.full||m?.label||'ภาพรวม'}`;
+  toggleOvFields(state.tab==='overview');
+  document.getElementById('editOverlay').classList.add('open');
+}
+function openEditModal(id){
+  const row=getData(state.tab).find(r=>r.id===id); if(!row) return;
+  state.editId=id; state.editTab=state.tab;
+  fillModal(row);
+  document.getElementById('modalTitle').textContent='✏️ แก้ไขรายการ';
+  const m=MONTHS.find(x=>x.key===state.tab);
+  document.getElementById('modalTabLabel').textContent=`📦 แก้ไขใน: ${m?.full||m?.label||'ภาพรวม'}`;
+  toggleOvFields(state.tab==='overview');
+  document.getElementById('editOverlay').classList.add('open');
+}
+function fillModal(row){
+  const s=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||''};
+  s('f_priority',row?.priority); s('f_orderDate',row?.orderDate); s('f_category',row?.category);
+  s('f_status',row?.status); s('f_item',row?.item); s('f_qty',row?.qty);
+  s('f_exp',row?.exp); s('f_dueDate',row?.dueDate); s('f_po',row?.po);
+  s('f_cost',row?.cost); s('f_contact',row?.contact); s('f_contact2',row?.contact);
+  s('f_rd',row?.rd); s('f_note',row?.note);
+}
+function toggleOvFields(isOv){
+  document.getElementById('ovSection').style.display=isOv?'':'none';
+  document.getElementById('ovFields').style.display=isOv?'':'none';
+  document.getElementById('mnSection').style.display=isOv?'none':'';
+  document.getElementById('mnFields').style.display=isOv?'none':'';
+}
+function closeModal(){ document.getElementById('editOverlay').classList.remove('open'); }
+
+async function saveItem(){
+  const isOv=state.editTab==='overview';
+  const item=document.getElementById('f_item').value.trim();
+  if(!item){ showToast('กรุณากรอกชื่อรายการ','error'); return; }
+  const row={
+    id:        state.editId||genId(state.editTab),
+    priority:  document.getElementById('f_priority').value.trim(),
+    orderDate: document.getElementById('f_orderDate').value,
+    category:  document.getElementById('f_category').value,
+    status:    document.getElementById('f_status').value,
+    item:      item,
+    qty:       document.getElementById('f_qty').value,
+    exp:       document.getElementById('f_exp').value,
+    dueDate:   document.getElementById('f_dueDate').value,
+    po:        isOv?document.getElementById('f_po').value.trim():'',
+    cost:      isOv?(document.getElementById('f_cost').value||''):'',
+    contact:   isOv?document.getElementById('f_contact').value.trim():document.getElementById('f_contact2').value.trim(),
+    rd:        !isOv?document.getElementById('f_rd').value.trim():'',
+    note:      document.getElementById('f_note').value.trim(),
+  };
+  const data=getData(state.editTab);
+  if(state.editId){ const idx=data.findIndex(r=>r.id===state.editId); idx>=0?data[idx]=row:data.push(row); }
+  else             { data.push(row); }
+  saveLocal(state.editTab, data);
+  closeModal(); render();
+  showToast('💾 บันทึกใน cache แล้ว — กำลัง Sync...','info');
+  await syncTab(state.editTab);
+}
+
+// ═══════════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════════
+function askDelete(id){
+  const row=getData(state.tab).find(r=>r.id===id);
+  state.delId=id;
+  document.getElementById('delItemName').textContent=row?.item||id;
+  document.getElementById('delOverlay').classList.add('open');
+}
+function closeConfirm(){ document.getElementById('delOverlay').classList.remove('open'); }
+async function confirmDelete(){
+  const data=getData(state.tab).filter(r=>r.id!==state.delId);
+  saveLocal(state.tab, data);
+  closeConfirm(); render();
+  showToast('🗑️ ลบแล้ว — กำลัง Sync...','info');
+  await syncTab(state.tab);
+}
+
+// ═══════════════════════════════════════════════
+// SETUP MODAL
+// ═══════════════════════════════════════════════
+function openSetup(){
+  const url=getScriptUrl();
+  document.getElementById('scriptUrlInput').value=url;
+  document.getElementById('testResult').textContent='';
+  document.getElementById('setupOverlay').classList.add('open');
+}
+function closeSetup(){ document.getElementById('setupOverlay').classList.remove('open'); }
+
+function saveScriptUrl(){
+  const url=document.getElementById('scriptUrlInput').value.trim();
+  if(!url.startsWith('https://script.google.com')){
+    showToast('URL ไม่ถูกต้อง — ต้องเป็น script.google.com','error'); return;
+  }
+  setScriptUrl(url);
+  showToast('✅ บันทึก URL แล้ว','success');
+  closeSetup();
+  loadFromGoogle();
+}
+
+async function testConnection(){
+  const url=document.getElementById('scriptUrlInput').value.trim();
+  if(!url){ showToast('กรุณาใส่ URL ก่อน','error'); return; }
+  const el=document.getElementById('testResult');
+  el.textContent='⏳ กำลังทดสอบ...'; el.style.color='var(--text2)';
+  try{
+    const res=await fetch(url+'?tab=overview', {redirect:'follow'});
+    const data=await res.json();
+    if(data.ok){ el.textContent='✅ เชื่อมต่อสำเร็จ! Google Sheets พร้อมใช้งาน'; el.style.color='var(--mint-dark)'; }
+    else        { el.textContent='❌ ตอบกลับผิดปกติ: '+data.error; el.style.color='var(--red-txt)'; }
+  } catch(e){
+    el.textContent='❌ ไม่สามารถเชื่อมต่อได้: '+e.message; el.style.color='var(--red-txt)';
+  }
+}
+
+function copyCode(){
+  const code=document.getElementById('codeBlock').textContent;
+  navigator.clipboard.writeText(code).then(()=>showToast('📋 คัดลอกโค้ดแล้ว','success')).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea'); ta.value=code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    showToast('📋 คัดลอกโค้ดแล้ว','success');
+  });
+}
+
+// ═══════════════════════════════════════════════
+// IMPORT EXCEL
+// ═══════════════════════════════════════════════
+function triggerImport(){ document.getElementById('fileInput').click(); }
+function handleImport(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'binary'});
+      const sheetMap={'ชีต1':'overview','JAN2026':'JAN','FEB2026':'FEB','MARCH2026':'MAR','APRIL2026':'APR','MAY2026':'MAY','JUN2026':'JUN','JUL2026':'JUL','AUG2026':'AUG','SEP2026':'SEP','OCT2026':'OCT','NOV2026':'NOV','DEC2026':'DEC'};
+      let cnt=0;
+      wb.SheetNames.forEach(name=>{
+        const tab=sheetMap[name]; if(!tab) return;
+        const ws=wb.Sheets[name];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        if(rows.length<2) return;
+        const isOv=tab==='overview';
+        const data=[];
+        for(let i=1;i<rows.length;i++){
+          const r=rows[i]; const item=(r[4]||'').toString().trim(); if(!item) continue;
+          data.push({
+            id:genId(tab),
+            priority:(r[0]||'').toString().trim(),
+            orderDate:parseExcelDate(r[1]),
+            category:(r[2]||'').toString().trim(),
+            status:(r[3]||'').toString().trim(),
+            item:item,
+            qty:isOv?(r[7]||'').toString():(r[5]||'').toString(),
+            po:isOv?(r[5]||'').toString().trim():'',
+            cost:isOv?(r[6]||'').toString():'',
+            exp:isOv?'':parseExcelDate(r[6]),
+            dueDate:isOv?'':parseExcelDate(r[7]),
+            contact:(isOv?r[8]:r[8]||'').toString().trim(),
+            note:(isOv?r[9]:r[9]||'').toString().trim(),
+            rd:isOv?'':(r[10]||'').toString().trim(),
+          });
+          cnt++;
+        }
+        if(data.length>0) saveLocal(tab, data);
+      });
+      showToast(`📥 นำเข้า ${cnt} รายการแล้ว`,'success');
+      render();
+      // sync all imported tabs
+      wb.SheetNames.forEach(name=>{
+        const tab=sheetMap[name]; if(tab) syncTab(tab);
+      });
+    } catch(err){ showToast('❌ นำเข้าไม่สำเร็จ: '+err.message,'error'); }
+    e.target.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+function parseExcelDate(v){
+  if(!v) return '';
+  if(typeof v==='number'){ try{ const d=new Date(Math.round((v-25569)*86400*1000)); return d.toISOString().slice(0,10); }catch(e){return '';} }
+  const s=v.toString().trim();
+  const m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return '';
+}
+
+// ═══════════════════════════════════════════════
+// EXPORT EXCEL
+// ═══════════════════════════════════════════════
+function exportExcel(){
+  if(typeof XLSX==='undefined'){ showToast('❌ ไม่สามารถโหลด SheetJS','error'); return; }
+  const wb=XLSX.utils.book_new();
+  const ovData=getData('overview');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+    ['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','เลข PO','ค่าใช้จ่าย','จำนวน','ผู้ติดต่อ','โน้ต'],
+    ...ovData.map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.po,r.cost,r.qty,r.contact,r.note])
+  ]),'ชีต1');
+  const mn={'JAN':'JAN2026','FEB':'FEB2026','MAR':'MARCH2026','APR':'APRIL2026','MAY':'MAY2026','JUN':'JUN2026','JUL':'JUL2026','AUG':'AUG2026','SEP':'SEP2026','OCT':'OCT2026','NOV':'NOV2026','DEC':'DEC2026'};
+  MONTHS.slice(1).forEach(m=>{
+    const d=getData(m.key);
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+      ['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','EXP.','ถึงภายในวันที่','ผู้ติดต่อ','โน้ต','RD'],
+      ...d.map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.qty,r.exp,r.dueDate,r.contact,r.note,r.rd])
+    ]),mn[m.key]||m.key);
+  });
+  XLSX.writeFile(wb,'INVENTORY_2026_export.xlsx');
+  showToast('📤 Export Excel สำเร็จ','success');
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+function showToast(msg,type='info'){
+  const wrap=document.getElementById('toastWrap');
+  const t=document.createElement('div'); t.className=`toast ${type}`; t.innerHTML=msg;
+  wrap.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),400);},3000);
+}
+
+// ═══════════════════════════════════════════════
+// CLOCK + INIT
+// ═══════════════════════════════════════════════
+function updateClock(){
+  const now=new Date();
+  const th=new Intl.DateTimeFormat('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric',calendar:'buddhist'});
+  document.getElementById('live-date').textContent=th.format(now);
+  document.getElementById('live-time').textContent=now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+updateClock(); setInterval(updateClock,1000);
+
+// Init
+(async function init(){
+  const url=getScriptUrl();
+  if(url){
+    await loadFromGoogle();
+  } else {
+    setSyncStatus('nourl');
+    renderSetupBanner(true);
+    render();
+  }
+})();
+
+// Close on overlay click
+document.getElementById('editOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
+document.getElementById('delOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeConfirm();});
+document.getElementById('setupOverlay').addEventListener('click',e=>{if(e.target===e.currentTarget)closeSetup();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeConfirm();closeSetup();}});
+</script>
+</body>
+</html>
