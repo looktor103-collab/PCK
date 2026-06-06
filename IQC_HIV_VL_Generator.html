@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCloud IQC HIV VL — Report Generator</title>
+<style>
+:root{
+  --navy:#1B3A6B;--blue:#2563EB;--blue-l:#DBEAFE;--teal:#0E7C7B;
+  --green:#16A34A;--green-l:#DCFCE7;--yellow:#CA8A04;--yellow-l:#FEF9C3;
+  --orange:#EA580C;--red:#DC2626;--red-l:#FEE2E2;
+  --gray50:#F8FAFC;--gray100:#F1F5F9;--gray200:#E2E8F0;
+  --gray400:#94A3B8;--gray600:#475569;--gray800:#1E293B;
+  --hpc:#0EA5E9;--hpc-l:#E0F2FE;--lpc:#8B5CF6;--lpc-l:#EDE9FE;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--gray50);color:var(--gray800);min-height:100vh}
+/* ── header ── */
+header{background:linear-gradient(135deg,var(--navy) 0%,#2E5FA3 100%);color:#fff;padding:20px 32px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+header .logo{width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px}
+header .title h1{font-size:1.4rem;font-weight:700}
+header .title p{font-size:.85rem;opacity:.8;margin-top:2px}
+header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20px;padding:6px 14px;font-size:.8rem}
+/* ── main layout ── */
+.container{max-width:1100px;margin:0 auto;padding:28px 20px;display:grid;gap:20px}
+/* ── card ── */
+.card{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:16px 22px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--gray200)}
+.card-header h2{font-size:1rem;font-weight:600;color:var(--navy)}
+.card-body{padding:22px}
+/* ── settings ── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--gray600);margin-bottom:5px}
+.field input,.field select{width:100%;padding:9px 12px;border:1px solid var(--gray200);border-radius:8px;font-size:.9rem;color:var(--gray800);background:#fff;transition:.2s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-l)}
+/* ── upload ── */
+.drop-zone{border:2.5px dashed var(--gray200);border-radius:var(--radius);padding:40px 20px;text-align:center;transition:.3s;cursor:pointer;background:var(--gray50)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:var(--blue-l)}
+.drop-zone .icon{font-size:3rem;margin-bottom:12px}
+.drop-zone h3{font-size:1.05rem;color:var(--navy);margin-bottom:6px}
+.drop-zone p{font-size:.85rem;color:var(--gray600);margin-bottom:16px}
+.btn-upload{background:var(--blue);color:#fff;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:600;transition:.2s}
+.btn-upload:hover{background:#1d4ed8}
+#fileInput{display:none}
+/* ── file list ── */
+.file-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.file-item{display:flex;align-items:center;gap:12px;background:var(--gray50);border:1px solid var(--gray200);border-radius:10px;padding:12px 16px;transition:.2s}
+.file-item:hover{border-color:var(--blue);background:var(--blue-l)}
+.file-icon{font-size:1.6rem}
+.file-info{flex:1}
+.file-info .name{font-weight:600;font-size:.9rem}
+.file-info .meta{font-size:.78rem;color:var(--gray600);margin-top:2px}
+.file-status{font-size:.78rem;padding:4px 10px;border-radius:12px;font-weight:600}
+.status-pending{background:var(--gray100);color:var(--gray600)}
+.status-parsing{background:var(--yellow-l);color:var(--yellow)}
+.status-done{background:var(--green-l);color:var(--green)}
+.status-error{background:var(--red-l);color:var(--red)}
+.file-remove{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--gray400);padding:4px;border-radius:6px;transition:.2s}
+.file-remove:hover{color:var(--red);background:var(--red-l)}
+/* ── preview ── */
+.preview-tabs{display:flex;gap:2px;margin-bottom:16px;background:var(--gray100);border-radius:8px;padding:3px}
+.tab-btn{flex:1;padding:8px 14px;border:none;background:none;border-radius:6px;font-size:.85rem;cursor:pointer;color:var(--gray600);font-weight:600;transition:.2s}
+.tab-btn.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.preview-table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--gray200)}
+.preview-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.preview-table th{background:var(--navy);color:#fff;padding:10px 12px;text-align:center;white-space:nowrap;font-weight:600}
+.preview-table td{padding:9px 12px;border-bottom:1px solid var(--gray100);text-align:center}
+.preview-table tr:hover td{background:var(--gray50)}
+.preview-table .hpc-val{color:var(--hpc);font-weight:700}
+.preview-table .lpc-val{color:var(--lpc);font-weight:700}
+.badge-ok{background:var(--green-l);color:var(--green);border-radius:6px;padding:2px 8px;font-weight:600;font-size:.76rem}
+.badge-warn{background:var(--yellow-l);color:var(--yellow);border-radius:6px;padding:2px 8px;font-weight:600;font-size:.76rem}
+.badge-fail{background:var(--red-l);color:var(--red);border-radius:6px;padding:2px 8px;font-weight:600;font-size:.76rem}
+/* ── generate ── */
+.gen-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.btn-gen{background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:10px;box-shadow:0 4px 16px rgba(37,99,235,.3)}
+.btn-gen:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.4)}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-clear{background:none;border:1.5px solid var(--gray200);color:var(--gray600);padding:13px 22px;border-radius:10px;cursor:pointer;font-size:.9rem;transition:.2s}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+.progress{flex:1;min-width:200px}
+.progress-bar-bg{height:8px;background:var(--gray200);border-radius:4px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--teal));border-radius:4px;transition:width .4s;width:0}
+.progress-text{font-size:.78rem;color:var(--gray600);margin-top:4px}
+/* ── download ── */
+.download-section{display:none;background:linear-gradient(135deg,var(--green-l),#D1FAE5);border:1.5px solid var(--green);border-radius:var(--radius);padding:20px 24px;display:flex;align-items:center;gap:16px}
+.download-section.show{display:flex}
+.download-section:not(.show){display:none}
+.btn-download{background:var(--green);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:.95rem;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:8px}
+.btn-download:hover{background:#15803d}
+/* ── notice ── */
+.notice{background:var(--blue-l);border-left:4px solid var(--blue);border-radius:0 8px 8px 0;padding:12px 16px;font-size:.82rem;color:var(--navy);line-height:1.6}
+.notice strong{display:block;margin-bottom:4px}
+/* ── empty state ── */
+.empty-state{text-align:center;padding:40px;color:var(--gray400)}
+.empty-state .icon{font-size:3rem;margin-bottom:10px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* ── responsive ── */
+@media(max-width:700px){.settings-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🔬</div>
+  <div class="title">
+    <h1>QCloud IQC HIV Viral Load — Report Generator</h1>
+    <p>อัพโหลด PDF จาก QCloud → ได้ Excel สรุปผล IQC พร้อมใช้งาน</p>
+  </div>
+  <div class="badge">🏥 Lab Code: 016</div>
+  <div id="libStatus" style="margin-left:8px;font-size:.78rem;padding:5px 12px;border-radius:12px;background:rgba(255,255,255,.15);color:rgba(255,255,255,.7)">
+    ⏳ กำลังโหลด Library...
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Settings -->
+  <div class="card">
+    <div class="card-header">
+      <span>⚙️</span><h2>ข้อมูลห้องปฏิบัติการ</h2>
+    </div>
+    <div class="card-body">
+      <div class="settings-grid">
+        <div class="field">
+          <label>รหัส Lab (Lab Code)</label>
+          <input type="text" id="labCode" value="016" placeholder="016">
+        </div>
+        <div class="field">
+          <label>ชื่อโรงพยาบาล</label>
+          <input type="text" id="labName" value="โรงพยาบาลพระจอมเกล้า" placeholder="ชื่อห้องปฏิบัติการ">
+        </div>
+        <div class="field">
+          <label>Test Name</label>
+          <input type="text" id="testName" value="HIV-1 Viral Load" placeholder="Test Name">
+        </div>
+      </div>
+      <div class="notice" style="margin-top:14px">
+        <strong>📌 วิธีใช้งาน (Offline Mode)</strong>
+        อัพโหลดไฟล์ PDF จาก QCloud IQC (Lab Mean Report) → กด Generate Excel → ดาวน์โหลดไฟล์ Excel<br>
+        รองรับหลายไฟล์พร้อมกัน: รายงานรวมทุก Reagent Lot และรายงานแยกต่อ Lot<br>
+        <em>⚠️ ต้องการ Internet ครั้งแรกสำหรับโหลด Library (PDF.js + ExcelJS) — หลังจากนั้นใช้ได้ Offline</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="card-header">
+      <span>📂</span><h2>อัพโหลดไฟล์ PDF จาก QCloud</h2>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📄</div>
+        <h3>ลาก PDF มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</h3>
+        <p>รองรับหลายไฟล์พร้อมกัน · ไฟล์ QCloud IQC Report (Lab Mean Report)</p>
+        <button class="btn-upload" onclick="document.getElementById('fileInput').click()">เลือกไฟล์ PDF</button>
+      </div>
+      <input type="file" id="fileInput" multiple accept=".pdf">
+      <div class="file-list" id="fileList"></div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+  <div class="card" id="previewCard" style="display:none">
+    <div class="card-header">
+      <span>📊</span><h2>ตัวอย่างข้อมูลที่อ่านได้</h2>
+    </div>
+    <div class="card-body">
+      <div class="preview-tabs">
+        <button class="tab-btn active" onclick="switchTab('summary')">สรุปสถิติ</button>
+        <button class="tab-btn" onclick="switchTab('runs')">ข้อมูลรายวัน</button>
+      </div>
+      <div id="tabSummary" class="tab-content active">
+        <div class="preview-table-wrap">
+          <table class="preview-table" id="summaryTable">
+            <thead>
+              <tr>
+                <th>Reagent Lot</th><th>Control Lot</th><th>ช่วงเวลา</th>
+                <th>HPC Mean</th><th>HPC SD</th><th>HPC %CV</th><th>HPC N</th><th>HPC ประเมิน</th>
+                <th>LPC Mean</th><th>LPC SD</th><th>LPC %CV</th><th>LPC N</th><th>LPC ประเมิน</th>
+              </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="tabRuns" class="tab-content">
+        <div class="preview-table-wrap">
+          <table class="preview-table" id="runsTable">
+            <thead>
+              <tr>
+                <th>#</th><th>วันที่</th><th>Reagent Lot</th>
+                <th>HPC</th><th>HPC สถานะ</th>
+                <th>LPC</th><th>LPC สถานะ</th>
+              </tr>
+            </thead>
+            <tbody id="runsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generate -->
+  <div class="card">
+    <div class="card-header">
+      <span>⚡</span><h2>สร้างไฟล์ Excel</h2>
+    </div>
+    <div class="card-body">
+      <div class="gen-row">
+        <button class="btn-gen" id="btnGen" onclick="generateReport()">
+          <span>📊</span> Generate Excel Report
+        </button>
+        <button class="btn-clear" onclick="clearAll()">🗑️ ล้างทั้งหมด</button>
+        <div class="progress" id="progressWrap" style="display:none">
+          <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+          <div class="progress-text" id="progressText">กำลังประมวลผล...</div>
+        </div>
+      </div>
+      <div class="download-section" id="downloadSection">
+        <div style="font-size:2rem">✅</div>
+        <div style="flex:1">
+          <div style="font-weight:700;color:var(--green);font-size:1rem">สร้างไฟล์ Excel สำเร็จ!</div>
+          <div style="font-size:.83rem;color:var(--gray600);margin-top:3px" id="downloadMeta"></div>
+        </div>
+        <button class="btn-download" id="btnDownload">
+          ⬇️ ดาวน์โหลด Excel
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PDF.js v3.11 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+  onerror="document.getElementById('libStatus').textContent='❌ PDF.js โหลดไม่ได้ — ตรวจสอบ Internet'"></script>
+<!-- ExcelJS v4.3 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"
+  onerror="document.getElementById('libStatus').textContent='❌ ExcelJS โหลดไม่ได้ — ตรวจสอบ Internet'"></script>
+
+<script>
+// ══════════════════════════════════════════════════════
+// PDF.js worker setup — ใช้ main-thread mode (workerSrc='')
+// เพื่อให้ทำงานได้จากไฟล์ local (file://) โดยไม่ต้องพึ่ง CDN worker
+// ══════════════════════════════════════════════════════
+if(typeof pdfjsLib !== 'undefined'){
+  // '' = disable separate worker → ทำงานบน main thread ได้เลย
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  document.getElementById('libStatus').textContent = '✅ PDF.js + ExcelJS พร้อมใช้งาน';
+  document.getElementById('libStatus').style.color = 'var(--green)';
+}
+
+// ══════════════════════════════════════════════════════
+// Library status check (run after all scripts load)
+// ══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  const el = document.getElementById('libStatus');
+  const hasPDF = typeof pdfjsLib !== 'undefined';
+  const hasXL  = typeof ExcelJS  !== 'undefined';
+  if(hasPDF && hasXL){
+    el.textContent = '✅ PDF.js + ExcelJS พร้อมใช้งาน';
+    el.style.color = '#6EE7B7';
+  } else {
+    const missing = [!hasPDF&&'PDF.js', !hasXL&&'ExcelJS'].filter(Boolean).join(', ');
+    el.textContent = `❌ โหลดไม่ได้: ${missing} — ต้องการ Internet`;
+    el.style.color = '#FCA5A5';
+    // Show alert
+    document.getElementById('dropZone').innerHTML +=
+      `<div style="margin-top:12px;padding:10px 16px;background:#FEE2E2;border-radius:8px;color:#DC2626;font-size:.9rem">
+        ⚠️ <b>${missing}</b> โหลดไม่ได้ — กรุณาเชื่อมต่อ Internet แล้วรีเฟรชหน้า (F5)
+      </div>`;
+  }
+});
+
+// ══════════════════════════════════════════════════════
+// State
+// ══════════════════════════════════════════════════════
+let uploadedFiles = [];   // {file, status, data}
+let parsedReports = [];   // parsed data from each PDF
+
+// ══════════════════════════════════════════════════════
+// Drag & Drop
+// ══════════════════════════════════════════════════════
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  handleFiles([...e.dataTransfer.files].filter(f=>f.name.endsWith('.pdf')));
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  handleFiles([...e.target.files]); e.target.value='';
+});
+
+function handleFiles(files){
+  files.forEach(f => {
+    if(uploadedFiles.find(u=>u.file.name===f.name)) return;
+    const entry = { file:f, status:'pending', data:null };
+    uploadedFiles.push(entry);
+    renderFileList();
+    processFile(entry);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// File List UI
+// ══════════════════════════════════════════════════════
+function renderFileList(){
+  const el = document.getElementById('fileList');
+  el.innerHTML = uploadedFiles.map((u,i) => `
+    <div class="file-item" id="fi_${i}" style="${u.status==='error'?'border-color:var(--red);background:var(--red-l)':''}">
+      <div class="file-icon">📄</div>
+      <div class="file-info">
+        <div class="name">${u.file.name}</div>
+        <div class="meta">${(u.file.size/1024).toFixed(1)} KB
+          ${u.data ? ` · Reagent: <b>${u.data.meta.reagentLot}</b> · Control: <b>${u.data.meta.controlLot || '–'}</b>
+            · HPC Mean: <b>${u.data.stats.hpc?u.data.stats.hpc.mean.toFixed(2):'?'}</b>
+            · LPC Mean: <b>${u.data.stats.lpc?u.data.stats.lpc.mean.toFixed(2):'?'}</b>` : ''}
+          ${u.status==='error' ? `<br><span style="color:var(--red);font-weight:600">⚠️ ${u.errorMsg||'ไม่ทราบสาเหตุ'}</span>` : ''}
+        </div>
+      </div>
+      <span class="file-status status-${u.status}">${statusLabel(u.status)}</span>
+      <button class="file-remove" onclick="removeFile(${i})" title="ลบ">✕</button>
+    </div>`).join('');
+}
+function statusLabel(s){return{pending:'รอ',parsing:'⏳ กำลังอ่าน',done:'✅ สำเร็จ',error:'❌ ผิดพลาด'}[s]||s}
+
+function removeFile(i){
+  uploadedFiles.splice(i,1);
+  parsedReports = uploadedFiles.filter(u=>u.data).map(u=>u.data);
+  renderFileList();
+  updatePreview();
+}
+function clearAll(){
+  uploadedFiles=[]; parsedReports=[];
+  document.getElementById('fileList').innerHTML='';
+  document.getElementById('previewCard').style.display='none';
+  document.getElementById('downloadSection').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════
+// PDF Parsing
+// ══════════════════════════════════════════════════════
+async function processFile(entry){
+  entry.status='parsing'; entry.errorMsg=''; renderFileList();
+  try{
+    // ตรวจสอบ library
+    if(typeof pdfjsLib === 'undefined')
+      throw new Error('PDF.js ไม่ได้โหลด — กรุณาเชื่อม Internet แล้วรีเฟรชหน้า');
+    const ab = await entry.file.arrayBuffer();
+    entry.data = await parseQCloudPDF(ab);
+    entry.status='done';
+    parsedReports = uploadedFiles.filter(u=>u.data).map(u=>u.data);
+    updatePreview();
+  }catch(e){
+    entry.status='error';
+    entry.errorMsg = e.message || String(e);
+    console.error('[IQC Parser Error]', e);
+  }
+  renderFileList();
+}
+
+async function parseQCloudPDF(arrayBuffer){
+  if(typeof pdfjsLib === 'undefined') throw new Error('PDF.js ไม่ได้โหลด');
+  // ใช้ Uint8Array เพื่อให้ PDF.js รับได้แน่นอน
+  const uint8 = new Uint8Array(arrayBuffer);
+  const loadTask = pdfjsLib.getDocument({ data: uint8, verbosity: 0 });
+  const pdf = await loadTask.promise;
+  let allItems = [];
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const vp = page.getViewport({scale:1});
+    const content = await page.getTextContent();
+    for(const item of content.items){
+      if(!item.str.trim()) continue;
+      allItems.push({
+        str: item.str.trim(),
+        x: item.transform[4],
+        y: vp.height - item.transform[5],  // flip: 0=top
+        page: p
+      });
+    }
+  }
+
+  // Sort top-to-bottom, left-to-right
+  allItems.sort((a,b) => Math.abs(a.y-b.y)<3 ? a.x-b.x : a.y-b.y);
+
+  const fullText = allItems.map(i=>i.str).join(' ');
+
+  const meta = extractMeta(fullText);
+  const stats = extractStats(fullText);
+  const runs = extractRuns(allItems);
+
+  // ── Debug: log what was found ────────────────────────────────────
+  console.log('[QCloud Parser]', {
+    file: '(parsed)',
+    reagentLot: meta.reagentLot,
+    controlLot: meta.controlLot,
+    isAllReagents: meta.isAllReagents,
+    hpc: stats.hpc,
+    lpc: stats.lpc,
+    hpcRuns: runs.hpc?.length,
+    lpcRuns: runs.lpc?.length,
+  });
+
+  // Determine period: try from PDF text first, then from run dates
+  const datePattern = /(\d{1,2}\/\d{1,2}\/\d{4})/g;
+  const allDatesInText = [...fullText.matchAll(datePattern)].map(m=>m[1]);
+  const runDates = [...(runs.hpc||[]).map(r=>r.date), ...(runs.lpc||[]).map(r=>r.date)];
+  const allDates = runDates.length > 0 ? runDates : allDatesInText.slice(0, 50);
+  meta.dateFrom = allDates[0] || '';
+  meta.dateTo = allDates[allDates.length-1] || '';
+
+  return { meta, stats, runs };
+}
+
+function extractMeta(text){
+  const meta = {};
+  // Lab code
+  const lc = text.match(/Lab\s*code\s+(\d{3,4})/i);
+  meta.labCode = lc ? lc[1] : document.getElementById('labCode').value;
+
+  // Report type
+  meta.isAllReagents = /Control Lot\./i.test(text);
+
+  // Reagent lot
+  const rl = text.match(/Reagent\s+Lot\s+number\s+([A-Z][A-Z0-9]{4,5})/i);
+  meta.reagentLot = rl ? rl[1] : (meta.isAllReagents ? 'All' : 'Unknown');
+
+  // Control lot (look for M##### pattern after "Control Lot number")
+  const cl = text.match(/Control\s+Lot\s+number\s+([A-Z][A-Z0-9]{4,5})/i);
+  meta.controlLot = cl ? cl[1] : '';
+
+  return meta;
+}
+
+function extractStats(text){
+  // Normalize whitespace
+  const t = text.replace(/\s+/g,' ').trim();
+  const LOT  = '[A-Z]\\d{4,6}';
+  const NUM  = '([\\d]+\\.[\\d]+)';
+  const INT  = '(\\d+)';
+  const LOT_RE = /^[A-Z]\d{4,6}$/;
+  const NUM_RE = /^\d+\.\d+$/;
+  const INT_RE = /^\d{1,4}$/;
+
+  function parse(ctrl){
+    // ── Pattern A: HPC/LPC HIV\S* Lot Lot Mean SD %CV N ──────────────
+    // Handles "HPC HIV-1.. M12542 M21098 5.16 0.08 1.46 15"
+    // KEY FIX: use HIV\S* (non-whitespace) instead of HIV[^\d]
+    let m = t.match(new RegExp(
+      `${ctrl}\\s+HIV\\S*\\s+(${LOT})\\s+(${LOT})\\s+${NUM}\\s+${NUM}\\s+${NUM}\\s+${INT}`,'i'
+    ));
+    if(m) return {reagentLot:m[1],controlLot:m[2],mean:+m[3],sd:+m[4],cv:+m[5],n:+m[6]};
+
+    // ── Pattern B: test name has spaces (e.g. "HIV-1 Quantitative") ──
+    m = t.match(new RegExp(
+      `${ctrl}\\s+HIV.{0,40}?\\s+(${LOT})\\s+(${LOT})\\s+${NUM}\\s+${NUM}\\s+${NUM}\\s+${INT}`,'i'
+    ));
+    if(m) return {reagentLot:m[1],controlLot:m[2],mean:+m[3],sd:+m[4],cv:+m[5],n:+m[6]};
+
+    // ── Pattern C: all-reagents report (one lot only) ─────────────────
+    // Handles "HPC HIV-1.. M21098 5.16 0.08 1.46 44"
+    m = t.match(new RegExp(
+      `${ctrl}\\s+HIV\\S*\\s+(${LOT})\\s+${NUM}\\s+${NUM}\\s+${NUM}\\s+${INT}`,'i'
+    ));
+    if(m) return {reagentLot:'All',controlLot:m[1],mean:+m[2],sd:+m[3],cv:+m[4],n:+m[5]};
+
+    // ── Pattern D: token-based fallback (most robust) ─────────────────
+    // Split on whitespace and scan for: (ctrl) … LOT LOT NUM NUM NUM INT
+    const tokens = t.split(/\s+/);
+    for(let i=0; i<tokens.length; i++){
+      if(tokens[i].toUpperCase() !== ctrl.toUpperCase()) continue;
+      for(let j=i+1; j<Math.min(i+20,tokens.length-5); j++){
+        // 2-lot version: Lot Lot Num Num Num Int
+        if(LOT_RE.test(tokens[j])   && LOT_RE.test(tokens[j+1]) &&
+           NUM_RE.test(tokens[j+2]) && NUM_RE.test(tokens[j+3]) &&
+           NUM_RE.test(tokens[j+4]) && INT_RE.test(tokens[j+5])){
+          const [r,c,mn,sd,cv,n]=[tokens[j],tokens[j+1],tokens[j+2],tokens[j+3],tokens[j+4],tokens[j+5]];
+          if(+mn>1&&+mn<10&&+sd<5&&+cv<100&&+n>0)
+            return {reagentLot:r,controlLot:c,mean:+mn,sd:+sd,cv:+cv,n:+n};
+        }
+        // 1-lot version: Lot Num Num Num Int
+        if(LOT_RE.test(tokens[j])   && NUM_RE.test(tokens[j+1]) &&
+           NUM_RE.test(tokens[j+2]) && NUM_RE.test(tokens[j+3]) &&
+           INT_RE.test(tokens[j+4])){
+          const [c,mn,sd,cv,n]=[tokens[j],tokens[j+1],tokens[j+2],tokens[j+3],tokens[j+4]];
+          if(+mn>1&&+mn<10&&+sd<5&&+cv<100&&+n>0)
+            return {reagentLot:'All',controlLot:c,mean:+mn,sd:+sd,cv:+cv,n:+n};
+        }
+      }
+    }
+
+    return null;
+  }
+
+  return { hpc: parse('HPC'), lpc: parse('LPC') };
+}
+
+function extractRuns(items){
+  // Find "HPC Lab results" and "LPC Lab results" header items
+  let hpcHdrIdx=-1, lpcHdrIdx=-1;
+  for(let i=0;i<items.length;i++){
+    if(/HPC\s*Lab\s*results?/i.test(items[i].str)) hpcHdrIdx=i;
+    if(/LPC\s*Lab\s*results?/i.test(items[i].str)) lpcHdrIdx=i;
+  }
+
+  // Also look for "HPC Lab results LPC Lab results" as single item
+  for(let i=0;i<items.length;i++){
+    if(/HPC.+LPC.+results?/i.test(items[i].str)){
+      hpcHdrIdx=i; lpcHdrIdx=i;
+    }
+  }
+
+  // Find the table area: look for "Completed Dat" items below HPC/LPC headers
+  // Determine midpoint X to separate HPC vs LPC columns
+  const hpcItem = hpcHdrIdx>=0 ? items[hpcHdrIdx] : null;
+  const lpcItem = lpcHdrIdx>=0 ? items[lpcHdrIdx] : null;
+
+  let midX = 400; // default
+  if(hpcItem && lpcItem && hpcItem !== lpcItem){
+    midX = (hpcItem.x + lpcItem.x + lpcItem.str.length*5) / 2;
+  }
+
+  // Find table start Y: first "Completed Dat" below headers
+  const headerY = hpcItem ? hpcItem.y : 0;
+  const tableItems = items.filter(i => i.y > headerY + 5);
+
+  // Find the Y range of the table
+  // Look for items with dates (d/m/yyyy format)
+  const DATE_RE = /^(\d{1,2}\/\d{1,2}\/\d{4})/;
+  const VAL_RE  = /^(\d+\.\d{2})$/;
+
+  // Group table items by approximate y-row (same row if y diff < 5)
+  const rows = groupByRow(tableItems, 5);
+
+  const hpcRuns = [], lpcRuns = [];
+
+  // Strategy: look for date items and nearby value items in same row
+  for(const row of rows){
+    const dateItem = row.find(i => DATE_RE.test(i.str));
+    if(!dateItem) continue;
+    const dateStr = dateItem.str.match(DATE_RE)[1];
+
+    // Value items in same row (numeric)
+    const vals = row.filter(i => VAL_RE.test(i.str));
+
+    for(const v of vals){
+      const num = parseFloat(v.str);
+      if(v.x < midX){
+        // HPC column
+        if(num >= 4.5 && num <= 6.5)
+          hpcRuns.push({ date:dateStr, value:num });
+      } else {
+        // LPC column
+        if(num >= 1.5 && num <= 4.0)
+          lpcRuns.push({ date:dateStr, value:num });
+      }
+    }
+  }
+
+  // Fallback: scan all items for date followed by value in same column
+  if(hpcRuns.length===0 && lpcRuns.length===0){
+    fallbackExtract(items, hpcRuns, lpcRuns, midX);
+  }
+
+  return { hpc: hpcRuns, lpc: lpcRuns };
+}
+
+function groupByRow(items, threshold=5){
+  const sorted = [...items].sort((a,b)=>a.y-b.y);
+  const rows = [];
+  let currentRow = [];
+  let currentY = -999;
+  for(const item of sorted){
+    if(Math.abs(item.y - currentY) <= threshold){
+      currentRow.push(item);
+    } else {
+      if(currentRow.length) rows.push(currentRow);
+      currentRow = [item];
+      currentY = item.y;
+    }
+  }
+  if(currentRow.length) rows.push(currentRow);
+  return rows;
+}
+
+function fallbackExtract(items, hpcRuns, lpcRuns, midX){
+  // Simple: look for date, then immediately after look for numeric value
+  const DATE_RE = /^(\d{1,2}\/\d{1,2}\/\d{4})/;
+  const VAL_RE  = /^(\d+\.\d{2})$/;
+  for(let i=0;i<items.length-1;i++){
+    const dm = items[i].str.match(DATE_RE);
+    if(!dm) continue;
+    // Look for value in next few items
+    for(let j=i+1;j<Math.min(i+5,items.length);j++){
+      const vm = items[j].str.match(VAL_RE);
+      if(!vm) continue;
+      const num = parseFloat(vm[1]);
+      const col = items[i].x < midX ? 'hpc' : 'lpc';
+      if(col==='hpc' && num>=4.5&&num<=6.5)
+        hpcRuns.push({date:dm[1],value:num});
+      else if(col==='lpc' && num>=1.5&&num<=4.0)
+        lpcRuns.push({date:dm[1],value:num});
+      break;
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Preview UI
+// ══════════════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function cvBadge(cv){
+  if(cv<=3) return `<span class="badge-ok">🟢 ดีเยี่ยม ${cv.toFixed(2)}%</span>`;
+  if(cv<=5) return `<span class="badge-warn">🟡 ยอมรับได้ ${cv.toFixed(2)}%</span>`;
+  return `<span class="badge-fail">🔴 ตรวจสอบ ${cv.toFixed(2)}%</span>`;
+}
+function statusBadge(z){
+  if(Math.abs(z)>3) return `<span class="badge-fail">🔴 Reject</span>`;
+  if(Math.abs(z)>2) return `<span class="badge-warn">⚠️ Warning</span>`;
+  return `<span class="badge-ok">✅ ปกติ</span>`;
+}
+
+function updatePreview(){
+  if(parsedReports.length===0){ document.getElementById('previewCard').style.display='none'; return; }
+  document.getElementById('previewCard').style.display='block';
+
+  // Summary table
+  const summaryTbody = document.getElementById('summaryBody');
+  // Filter out "all reagents" reports for per-lot summary (show them separately)
+  const lotReports = parsedReports.filter(r=>!r.meta.isAllReagents);
+  const allReport = parsedReports.find(r=>r.meta.isAllReagents);
+
+  let rows = '';
+  const reportsToShow = lotReports.length>0 ? lotReports : parsedReports;
+  for(const r of reportsToShow){
+    const h=r.stats.hpc, l=r.stats.lpc;
+    rows += `<tr>
+      <td><strong>${r.meta.reagentLot}</strong></td>
+      <td>${(h&&h.controlLot)||r.meta.controlLot||'–'}</td>
+      <td>${r.meta.dateFrom||'–'} → ${r.meta.dateTo||'–'}</td>
+      <td class="hpc-val">${h?h.mean.toFixed(2):'–'}</td>
+      <td>${h?h.sd.toFixed(2):'–'}</td>
+      <td>${h?cvBadge(h.cv):'–'}</td>
+      <td>${h?h.n:'–'}</td>
+      <td>${h?cvBadge(h.cv):'–'}</td>
+      <td class="lpc-val">${l?l.mean.toFixed(2):'–'}</td>
+      <td>${l?l.sd.toFixed(2):'–'}</td>
+      <td>${l?cvBadge(l.cv):'–'}</td>
+      <td>${l?l.n:'–'}</td>
+      <td>${l?cvBadge(l.cv):'–'}</td>
+    </tr>`;
+  }
+  if(allReport && allReport.stats.hpc){
+    const h=allReport.stats.hpc, l=allReport.stats.lpc;
+    rows += `<tr style="background:#DBEAFE;font-weight:700">
+      <td>Overall (ทั้งหมด)</td>
+      <td>${h.controlLot||'–'}</td>
+      <td colspan="1">รวมทุก Lot</td>
+      <td class="hpc-val">${h.mean.toFixed(2)}</td><td>${h.sd.toFixed(2)}</td>
+      <td>${cvBadge(h.cv)}</td><td>${h.n}</td><td>${cvBadge(h.cv)}</td>
+      <td class="lpc-val">${l?l.mean.toFixed(2):'–'}</td><td>${l?l.sd.toFixed(2):'–'}</td>
+      <td>${l?cvBadge(l.cv):'–'}</td><td>${l?l.n:'–'}</td><td>${l?cvBadge(l.cv):'–'}</td>
+    </tr>`;
+  }
+  summaryTbody.innerHTML = rows || '<tr><td colspan="13" class="empty-state">ไม่พบข้อมูล</td></tr>';
+
+  // Runs table
+  const runsTbody = document.getElementById('runsBody');
+  let allRuns = [];
+  for(const r of parsedReports.filter(rep=>!rep.meta.isAllReagents)){
+    const hpcArr = r.runs.hpc||[];
+    const lpcArr = r.runs.lpc||[];
+    const maxN = Math.max(hpcArr.length, lpcArr.length);
+    const h=r.stats.hpc, l=r.stats.lpc;
+    for(let i=0;i<maxN;i++){
+      const hv = hpcArr[i]; const lv = lpcArr[i];
+      allRuns.push({
+        lot: r.meta.reagentLot,
+        date: (hv||lv).date,
+        hpc: hv ? hv.value : null,
+        lpc: lv ? lv.value : null,
+        hMean: h?h.mean:null, hSd: h?h.sd:null,
+        lMean: l?l.mean:null, lSd: l?l.sd:null
+      });
+    }
+  }
+  let runRows = '';
+  allRuns.forEach((r,i) => {
+    const hZ = (r.hpc&&r.hMean&&r.hSd) ? (r.hpc-r.hMean)/r.hSd : null;
+    const lZ = (r.lpc&&r.lMean&&r.lSd) ? (r.lpc-r.lMean)/r.lSd : null;
+    runRows += `<tr>
+      <td>${i+1}</td><td>${r.date||'–'}</td>
+      <td><strong>${r.lot}</strong></td>
+      <td class="hpc-val">${r.hpc?r.hpc.toFixed(2):'–'}</td>
+      <td>${hZ!==null?statusBadge(hZ):'–'}</td>
+      <td class="lpc-val">${r.lpc?r.lpc.toFixed(2):'–'}</td>
+      <td>${lZ!==null?statusBadge(lZ):'–'}</td>
+    </tr>`;
+  });
+  runsTbody.innerHTML = runRows ||
+    '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--gray400)">ไม่พบข้อมูลรายวัน (PDF อาจไม่มีตาราง หรือรูปแบบไม่ตรง)</td></tr>';
+}
+
+// ══════════════════════════════════════════════════════
+// Excel Generation (ExcelJS)
+// ══════════════════════════════════════════════════════
+function setProgress(pct, txt){
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('progressText').textContent=txt;
+}
+
+async function generateReport(){
+  if(parsedReports.length===0){ alert('กรุณาอัพโหลดไฟล์ PDF ก่อน'); return; }
+  if(typeof ExcelJS === 'undefined'){ alert('ExcelJS ยังไม่โหลด — กรุณาเชื่อม Internet แล้วรีเฟรช'); return; }
+
+  const btn = document.getElementById('btnGen');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> กำลังสร้าง...';
+  document.getElementById('progressWrap').style.display='block';
+  document.getElementById('downloadSection').classList.remove('show');
+  setProgress(5,'กำลังเตรียมข้อมูล...');
+
+  const labName = document.getElementById('labName').value || 'ห้องปฏิบัติการ';
+  const labCode = document.getElementById('labCode').value || '016';
+  const testName = document.getElementById('testName').value || 'HIV-1 Viral Load';
+
+  try{
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'QCloud IQC Generator';
+    wb.created = new Date();
+
+    setProgress(15,'สร้าง Sheet สรุปภาพรวม...');
+    await buildSummarySheet(wb, labName, labCode, testName);
+
+    setProgress(40,'สร้าง Sheet ข้อมูลรายวัน...');
+    await buildDailySheet(wb, labCode);
+
+    setProgress(65,'สร้าง Sheet สถิติ Reagent Lot...');
+    await buildStatsSheet(wb, labCode);
+
+    setProgress(85,'สร้าง Sheet เกณฑ์การแปลผล...');
+    await buildCriteriaSheet(wb);
+
+    setProgress(95,'กำลัง Export...');
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+
+    const dl = document.getElementById('btnDownload');
+    dl.onclick = ()=>{ const a=document.createElement('a'); a.href=url; a.download=`IQC_HIV_VL_Lab${labCode}_Report.xlsx`; a.click(); };
+
+    const lots = parsedReports.filter(r=>!r.meta.isAllReagents).map(r=>r.meta.reagentLot).join(', ');
+    const total = parsedReports.reduce((s,r)=>(r.stats.hpc?s+r.stats.hpc.n:s),0);
+    document.getElementById('downloadMeta').textContent = `Reagent Lots: ${lots||'N/A'} · จำนวนรวม: ~${total} ครั้ง`;
+    document.getElementById('downloadSection').classList.add('show');
+    setProgress(100,'สำเร็จ!');
+  }catch(e){
+    console.error(e); alert('เกิดข้อผิดพลาด: '+e.message);
+  }finally{
+    btn.disabled=false; btn.innerHTML='<span>📊</span> Generate Excel Report';
+  }
+}
+
+// ── Color helpers ────────────────────────────────────
+const C={
+  navy:'1B3A6B', blue:'2563EB', blueL:'DBEAFE',
+  green:'16A34A', greenL:'DCFCE7',
+  yellow:'CA8A04', yellowL:'FEF9C3',
+  red:'DC2626', redL:'FEE2E2',
+  hpc:'0EA5E9', hpcL:'E0F2FE',
+  lpc:'8B5CF6', lpcL:'EDE9FE',
+  gray50:'F8FAFC', gray100:'F1F5F9', gray200:'E2E8F0',
+  gray600:'475569', gray800:'1E293B',
+  white:'FFFFFF',
+};
+
+function argb(hex){ return 'FF'+hex.toUpperCase(); }
+function fill(hex){ return { type:'pattern', pattern:'solid', fgColor:{argb:argb(hex)} }; }
+function font(opts={}){ return { name:opts.name||'Calibri', size:opts.size||11, bold:!!opts.bold, color:{argb:argb(opts.color||'000000')}, italic:!!opts.italic }; }
+function align(h='center',v='center',wrap=false){ return {horizontal:h,vertical:v,wrapText:wrap}; }
+function border(color='CCCCCC'){ const s={style:'thin',color:{argb:argb(color)}}; return {top:s,left:s,bottom:s,right:s}; }
+
+function styleCell(cell, opts={}){
+  if(opts.fill)    cell.fill    = fill(opts.fill);
+  if(opts.font)    cell.font    = font(opts.font);
+  if(opts.align)   cell.alignment = align(...(Array.isArray(opts.align)?opts.align:[opts.align]));
+  if(opts.border)  cell.border  = border(opts.border);
+  if(opts.numFmt)  cell.numFmt  = opts.numFmt;
+}
+
+function headerCell(ws, addr, value, bg, fg='FFFFFF', sz=12, bold=true){
+  const cell = ws.getCell(addr);
+  cell.value = value;
+  styleCell(cell, {fill:bg, font:{size:sz,bold:bold,color:fg}, align:['center','center',true], border:C.gray200});
+  return cell;
+}
+
+function cvStatus(cv){
+  if(cv<=3) return {txt:'🟢 ดีเยี่ยม', bg:C.greenL, fg:C.green};
+  if(cv<=5) return {txt:'🟡 ยอมรับได้', bg:C.yellowL, fg:C.yellow};
+  return {txt:'🔴 ตรวจสอบ', bg:C.redL, fg:C.red};
+}
+function zStatus(z){
+  if(Math.abs(z)>3) return {txt:'🔴 Reject (>3SD)', bg:C.redL, fg:C.red};
+  if(Math.abs(z)>2) return {txt:'⚠️ Warning (>2SD)', bg:C.yellowL, fg:C.yellow};
+  return {txt:'✅ ปกติ', bg:C.greenL, fg:C.green};
+}
+
+// ══════════════════════════════════════════════════════
+// Sheet 1: สรุปภาพรวม
+// ══════════════════════════════════════════════════════
+async function buildSummarySheet(wb, labName, labCode, testName){
+  const ws = wb.addWorksheet('สรุปภาพรวม');
+  ws.properties.tabColor = {argb: argb(C.navy)};
+
+  // Column widths
+  [3,22,22,10,10,10,10,16,10,10,10,10,16,3].forEach((w,i)=>ws.getColumn(i+1).width=w);
+
+  // Big header
+  ws.mergeCells('B2:M2');
+  const h1 = ws.getCell('B2');
+  h1.value = `รายงานสรุปผล IQC  HIV-1 Viral Load`;
+  styleCell(h1,{fill:C.navy,font:{size:22,bold:true,color:C.white},align:['center','center'],border:C.navy});
+  ws.getRow(2).height=44;
+
+  ws.mergeCells('B3:M3');
+  const h2=ws.getCell('B3');
+  h2.value=`QCloud IQC – Lab Mean Report  |  Lab Code: ${labCode}  ${labName}`;
+  styleCell(h2,{fill:C.blue,font:{size:13,color:C.white},align:['center','center']});
+  ws.getRow(3).height=26;
+
+  ws.mergeCells('B4:M4');
+  const h3=ws.getCell('B4');
+  const allCtrl = parsedReports.find(r=>r.stats.hpc)?.stats.hpc?.controlLot || 'M21098';
+  const dateRange = parsedReports.map(r=>r.meta.dateFrom+' – '+r.meta.dateTo).filter(Boolean).join(' | ');
+  h3.value=`Control Lot: ${allCtrl}  |  ${testName}  |  Unit: log₁₀ copies/mL  |  ช่วงเวลา: ${dateRange}`;
+  styleCell(h3,{fill:C.blueL,font:{size:10,color:C.navy},align:['center','center']});
+  ws.getRow(4).height=22;
+
+  // ── Summary table ──
+  let row = 6;
+  ws.mergeCells(`B${row}:M${row}`);
+  const sh=ws.getCell(`B${row}`);
+  sh.value='▌ สรุปสถิติแยก Reagent Lot (Control Lot: M21098)';
+  styleCell(sh,{fill:C.navy,font:{size:12,bold:true,color:C.white},align:['left','center']});
+  ws.getRow(row).height=28; row++;
+
+  // HPC / LPC group labels
+  ws.mergeCells(`C${row}:H${row}`);
+  const hg=ws.getCell(`C${row}`); hg.value='🔵  HPC  (High Positive Control)';
+  styleCell(hg,{fill:C.hpc,font:{size:11,bold:true,color:C.white},align:['center','center']});
+  ws.mergeCells(`I${row}:M${row}`);
+  const lg=ws.getCell(`I${row}`); lg.value='🟣  LPC  (Low Positive Control)';
+  styleCell(lg,{fill:C.lpc,font:{size:11,bold:true,color:C.white},align:['center','center']});
+  ws.getCell(`B${row}`).fill=fill(C.gray100);
+  ws.getRow(row).height=26; row++;
+
+  // Column headers
+  const hdrs=['','Reagent Lot / ช่วงเวลา','Mean','SD','%CV','N','ประเมิน HPC','Mean','SD','%CV','N','ประเมิน LPC',''];
+  hdrs.forEach((h,i)=>{
+    const cell=ws.getCell(row,i+1); cell.value=h;
+    const bg=i===0||i===12?C.gray100:i===1?C.gray800:i>=2&&i<=6?C.hpc:C.lpc;
+    styleCell(cell,{fill:bg,font:{bold:true,color:i<=1||i>=12?C.white:C.white,size:10},align:['center','center',true],border:C.gray200});
+  });
+  ws.getRow(row).height=28; row++;
+
+  // Data rows
+  const lotReports = parsedReports.filter(r=>!r.meta.isAllReagents);
+  const toShow = lotReports.length>0 ? lotReports : parsedReports;
+  for(let i=0;i<toShow.length;i++){
+    const r=toShow[i]; const h=r.stats.hpc; const l=r.stats.lpc;
+    const bg=i%2===0?C.gray50:C.white;
+    const hs=h?cvStatus(h.cv):null; const ls=l?cvStatus(l.cv):null;
+    const dateStr=`${r.meta.dateFrom||''} – ${r.meta.dateTo||''}`;
+    const cells=[
+      '',`${r.meta.reagentLot}\n${dateStr}`,
+      h?h.mean:'–', h?h.sd:'–', h?h.cv:'–', h?h.n:'–', hs?hs.txt:'–',
+      l?l.mean:'–', l?l.sd:'–', l?l.cv:'–', l?l.n:'–', ls?ls.txt:'–', ''
+    ];
+    cells.forEach((v,ci)=>{
+      const cell=ws.getCell(row,ci+1); cell.value=v;
+      let fb=bg,ff='000000';
+      if(ci===0||ci===12){fb=C.gray100;}
+      else if(ci===1){fb=bg; cell.font=font({bold:true,size:10}); cell.alignment=align('left','center',true);}
+      else if(ci>=2&&ci<=5){fb=C.hpcL; cell.numFmt='0.00';}
+      else if(ci===6&&hs){fb=hs.bg;ff=hs.fg;}
+      else if(ci>=7&&ci<=10){fb=C.lpcL; cell.numFmt='0.00';}
+      else if(ci===11&&ls){fb=ls.bg;ff=ls.fg;}
+      if(ci!==1){ styleCell(cell,{fill:fb,font:{size:10,bold:ci===6||ci===11,color:ff},align:['center','center',true],border:C.gray200}); }
+      else { cell.fill=fill(fb); cell.border=border(C.gray200); }
+    });
+    ws.getRow(row).height=34; row++;
+  }
+
+  // Overall row (from all-reagents report)
+  const allRep = parsedReports.find(r=>r.meta.isAllReagents);
+  if(allRep&&allRep.stats.hpc){
+    const h=allRep.stats.hpc, l=allRep.stats.lpc;
+    const hs=cvStatus(h.cv); const ls=l?cvStatus(l.cv):null;
+    const ovCells=['',' รวมทุก Lots (Overall)',h.mean,h.sd,h.cv,h.n,hs.txt,l?l.mean:'–',l?l.sd:'–',l?l.cv:'–',l?l.n:'–',ls?ls.txt:'–',''];
+    ovCells.forEach((v,ci)=>{
+      const cell=ws.getCell(row,ci+1); cell.value=v;
+      let bg2=C.navy,fg2=C.white;
+      if(ci===0||ci===12){bg2=C.gray100;fg2='000000';}
+      else if(ci>=2&&ci<=5){bg2='D1ECF1';fg2=C.navy;}
+      else if(ci===6){bg2=hs.bg;fg2=hs.fg;}
+      else if(ci>=7&&ci<=10){bg2='E8DAEF';fg2='6C3483';}
+      else if(ci===11&&ls){bg2=ls.bg;fg2=ls.fg;}
+      styleCell(cell,{fill:bg2,font:{size:11,bold:true,color:fg2},align:['center','center',true],border:C.navy});
+      if(ci>=2&&ci<=5||ci>=7&&ci<=10) cell.numFmt='0.00';
+    });
+    ws.getRow(row).height=34; row++;
+  }
+
+  // ── IQC Limits table ──
+  row+=1;
+  ws.mergeCells(`B${row}:M${row}`);
+  const lh=ws.getCell(`B${row}`);
+  lh.value='▌ ขอบเขต IQC ตาม Westgard Rules (±2SD Warning · ±3SD Reject)';
+  styleCell(lh,{fill:C.navy,font:{size:12,bold:true,color:C.white},align:['left','center']});
+  ws.getRow(row).height=28; row++;
+
+  // Limits headers
+  const lHdrs=['','Reagent Lot','Control','Mean','-3SD','-2SD','+2SD','+3SD','Min','Max','N','ประเมิน',''];
+  lHdrs.forEach((h,i)=>{
+    const cell=ws.getCell(row,i+1); cell.value=h;
+    styleCell(cell,{fill:i===0||i===12?C.gray100:C.gray800,font:{bold:true,color:C.white,size:9},align:['center','center',true],border:C.gray200});
+  });
+  ws.getRow(row).height=24; row++;
+
+  for(let i=0;i<toShow.length;i++){
+    const r=toShow[i];
+    for(const [ctrl,key] of [['HPC','hpc'],['LPC','lpc']]){
+      const st=r.stats[key]; if(!st) continue;
+      const mn=st.mean,sd=st.sd;
+      const vals=[...(r.runs[key]||[])].map(v=>v.value);
+      const vmin=vals.length?Math.min(...vals).toFixed(2):'–';
+      const vmax=vals.length?Math.max(...vals).toFixed(2):'–';
+      const out2=vals.filter(v=>Math.abs(v-mn)/sd>2).length;
+      const stTxt=out2===0?'✅ ทุกค่าอยู่ใน ±2SD':`⚠️ ${out2} ครั้งนอก ±2SD`;
+      const stBg=out2===0?C.greenL:C.yellowL; const stFg=out2===0?C.green:C.yellow;
+      const bg=i%2===0?C.gray50:C.white;
+      const lCells=['',r.meta.reagentLot,ctrl,mn.toFixed(2),(mn-3*sd).toFixed(2),(mn-2*sd).toFixed(2),(mn+2*sd).toFixed(2),(mn+3*sd).toFixed(2),vmin,vmax,st.n,stTxt,''];
+      lCells.forEach((v,ci)=>{
+        const cell=ws.getCell(row,ci+1); cell.value=v;
+        let fb=bg,ff='000000';
+        if(ci===0||ci===12){fb=C.gray100;}
+        else if(ci===1){fb=ctrl==='HPC'?C.hpcL:C.lpcL;ff=ctrl==='HPC'?C.hpc:C.lpc;}
+        else if(ci===2){fb=ctrl==='HPC'?C.hpcL:C.lpcL;ff=ctrl==='HPC'?C.hpc:C.lpc;}
+        else if(ci===4||ci===5||ci===6||ci===7){fb='FEF9C3';}
+        else if(ci===11){fb=stBg;ff=stFg;}
+        styleCell(cell,{fill:fb,font:{size:9,color:ff,bold:ci===1||ci===2||ci===11},align:['center','center',true],border:C.gray200});
+      });
+      ws.getRow(row).height=20; row++;
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Sheet 2: ข้อมูลรายวัน
+// ══════════════════════════════════════════════════════
+async function buildDailySheet(wb, labCode){
+  const ws = wb.addWorksheet('ข้อมูลรายวัน');
+  ws.properties.tabColor = {argb: argb(C.blue)};
+
+  [3,6,14,12,10,12,12,20,10,12,12,20,16,3].forEach((w,i)=>ws.getColumn(i+1).width=w);
+
+  ws.mergeCells('B2:M2');
+  const h=ws.getCell('B2'); h.value=`ข้อมูล IQC รายวัน  –  HIV-1 Viral Load  |  Lab ${labCode}`;
+  styleCell(h,{fill:C.navy,font:{size:16,bold:true,color:C.white},align:['center','center']});
+  ws.getRow(2).height=38;
+
+  ws.mergeCells('B3:M3');
+  const sh=ws.getCell('B3'); sh.value='ผลการวัด HPC และ LPC พร้อมการประเมิน Westgard Rules (1:2S Warning / 1:3S Reject) เปรียบเทียบกับ Mean±SD ต่อ Reagent Lot';
+  styleCell(sh,{fill:C.blueL,font:{size:9,color:C.navy},align:['center','center']});
+  ws.getRow(3).height=20;
+
+  ws.mergeCells('F4:I4');
+  const hg=ws.getCell('F4'); hg.value='🔵  HPC (High Positive Control)';
+  styleCell(hg,{fill:C.hpc,font:{size:11,bold:true,color:C.white},align:['center','center']});
+  ws.mergeCells('J4:M4');
+  const lg=ws.getCell('J4'); lg.value='🟣  LPC (Low Positive Control)';
+  styleCell(lg,{fill:C.lpc,font:{size:11,bold:true,color:C.white},align:['center','center']});
+  ws.getRow(4).height=26;
+
+  const hdrs=['','#','วันที่','Reagent Lot','Control Lot','HPC ผล','Mean±SD HPC','Z-Score','สถานะ HPC','LPC ผล','Mean±SD LPC','Z-Score','สถานะ LPC','หมายเหตุ'];
+  hdrs.forEach((h,i)=>{
+    const cell=ws.getCell(5,i+1); cell.value=h;
+    const bg=i===0||i===13?C.gray100:i<=4?C.gray800:i<=8?C.hpc:i<=12?C.lpc:C.gray800;
+    styleCell(cell,{fill:bg,font:{bold:true,color:C.white,size:9},align:['center','center',true],border:C.gray200});
+  });
+  ws.getRow(5).height=32;
+
+  let rowN=6, runIdx=0;
+  const lotColors={'M12542':'ECFDF5','M23842':'EFF6FF','M26460':'FFFBEB','N16037':'FDF4FF'};
+
+  for(const r of parsedReports.filter(rep=>!rep.meta.isAllReagents)){
+    const h=r.stats.hpc, l=r.stats.lpc;
+    const hpc=r.runs.hpc||[], lpc=r.runs.lpc||[];
+    const maxN=Math.max(hpc.length,lpc.length);
+    if(maxN===0) continue;
+
+    for(let i=0;i<maxN;i++){
+      runIdx++;
+      const hv=hpc[i], lv=lpc[i];
+      const hZ=(hv&&h)?((hv.value-h.mean)/h.sd):null;
+      const lZ=(lv&&l)?((lv.value-l.mean)/l.sd):null;
+      const hs=hZ!==null?zStatus(hZ):null;
+      const ls=lZ!==null?zStatus(lZ):null;
+      const bg=i%2===0?C.gray50:C.white;
+      const lotBg=lotColors[r.meta.reagentLot]||C.gray50;
+      const notes=[];
+      if(hZ!==null&&Math.abs(hZ)>2) notes.push(`HPC ${hZ>0?'+':''}${hZ.toFixed(2)}SD`);
+      if(lZ!==null&&Math.abs(lZ)>2) notes.push(`LPC ${lZ>0?'+':''}${lZ.toFixed(2)}SD`);
+
+      const vals=[
+        '', runIdx, (hv||lv)?.date||'', r.meta.reagentLot,
+        (h?.controlLot||l?.controlLot||''),
+        hv?hv.value:'', h?`${h.mean.toFixed(2)} ± ${h.sd.toFixed(2)}`:'', hZ!==null?+hZ.toFixed(3):'', hs?hs.txt:'',
+        lv?lv.value:'', l?`${l.mean.toFixed(2)} ± ${l.sd.toFixed(2)}`:'', lZ!==null?+lZ.toFixed(3):'', ls?ls.txt:'',
+        notes.join(', ')
+      ];
+      vals.forEach((v,ci)=>{
+        const cell=ws.getCell(rowN,ci+1); cell.value=v;
+        if(ci===0||ci===13){styleCell(cell,{fill:C.gray100});}
+        else if(ci===1||ci===2){styleCell(cell,{fill:bg,font:{size:10},align:['center','center'],border:C.gray200});}
+        else if(ci===3){styleCell(cell,{fill:lotBg,font:{size:10,bold:true},align:['center','center'],border:C.gray200});}
+        else if(ci===4){styleCell(cell,{fill:bg,font:{size:9,color:C.gray600},align:['center','center'],border:C.gray200});}
+        else if(ci===5){styleCell(cell,{fill:hs?hs.bg:C.hpcL,font:{size:11,bold:true,color:hs?hs.fg:C.hpc},align:['center','center'],border:C.gray200,numFmt:'0.00'});}
+        else if(ci===6){styleCell(cell,{fill:C.hpcL,font:{size:9,color:C.gray600},align:['center','center'],border:C.gray200});}
+        else if(ci===7){styleCell(cell,{fill:hs?hs.bg:bg,font:{size:10,color:hs?hs.fg:'000000'},align:['center','center'],border:C.gray200,numFmt:'0.00'});}
+        else if(ci===8&&hs){styleCell(cell,{fill:hs.bg,font:{size:10,bold:true,color:hs.fg},align:['center','center',true],border:C.gray200});}
+        else if(ci===9){styleCell(cell,{fill:ls?ls.bg:C.lpcL,font:{size:11,bold:true,color:ls?ls.fg:C.lpc},align:['center','center'],border:C.gray200,numFmt:'0.00'});}
+        else if(ci===10){styleCell(cell,{fill:C.lpcL,font:{size:9,color:C.gray600},align:['center','center'],border:C.gray200});}
+        else if(ci===11){styleCell(cell,{fill:ls?ls.bg:bg,font:{size:10,color:ls?ls.fg:'000000'},align:['center','center'],border:C.gray200,numFmt:'0.00'});}
+        else if(ci===12&&ls){styleCell(cell,{fill:ls.bg,font:{size:10,bold:true,color:ls.fg},align:['center','center',true],border:C.gray200});}
+        else if(ci===13){styleCell(cell,{fill:notes.length?C.yellowL:bg,font:{size:8,color:notes.length?C.yellow:C.gray600},align:['center','center',true],border:C.gray200});}
+        else{styleCell(cell,{fill:bg,font:{size:10},align:['center','center'],border:C.gray200});}
+      });
+      ws.getRow(rowN).height=20; rowN++;
+    }
+  }
+
+  if(rowN===6){
+    ws.mergeCells(`B${rowN}:M${rowN}`);
+    const cell=ws.getCell(`B${rowN}`);
+    cell.value='ไม่พบข้อมูลรายวัน — PDF อาจใช้รูปแบบที่ไม่รองรับ หรือเป็นรายงานแบบ All Reagents เท่านั้น';
+    styleCell(cell,{fill:C.yellowL,font:{color:C.yellow,size:11},align:['center','center']});
+    ws.getRow(rowN).height=30;
+  }
+
+  ws.views=[{state:'frozen',xSplit:0,ySplit:5,topLeftCell:'B6'}];
+}
+
+// ══════════════════════════════════════════════════════
+// Sheet 3: สถิติ Reagent Lot
+// ══════════════════════════════════════════════════════
+async function buildStatsSheet(wb, labCode){
+  const ws = wb.addWorksheet('สถิติ Reagent Lot');
+  ws.properties.tabColor = {argb: argb(C.hpc)};
+  [3,22,12,14,14,16,3].forEach((w,i)=>ws.getColumn(i+1).width=w);
+
+  ws.mergeCells('B2:F2');
+  const h=ws.getCell('B2'); h.value=`สถิติ IQC แยก Reagent Lot  |  Lab ${labCode}  |  HIV-1 Viral Load`;
+  styleCell(h,{fill:C.navy,font:{size:14,bold:true,color:C.white},align:['center','center']});
+  ws.getRow(2).height=34;
+
+  let row=4;
+  const lotReports=parsedReports.filter(r=>!r.meta.isAllReagents);
+  const toShow=lotReports.length>0?lotReports:parsedReports;
+
+  for(const r of toShow){
+    ws.mergeCells(`B${row}:F${row}`);
+    const lh=ws.getCell(`B${row}`);
+    lh.value=`Reagent Lot: ${r.meta.reagentLot}  |  ${r.meta.dateFrom||''} – ${r.meta.dateTo||''}  |  Control: ${r.meta.controlLot||r.stats.hpc?.controlLot||''}`;
+    styleCell(lh,{fill:C.blue,font:{size:11,bold:true,color:C.white},align:['left','center']});
+    ws.getRow(row).height=26; row++;
+
+    // Headers
+    ['','ตัวชี้วัด','HPC','LPC','เกณฑ์','ประเมิน',''].forEach((h,i)=>{
+      const cell=ws.getCell(row,i+1); cell.value=h;
+      styleCell(cell,{fill:i===0||i===6?C.gray100:C.gray800,font:{bold:true,color:C.white,size:10},align:['center','center'],border:C.gray200});
+    });
+    ws.getRow(row).height=24; row++;
+
+    const h=r.stats.hpc, l=r.stats.lpc;
+    const hpc=r.runs.hpc||[], lpc=r.runs.lpc||[];
+    const hs=h?cvStatus(h.cv):null, ls=l?cvStatus(l.cv):null;
+    const h2out=h&&hpc.length?hpc.filter(v=>Math.abs(v.value-h.mean)/h.sd>2).length:0;
+    const l2out=l&&lpc.length?lpc.filter(v=>Math.abs(v.value-l.mean)/l.sd>2).length:0;
+
+    const statRows=[
+      ['Mean (log₁₀)', h?h.mean.toFixed(2):'–', l?l.mean.toFixed(2):'–', '–', '–', C.gray50],
+      ['SD', h?h.sd.toFixed(2):'–', l?l.sd.toFixed(2):'–', '–', '–', C.gray50],
+      ['%CV', h?h.cv.toFixed(2)+'%':'–', l?l.cv.toFixed(2)+'%':'–', '≤ 5.0%', hs&&ls?`HPC:${hs.txt} LPC:${ls.txt}`:'–', hs?hs.bg:C.gray50],
+      ['N (จำนวนครั้ง)', h?h.n:'–', l?l.n:'–', '–', '–', C.gray50],
+      ['+2SD (Warning)', h?(h.mean+2*h.sd).toFixed(2):'–', l?(l.mean+2*l.sd).toFixed(2):'–', '–', '–', 'FEF9C3'],
+      ['-2SD (Warning)', h?(h.mean-2*h.sd).toFixed(2):'–', l?(l.mean-2*l.sd).toFixed(2):'–', '–', '–', 'FEF9C3'],
+      ['+3SD (Reject)',  h?(h.mean+3*h.sd).toFixed(2):'–', l?(l.mean+3*l.sd).toFixed(2):'–', '–', '–', 'FEE2E2'],
+      ['-3SD (Reject)',  h?(h.mean-3*h.sd).toFixed(2):'–', l?(l.mean-3*l.sd).toFixed(2):'–', '–', '–', 'FEE2E2'],
+      ['ค่าเกิน ±2SD', h2out>0?`${h2out} ครั้ง`:(hpc.length?'0 ครั้ง':'–'), l2out>0?`${l2out} ครั้ง`:(lpc.length?'0 ครั้ง':'–'), '0 ครั้ง',
+        `HPC:${h2out===0?'✅':'⚠️'} LPC:${l2out===0?'✅':'⚠️'}`, h2out>0||l2out>0?C.yellowL:C.greenL],
+    ];
+
+    for(let i=0;i<statRows.length;i++){
+      const [label,hVal,lVal,crit,eval_,bg]=statRows[i];
+      const cells=['',label,hVal,lVal,crit,eval_,''];
+      cells.forEach((v,ci)=>{
+        const cell=ws.getCell(row,ci+1); cell.value=v;
+        if(ci===0||ci===6){styleCell(cell,{fill:C.gray100});}
+        else if(ci===1){styleCell(cell,{fill:bg||C.gray50,font:{bold:true,size:10},align:['left','center'],border:C.gray200});}
+        else if(ci===2){styleCell(cell,{fill:C.hpcL,font:{bold:true,color:C.hpc,size:11},align:['center','center'],border:C.gray200});}
+        else if(ci===3){styleCell(cell,{fill:C.lpcL,font:{bold:true,color:C.lpc,size:11},align:['center','center'],border:C.gray200});}
+        else if(ci===4){styleCell(cell,{fill:C.gray50,font:{size:9,color:C.gray600},align:['center','center'],border:C.gray200});}
+        else if(ci===5){styleCell(cell,{fill:bg||C.gray50,font:{size:10,bold:true},align:['center','center',true],border:C.gray200});}
+      });
+      ws.getRow(row).height=20; row++;
+    }
+    row+=2;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// Sheet 4: เกณฑ์การแปลผล
+// ══════════════════════════════════════════════════════
+async function buildCriteriaSheet(wb){
+  const ws = wb.addWorksheet('เกณฑ์การแปลผล');
+  ws.properties.tabColor = {argb: argb(C.lpc)};
+  [3,18,18,30,24,3].forEach((w,i)=>ws.getColumn(i+1).width=w);
+
+  ws.mergeCells('B2:E2');
+  const h=ws.getCell('B2'); h.value='เกณฑ์การแปลผล IQC  HIV-1 Viral Load  —  Westgard Rules & %CV';
+  styleCell(h,{fill:C.navy,font:{size:14,bold:true,color:C.white},align:['center','center']});
+  ws.getRow(2).height=34;
+
+  let row=4;
+  // %CV
+  ws.mergeCells(`B${row}:E${row}`);
+  ws.getCell(`B${row}`).value='1. เกณฑ์ %CV'; styleCell(ws.getCell(`B${row}`),{fill:C.blue,font:{size:12,bold:true,color:C.white},align:['left','center']});
+  ws.getRow(row).height=26; row++;
+
+  [['','%CV','ระดับ','ความหมาย / การดำเนินการ','']].concat([
+    [C.greenL,'≤ 3.0%','🟢 ดีเยี่ยม (Excellent)','ความแม่นยำสูง ดำเนินการต่อได้ตามปกติ',C.greenL],
+    [C.yellowL,'3.0–5.0%','🟡 ยอมรับได้ (Acceptable)','ยอมรับได้ ติดตาม Trend อย่างใกล้ชิด',C.yellowL],
+    [C.redL,'> 5.0%','🔴 ตรวจสอบ (Review Required)','หยุดรายงานผล — ตรวจสอบ Reagent / เครื่องมือ',C.redL],
+  ]).forEach((r,ri)=>{
+    const cells=r;
+    cells.forEach((v,ci)=>{
+      const cell=ws.getCell(row,ci+1); cell.value=v;
+      styleCell(cell,{fill:ri===0?C.gray800:(typeof v==='string'&&v!==''?cells[0]:C.gray50),font:{bold:ri===0,color:ri===0?C.white:'000000',size:ri===0?10:11},align:['center','center',true],border:C.gray200});
+    });
+    ws.getRow(row).height=ri===0?24:28; row++;
+  });
+
+  row++;
+  ws.mergeCells(`B${row}:E${row}`);
+  ws.getCell(`B${row}`).value='2. Westgard Rules'; styleCell(ws.getCell(`B${row}`),{fill:C.blue,font:{size:12,bold:true,color:C.white},align:['left','center']});
+  ws.getRow(row).height=26; row++;
+
+  [['','กฎ','ประเภท','คำอธิบาย / การดำเนินการ','']].concat([
+    [C.yellowL,'1:2S','⚠️ Warning','ค่า 1 ค่าเกิน Mean ± 2SD — ตรวจสอบ Trend ไม่ต้อง Reject',C.yellowL],
+    [C.redL,'1:3S','🔴 Reject','ค่า 1 ค่าเกิน Mean ± 3SD — ปฏิเสธรัน Repeat QC ทันที',C.redL],
+    [C.redL,'2:2S','🔴 Reject','2 ค่าต่อเนื่องเกิน ±2SD ด้านเดียว — Systematic Error',C.redL],
+    [C.redL,'R:4S','🔴 Reject','ช่วง (max-min) ใน 1 รัน > 4SD — Random Error สูง',C.redL],
+    [C.yellowL,'4:1S','⚠️ Warning','4 ค่าต่อเนื่องอยู่เกิน ±1SD ด้านเดียว — ระวัง Trend',C.yellowL],
+    [C.yellowL,'10x','⚠️ Warning','10 ค่าต่อเนื่องอยู่ด้านเดียวของ Mean — ระวัง Drift',C.yellowL],
+  ]).forEach((r,ri)=>{
+    r.forEach((v,ci)=>{
+      const cell=ws.getCell(row,ci+1); cell.value=v;
+      styleCell(cell,{fill:ri===0?C.gray800:(typeof v==='string'?r[0]:C.gray50),font:{bold:ri===0||ci===1||ci===2,color:ri===0?C.white:'000000',size:ri===0?10:10},align:['center','center',true],border:C.gray200});
+    });
+    ws.getRow(row).height=ri===0?24:26; row++;
+  });
+
+  row++;
+  ws.mergeCells(`B${row}:E${row}`);
+  ws.getCell(`B${row}`).value='3. หมายเหตุสำคัญ HIV-1 Viral Load (log₁₀ copies/mL)';
+  styleCell(ws.getCell(`B${row}`),{fill:C.blue,font:{size:12,bold:true,color:C.white},align:['left','center']});
+  ws.getRow(row).height=26; row++;
+
+  const notes=[
+    'ค่า HPC (High Positive Control): ปกติอยู่ในช่วง 5.0–5.5 log₁₀ copies/mL',
+    'ค่า LPC (Low Positive Control): ปกติอยู่ในช่วง 2.0–3.0 log₁₀ copies/mL',
+    '%CV ≤ 5% ถือว่ายอมรับได้สำหรับ HIV Viral Load',
+    'Westgard 1:2S = Warning (ไม่ต้อง Reject แต่ต้องบันทึกและติดตาม)',
+    'Westgard 1:3S = Reject (ต้องหยุดการรายงานผลและตรวจสอบทันที)',
+    'N < 20 ค่า %CV อาจไม่เสถียร ควรติดตามต่อเนื่อง',
+  ];
+  notes.forEach((n,i)=>{
+    ws.mergeCells(`B${row}:E${row}`);
+    const cell=ws.getCell(`B${row}`);
+    cell.value=`• ${n}`;
+    styleCell(cell,{fill:i%2===0?C.gray50:C.white,font:{size:10},align:['left','center'],border:C.gray200});
+    ws.getRow(row).height=22; row++;
+  });
+}
+
+</script>
+</body>
+</html>
