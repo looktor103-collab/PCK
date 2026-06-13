@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maintenance Tracking Dashboard — รพ.พระจอมเกล้า เพชรบุรี</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-light: #dbeafe; --blue-mid: #93c5fd; --blue-dark: #3b82f6;
+    --green-light:#dcfce7; --green-mid: #86efac; --green-dark: #22c55e;
+    --red-light:  #fee2e2; --red-mid:   #fca5a5; --red-dark:   #ef4444;
+    --purple-light:#ede9fe; --purple-mid:#c4b5fd; --purple-dark:#8b5cf6;
+    --amber-light: #fef3c7; --amber-mid: #fcd34d; --amber-dark: #f59e0b;
+    --gray-50:#f9fafb; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
+    --gray-300:#d1d5db; --gray-600:#4b5563; --gray-700:#374151; --gray-800:#1f2937;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', sans-serif; background: #f0f4f8; color: var(--gray-800); font-size: 14px; }
+
+  /* ── Back bar ── */
+  .back-bar { background:linear-gradient(135deg,#fdf6f8,#fce4ec); border-bottom:1px solid #f4c8d4; padding:10px 20px; display:flex; align-items:center; }
+  .back-btn { display:inline-flex; align-items:center; gap:8px; color:#8b3a52; font-size:13px; font-weight:600; text-decoration:none; padding:6px 14px; border-radius:99px; background:rgba(255,255,255,.8); border:1px solid #f4c8d4; transition:background .18s,transform .18s; }
+  .back-btn:hover { background:#fff; transform:translateX(-2px); }
+
+  /* ── Tabs ── */
+  .tab-bar { display:flex; flex-wrap:wrap; gap:4px; background:#fff; padding:10px 16px 0; border-bottom:2px solid var(--gray-200); position:sticky; top:0; z-index:100; box-shadow:0 2px 6px rgba(0,0,0,.06); }
+  .tab-btn { padding:8px 16px; border:none; background:var(--gray-100); border-radius:8px 8px 0 0; cursor:pointer; font-family:inherit; font-size:13px; color:var(--gray-600); transition:all .2s; }
+  .tab-btn:hover { background:var(--gray-200); }
+  .tab-btn.active { background:#fff; border-bottom:2px solid #fff; margin-bottom:-2px; color:var(--gray-800); font-weight:600; }
+  .tab-panel { display:none; padding:24px; }
+  .tab-panel.active { display:block; }
+
+  /* ── Card ── */
+  .card { background:#fff; border-radius:var(--radius); box-shadow:0 1px 4px rgba(0,0,0,.08); margin-bottom:20px; overflow:hidden; }
+  .card-header { padding:14px 18px; font-weight:700; font-size:15px; border-bottom:1px solid var(--gray-100); }
+  .card-body { padding:18px; }
+
+  /* ── Hero ── */
+  .hero { background:linear-gradient(135deg,#1e3a5f 0%,#2563eb 100%); color:#fff; padding:28px 32px; border-radius:var(--radius); margin-bottom:20px; }
+  .hero h1 { font-size:22px; font-weight:700; margin-bottom:4px; }
+  .hero p  { font-size:13px; opacity:.85; }
+
+  /* ── KPI strip ── */
+  .kpi-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+  .kpi { flex:1 1 130px; background:#fff; border-radius:var(--radius); box-shadow:0 1px 4px rgba(0,0,0,.08); padding:16px 18px; border-top:4px solid var(--blue-dark); }
+  .kpi.green  { border-top-color:var(--green-dark); }
+  .kpi.amber  { border-top-color:var(--amber-dark); }
+  .kpi.red    { border-top-color:var(--red-dark); }
+  .kpi.purple { border-top-color:var(--purple-dark); }
+  .kpi-num { font-size:28px; font-weight:700; line-height:1; }
+  .kpi-lbl { font-size:12px; color:var(--gray-600); margin-top:4px; }
+
+  /* ── Tables ── */
+  .tbl-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  thead th { background:var(--gray-100); padding:9px 10px; text-align:left; font-weight:600; color:var(--gray-700); border-bottom:2px solid var(--gray-200); white-space:nowrap; }
+  tbody td { padding:8px 10px; border-bottom:1px solid var(--gray-100); vertical-align:top; }
+  tbody tr:hover { background:#fafbff; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; white-space:nowrap; }
+  .badge-pm     { background:var(--green-light); color:#166534; }
+  .badge-repair { background:var(--red-light);   color:#991b1b; }
+  .badge-remote { background:var(--blue-light);  color:#1e40af; }
+  .badge-other  { background:var(--gray-100);    color:var(--gray-700); }
+  .badge-pass   { background:var(--green-light); color:#166534; }
+  .pass-cell { color:#16a34a; font-weight:600; }
+  .chk-row td:nth-child(2) { color:#16a34a; font-weight:600; }
+
+  /* ── Device hero strip ── */
+  .dev-hero { padding:22px 24px; border-radius:var(--radius); margin-bottom:20px; color:#fff; }
+  .dev-hero.blue   { background:linear-gradient(135deg,#1d4ed8,#60a5fa); }
+  .dev-hero.green  { background:linear-gradient(135deg,#15803d,#4ade80); }
+  .dev-hero.red    { background:linear-gradient(135deg,#b91c1c,#f87171); }
+  .dev-hero.purple { background:linear-gradient(135deg,#6d28d9,#a78bfa); }
+  .dev-hero h2 { font-size:18px; font-weight:700; }
+  .dev-hero p  { font-size:12px; opacity:.9; margin-top:3px; }
+
+  /* ── Plan grid ── */
+  .plan-grid table thead th { text-align:center; }
+  .plan-grid table tbody td { text-align:center; }
+  .plan-grid table tbody td:nth-child(2) { text-align:left; }
+
+  /* ── Footer / misc ── */
+  .footer { text-align:center; padding:16px; font-size:12px; color:var(--gray-600); }
+  .att-file { color:#2563eb; font-family:monospace; font-size:12px; }
+  .warn-note { font-size:12px; color:#92400e; background:var(--amber-light); padding:8px 12px; border-radius:6px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<!-- ── BACK BAR ── -->
+<div class="back-bar">
+  <a class="back-btn" href="index.html">← กลับหน้าหลัก Dashboard</a>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('tab-dash',this)">📊 Dashboard</button>
+  <button class="tab-btn" onclick="showTab('tab-c6800',this)">🔵 cobas 6800</button>
+  <button class="tab-btn" onclick="showTab('tab-cz480',this)">🔵 cobas z 480</button>
+  <button class="tab-btn" onclick="showTab('tab-ipon',this)">🟢 iPonatic III</button>
+  <button class="tab-btn" onclick="showTab('tab-plan',this)">📅 Roche Plan 2569</button>
+  <button class="tab-btn" onclick="showTab('tab-bd',this)">🔴 BD FACSCalibur</button>
+</div>
+
+<!-- DASHBOARD -->
+<div id="tab-dash" class="tab-panel active">
+  <div class="hero">
+    <h1>🏥 ระบบติดตามการบำรุงรักษาเครื่องมือแพทย์</h1>
+    <p>โรงพยาบาลพระจอมเกล้า เพชรบุรี · Maintenance Tracking Dashboard · งานอณูชีวโมเลกุล</p>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi">       <div class="kpi-num">🔬 4</div><div class="kpi-lbl">ประเภทเครื่องมือ</div></div>
+    <div class="kpi amber"> <div class="kpi-num">🔧 31</div><div class="kpi-lbl">การบริการทั้งหมด</div></div>
+    <div class="kpi green"> <div class="kpi-num">✅ 13</div><div class="kpi-lbl">PM Visit</div></div>
+    <div class="kpi red">   <div class="kpi-num">🔨 12</div><div class="kpi-lbl">Repair / Service</div></div>
+    <div class="kpi purple"><div class="kpi-num">📡 7</div> <div class="kpi-lbl">Remote Support</div></div>
+    <div class="kpi amber"> <div class="kpi-num">⏱ ~60h</div><div class="kpi-lbl">ชั่วโมงบริการรวม</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📋 สรุปข้อมูลเครื่องมือแพทย์รายเครื่อง</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>เครื่องมือ</th><th>ยี่ห้อ</th><th>รุ่น / Model</th><th>Serial No.</th><th>PM</th><th>Repair</th><th>Remote</th><th>รวม</th><th>Labor hrs</th><th>ช่วงเวลา</th><th>ช่างหลัก</th></tr></thead>
+        <tbody>
+          <tr><td><strong>cobas® 6800</strong></td><td>Roche Diagnostics (TH)</td><td>cobas 6800</td><td><code>1376</code></td><td><span class="badge badge-pm">2</span></td><td><span class="badge badge-repair">8</span></td><td><span class="badge badge-remote">7</span></td><td><strong>17</strong></td><td>31.9h</td><td>ม.ค.68–พ.ค.69</td><td>Roche FSE</td></tr>
+          <tr><td><strong>cobas® z 480</strong></td><td>Roche Diagnostics (TH)</td><td>cobas z 480</td><td><code>54632</code></td><td><span class="badge badge-pm">1</span></td><td>—</td><td>—</td><td><strong>1</strong></td><td>—</td><td>พ.ค.68</td><td>Roche FSE</td></tr>
+          <tr><td><strong>iPonatic® III</strong></td><td>Z-medic Co., Ltd.</td><td>iPonatic Portable Mol.</td><td><code>Q36AE032210010130</code></td><td><span class="badge badge-pm">6</span></td><td>—</td><td>—</td><td><strong>6</strong></td><td>—</td><td>ก.พ.67–ก.ค.68</td><td>จารุวรรณ / ธนภูมิ / สุดารัตน์</td></tr>
+          <tr><td><strong>BD FACSCalibur™</strong></td><td>Becton Dickinson (TH)</td><td>FACSCalibur 3Color</td><td><code>E34297300589</code></td><td><span class="badge badge-pm">4</span></td><td><span class="badge badge-repair">3</span></td><td>—</td><td><strong>8</strong></td><td>27.5h</td><td>พ.ย.66–พ.ย.69</td><td>Janboon Pisitpong</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">📊 สรุปประเภทการบริการ</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>ประเภท</th><th>cobas 6800</th><th>cobas z 480</th><th>iPonatic III</th><th>BD FACSCalibur</th><th>รวม</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td>✅ Preventive Maintenance</td><td>2</td><td>1</td><td>6</td><td>4</td><td><strong>13</strong></td><td>ดำเนินการตามแผนทุกเครื่อง</td></tr>
+          <tr><td>🔨 Repair / Service Visit</td><td>8</td><td>—</td><td>—</td><td>3</td><td><strong>11</strong></td><td>Roche cobas 6800 และ BD FACSCalibur</td></tr>
+          <tr><td>📡 Remote / Tele Support</td><td>7</td><td>—</td><td>—</td><td>—</td><td><strong>7</strong></td><td>cobas 6800 เท่านั้น</td></tr>
+          <tr><td>🚚 Relocation / Courtesy</td><td>1</td><td>—</td><td>—</td><td>1</td><td><strong>2</strong></td><td>cobas 6800 Courtesy + BD Relocation</td></tr>
+          <tr style="background:var(--gray-50);font-weight:700;"><td>📋 รวมทั้งหมด</td><td>18</td><td>1</td><td>6</td><td>8</td><td>33</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="footer">ห้องปฏิบัติการเทคนิคการแพทย์ · โรงพยาบาลพระจอมเกล้า เพชรบุรี · Maintenance Dashboard</div>
+</div>
+
+<!-- COBAS 6800 -->
+<div id="tab-c6800" class="tab-panel">
+  <div class="dev-hero blue"><h2>🔵 Roche Diagnostics (Thailand) · cobas® 6800</h2><p>S/N: 1376 · รพ.พระจอมเกล้า เพชรบุรี · Hotline: 1800-0193-99 · Line: @rcscthailand</p></div>
+  <div class="kpi-row">
+    <div class="kpi">       <div class="kpi-num">📊 18</div><div class="kpi-lbl">บริการทั้งหมด</div></div>
+    <div class="kpi red">   <div class="kpi-num">🔨 8</div> <div class="kpi-lbl">Service Visit</div></div>
+    <div class="kpi green"> <div class="kpi-num">✅ 2</div> <div class="kpi-lbl">PM</div></div>
+    <div class="kpi purple"><div class="kpi-num">📡 7</div> <div class="kpi-lbl">Remote</div></div>
+    <div class="kpi amber"> <div class="kpi-num">⏱ 31.9h</div><div class="kpi-lbl">Labor</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📋 ประวัติการบริการ (Service History)</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>วันที่</th><th>ประเภท</th><th>S/N</th><th>Case No.</th><th>Work Order</th><th>อาการ</th><th>การแก้ไข</th><th>งานที่ดำเนินการ</th><th>ชั่วโมง</th><th>ช่าง</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>16/01/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>CAS-0022102876</td><td>WO-31212303</td><td>ไม่ Initialize หลัง PM</td><td>Restart → standby สำเร็จ</td><td>Replace Control unit; ปรับ Reagent Storage</td><td>7.98</td><td>Sompop Bangyeekhan</td></tr>
+          <tr><td>2</td><td>14/02/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>CAS-0022388810</td><td>WO-31515749</td><td>Magazine C error</td><td>Close reagent drawer loosely</td><td>Clean/adjust motor B/5/7; Drawer test</td><td>4.80</td><td>Anurak Phaphai</td></tr>
+          <tr><td>3</td><td>12/03/2025</td><td><span class="badge badge-other">SW Modification</span></td><td>—</td><td>—</td><td>—</td><td>Network SW Modification (FortiGate)</td><td>SW Modification</td><td>—</td><td>1.00</td><td>—</td></tr>
+          <tr><td>4</td><td>20/03/2025</td><td><span class="badge badge-remote">Tele/Remote Diag</span></td><td>1376</td><td>—</td><td>—</td><td>Remote diagnostic</td><td>Tele support</td><td>—</td><td>2.25</td><td>—</td></tr>
+          <tr><td>5</td><td>21/03/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Transfer module Error</td><td>ตรวจสอบ transfer module</td><td>Transfer module inspection &amp; adjustment</td><td>2.50</td><td>—</td></tr>
+          <tr><td>6</td><td>27/05/2025</td><td><span class="badge badge-pm">PM Visit</span></td><td>1376</td><td>—</td><td>—</td><td>PM ครั้งที่ 1/2568</td><td>PM ตามแผน</td><td>Periodic Maintenance</td><td>—</td><td>—</td></tr>
+          <tr><td>7</td><td>23/06/2025</td><td><span class="badge badge-remote">Remote Support</span></td><td>1376</td><td>—</td><td>—</td><td>Remote support</td><td>Remote</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>8</td><td>24/06/2025</td><td><span class="badge badge-remote">Remote Support</span></td><td>1376</td><td>—</td><td>—</td><td>Transfer module error ระหว่าง HPV run</td><td>Remote support</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>9</td><td>27/06/2025</td><td><span class="badge badge-other">Courtesy Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Courtesy Visit</td><td>ตรวจสอบโดยรวม</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>10</td><td>29/07/2025</td><td><span class="badge badge-remote">Remote Support</span></td><td>1376</td><td>—</td><td>—</td><td>Remote support</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>11</td><td>17/08/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Backup failed — S drive unavailable</td><td>Backup troubleshooting</td><td>System check; Backup fix</td><td>2.98</td><td>—</td></tr>
+          <tr><td>12</td><td>26/08/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Processing module error HPV</td><td>ตรวจสอบ processing module</td><td>Module inspection; Carrier adjustment</td><td>2.98</td><td>—</td></tr>
+          <tr><td>13</td><td>03/12/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>CAS-0024758063</td><td>WO-34968781</td><td>Supply บน processing plate park position A</td><td>ตรวจสอบ transfer module</td><td>Module inspection; Supply removal</td><td>—</td><td>—</td></tr>
+          <tr><td>14</td><td>17/12/2025</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Service Visit ธ.ค.68</td><td>ตรวจสอบและบำรุงรักษา</td><td>Inspection</td><td>—</td><td>—</td></tr>
+          <tr><td>15</td><td>25/02/2026</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Transfer module error — HIV-1</td><td>ตรวจสอบ transfer module</td><td>Transfer module inspection</td><td>—</td><td>—</td></tr>
+          <tr><td>16</td><td>10/03/2026</td><td><span class="badge badge-remote">Remote Support</span></td><td>1376</td><td>CAS-0025386910</td><td>WO-35857115</td><td>HPV positive สูงผิดปกติ 2 batch</td><td>Review Colibri data → HPV confirmed</td><td>Colibri data review; Result verification</td><td>—</td><td>—</td></tr>
+          <tr><td>17</td><td>16/03/2026</td><td><span class="badge badge-repair">Service Visit</span></td><td>1376</td><td>—</td><td>—</td><td>Transfer module error — HIV-1</td><td>ตรวจสอบและซ่อม transfer module</td><td>Transfer module repair; Verification</td><td>8.48</td><td>—</td></tr>
+          <tr><td>18</td><td>11/05/2026</td><td><span class="badge badge-remote">Remote Support</span></td><td>1376</td><td>CAS-0025859593</td><td>WO-36576697</td><td>Error ระหว่าง Initialize หลัง PM</td><td>Restart → initialize สำเร็จ</td><td>Remote restart guidance</td><td>0.67</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- COBAS Z 480 -->
+<div id="tab-cz480" class="tab-panel">
+  <div class="dev-hero blue"><h2>🔵 Roche Diagnostics (Thailand) · cobas® z 480</h2><p>S/N: 54632 · รพ.พระจอมเกล้า เพชรบุรี · Hotline: 1800-0193-99</p></div>
+  <div class="kpi-row">
+    <div class="kpi green"><div class="kpi-num">✅ 1</div><div class="kpi-lbl">PM Visit</div></div>
+    <div class="kpi amber"><div class="kpi-num">📅 1/ปี</div><div class="kpi-lbl">ความถี่ PM</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📋 ประวัติการบริการ</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>วันที่</th><th>ประเภท</th><th>อาการ / Issue</th><th>งานที่ดำเนินการ</th><th>ช่าง</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>27/05/2025</td><td><span class="badge badge-pm">PM Visit</span></td><td>PM ครั้งที่ 1/2568 ตามแผน</td><td>Periodic Maintenance — ดำเนินการพร้อม cobas 6800</td><td>Roche FSE</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- iPONATIC III -->
+<div id="tab-ipon" class="tab-panel">
+  <div class="dev-hero green"><h2>🟢 Z-medic Co., Ltd. · iPonatic® Portable Molecular (iPonatic III)</h2><p>S/N: Q36AE032210010130 · รพ.พระจอมเกล้า เพชรบุรี · Tel: 0-2197-8652-3 · PM: 2 ครั้ง/ปี</p></div>
+  <div class="kpi-row">
+    <div class="kpi green"><div class="kpi-num">✅ 6</div><div class="kpi-lbl">PM ทั้งหมด</div></div>
+    <div class="kpi amber"><div class="kpi-num">📅 2/ปี</div><div class="kpi-lbl">ความถี่ PM</div></div>
+    <div class="kpi green"><div class="kpi-num">🔬 PASS</div><div class="kpi-lbl">ทุกครั้ง</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📋 ประวัติการบริการ</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>วันที่</th><th>PM ครั้งที่</th><th>App Ver.</th><th>PCR FW</th><th>Extract FW</th><th>Clean ภายนอก</th><th>Clean ภายใน</th><th>Clean Carrier</th><th>Sensor</th><th>UV</th><th>เปิด-ปิด</th><th>ผล</th><th>ช่าง</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>13/02/2024</td><td>PM 1/2567</td><td>V1.7.0</td><td>V1.1.5</td><td>—</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td><span class="badge badge-pass">PASS</span></td><td>จารุวรรณ สายรุ่งเรืองศิลป์</td></tr>
+          <tr><td>2</td><td>08/05/2024</td><td>PM 2/2567</td><td>V1.7.0</td><td>—</td><td>—</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td><span class="badge badge-pass">PASS</span></td><td>จารุวรรณ สายรุ่งเรืองศิลป์</td></tr>
+          <tr><td>3</td><td>24/07/2024</td><td>PM 3/2567</td><td>—</td><td>—</td><td>—</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td><span class="badge badge-pass">PASS</span></td><td>จารุวรรณ สายรุ่งเรืองศิลป์</td></tr>
+          <tr><td>4</td><td>02/10/2024</td><td>PM 4/2567</td><td>V1.8.0</td><td>V1.1.7</td><td>V1.1.6</td><td class="pass-cell">✓</td><td>—</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td><span class="badge badge-pass">PASS</span></td><td>ธนภูมิ เจริญสุข</td></tr>
+          <tr><td>5</td><td>15/07/2025</td><td>PM 2/2568</td><td>V1.8.3</td><td>V1.1.8</td><td>V1.1.7</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td><span class="badge badge-pass">PASS</span></td><td>สุดารัตน์ คำเลิศ</td></tr>
+          <tr><td>6</td><td>19/01/2026</td><td>PM 1/2569</td><td>V1.8.3</td><td>V1.1.8</td><td>V1.1.7</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td class="pass-cell">✓</td><td><span class="badge badge-pass">PASS</span></td><td>สุดารัตน์ คำเลิศ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ROCHE PLAN 2569 -->
+<div id="tab-plan" class="tab-panel">
+  <div class="dev-hero purple"><h2>📅 แผนการบำรุงรักษาเครื่องมือ Roche ประจำปี พ.ศ. 2569</h2><p>อ้างอิง: RDT/PS/L470/2026 · ลงนาม: มนตรี รักใหม่ · 12 มกราคม 2569</p></div>
+  <div class="card plan-grid">
+    <div class="card-header">📅 ตารางแผนการบำรุงรักษารายเครื่อง</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th style="text-align:left">เครื่องมือ</th><th>S/N</th><th>PM/ปี</th><th>ม.ค.</th><th>ก.พ.</th><th>มี.ค.</th><th>เม.ย.</th><th>พ.ค.</th><th>มิ.ย.</th><th>ก.ค.</th><th>ส.ค.</th><th>ก.ย.</th><th>ต.ค.</th><th>พ.ย.</th><th>ธ.ค.</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td style="text-align:left">cobas p 471</td><td>66300377</td><td>2</td><td>✅</td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>2</td><td style="text-align:left">cobas p 512</td><td>64300333</td><td>2</td><td>✅</td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>3</td><td style="text-align:left">cobas pro SSU (1)</td><td>C4P8-02</td><td>1</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>4</td><td style="text-align:left">cobas pro ISE (1)</td><td>2386-05</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>5</td><td style="text-align:left">cobas c 503 (1)</td><td>24A8-09</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>6</td><td style="text-align:left">cobas e 801</td><td>44B9-02</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>7</td><td style="text-align:left">Merck RO AFS 120E</td><td>F2KB96929D</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>8</td><td style="text-align:left">cobas pro SSU (2)</td><td>C4R0-09</td><td>1</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>9</td><td style="text-align:left">cobas pro ISE (2)</td><td>2396-03</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>10</td><td style="text-align:left">cobas c 503 (2)</td><td>24C3-03</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>11</td><td style="text-align:left">Merck RO AFS 80E</td><td>F4JB66194D</td><td>2</td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td></tr>
+          <tr><td>12</td><td style="text-align:left">HENm (1)</td><td>H1221075</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>13</td><td style="text-align:left">HENm (2)</td><td>H1221106</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>14</td><td style="text-align:left">HENm (3)</td><td>H1222180</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>15</td><td style="text-align:left">HENm (4)</td><td>H1224118</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>16</td><td style="text-align:left">HENm Mobile</td><td>H1323003</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>17</td><td style="text-align:left">cobas z 480</td><td>54632</td><td>1</td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr style="background:var(--blue-light)"><td>18</td><td style="text-align:left"><strong>cobas 6800 ⭐</strong></td><td><strong>1376</strong></td><td><strong>2</strong></td><td></td><td></td><td></td><td></td><td>✅</td><td></td><td></td><td></td><td></td><td></td><td>✅</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- BD FACSCalibur -->
+<div id="tab-bd" class="tab-panel">
+  <div class="dev-hero red"><h2>🔴 Becton Dickinson (Thailand) · BD FACSCalibur™ Cytometer 3 Color</h2><p>S/N: E34297300589 · รพ.พระจอมเกล้า เพชรบุรี · ผู้ประสานงาน: Kanchana Sonjai · Tel: 02-2645970-1</p></div>
+  <div class="kpi-row">
+    <div class="kpi red">   <div class="kpi-num">🔨 8</div> <div class="kpi-lbl">บริการทั้งหมด</div></div>
+    <div class="kpi green"> <div class="kpi-num">✅ 4</div> <div class="kpi-lbl">PM Visit</div></div>
+    <div class="kpi amber"> <div class="kpi-num">🛠 3</div>  <div class="kpi-lbl">Repair</div></div>
+    <div class="kpi purple"><div class="kpi-num">⏱ 27.5h</div><div class="kpi-lbl">Labor</div></div>
+  </div>
+  <div class="card">
+    <div class="card-header">📋 ประวัติการบริการ</div>
+    <div class="card-body tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>วันที่</th><th>Work Order</th><th>Case No.</th><th>ประเภท</th><th>อาการ</th><th>งานที่ดำเนินการ</th><th>อะไหล่</th><th>Labor</th><th>ช่าง</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>10/11/2023</td><td>WO-03183247</td><td>02150792</td><td><span class="badge badge-pm">PM</span></td><td>PM ตามแผน</td><td>PM; fluid/optic; Run beads; QC</td><td>—</td><td>1h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>2</td><td>23/04/2024</td><td>WO-03434115</td><td>02328265</td><td><span class="badge badge-other">Relocation</span></td><td>ย้ายเครื่อง</td><td>Disconnect; ย้าย; เชื่อมต่อใหม่; Run beads; FACSComp</td><td>—</td><td>2h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>3</td><td>01/06/2024</td><td>WO-03488349</td><td>02367329</td><td><span class="badge badge-repair">Repair</span></td><td>จอดำ — Monitor blank</td><td>เปลี่ยน ATI Radeon Graphics Card</td><td>ATI Radeon Graphics Card</td><td>1.5h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>4</td><td>22/08/2024</td><td>WO-03589462</td><td>02422767</td><td><span class="badge badge-repair">Repair</span></td><td>Printer ไม่พิมพ์</td><td>ติดตั้ง Printer ใหม่ Epson L1210</td><td>Epson L1210</td><td>3.5h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>5</td><td>21/10/2024</td><td>WO-03651960</td><td>02494689</td><td><span class="badge badge-pm">PM</span></td><td>PM ตามแผน</td><td>PM; fluid + sheath 4.5 psi; optic/laser; Run beads; FACSComp</td><td>—</td><td>4h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>6</td><td>30/04/2025</td><td>WO-03887946</td><td>02677643</td><td><span class="badge badge-pm">PM</span></td><td>PM ตามแผน</td><td>PM; fluid + sheath 4.5 psi; optic/laser; Run beads; FACSComp</td><td>—</td><td>4h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>7</td><td>24/11/2025</td><td>WO-04237279</td><td>02934307</td><td><span class="badge badge-repair">Repair</span></td><td>Pressure switch</td><td>เปลี่ยน Pressure on/off; ตรวจสอบ pressure</td><td>Assembly Vent Valve-Fascan</td><td>7h</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>8</td><td>04/11/2026</td><td>WO-04409562</td><td>03061476</td><td><span class="badge badge-pm">PM</span></td><td>PM ตามแผน</td><td>PM; fluid + sheath 4.5 psi; optic/laser; Run beads; FACSComp</td><td>—</td><td>4h</td><td>Kitpakornkitti Jeeranuch</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
