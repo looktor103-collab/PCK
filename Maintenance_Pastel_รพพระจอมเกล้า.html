@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบติดตามการบำรุงรักษาเครื่องมือแพทย์ — รพ.พระจอมเกล้า เพชรบุรี</title>
+<style>
+  :root {
+    --blue-dark: #1A4F7A;
+    --blue-mid: #2874A6;
+    --blue-light: #D6EAF8;
+    --blue-xlight: #EBF5FB;
+    --green-dark: #1E8449;
+    --green-light: #D5F5E3;
+    --red-dark: #922B21;
+    --red-light: #FADBD8;
+    --amber: #F39C12;
+    --amber-light: #FEF9E7;
+    --gray: #566573;
+    --gray-light: #F2F3F4;
+    --white: #ffffff;
+    --shadow: 0 2px 8px rgba(0,0,0,0.10);
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 13px;
+    background: #f0f4f8;
+    color: #2c3e50;
+    line-height: 1.5;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: linear-gradient(135deg, #1A4F7A 0%, #2874A6 60%, #5DADE2 100%);
+    color: white;
+    padding: 24px 32px 20px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+  }
+  .site-header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.3px; }
+  .site-header p  { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+
+  /* ── NAV TABS ── */
+  .tabs {
+    display: flex; gap: 4px;
+    background: #dce8f3;
+    padding: 10px 24px 0;
+    border-bottom: 2px solid #b0cde4;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    padding: 8px 16px;
+    border: none; border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 12.5px; font-weight: 600;
+    background: #c5ddf0; color: var(--blue-dark);
+    transition: background 0.15s;
+  }
+  .tab-btn:hover { background: #a8cce4; }
+  .tab-btn.active { background: white; color: var(--blue-dark); border-bottom: 2px solid white; margin-bottom: -2px; }
+
+  /* ── PANELS ── */
+  .panel { display: none; padding: 24px; }
+  .panel.active { display: block; }
+
+  /* ── CARDS / SECTIONS ── */
+  .section {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .section-header {
+    padding: 12px 18px;
+    font-weight: 700; font-size: 13.5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-body { padding: 16px 18px; }
+
+  .hdr-blue   { background: var(--blue-light);  color: var(--blue-dark); border-left: 4px solid var(--blue-mid); }
+  .hdr-green  { background: var(--green-light); color: var(--green-dark); border-left: 4px solid #27AE60; }
+  .hdr-amber  { background: var(--amber-light); color: #7D6608; border-left: 4px solid var(--amber); }
+  .hdr-gray   { background: var(--gray-light);  color: #2c3e50; border-left: 4px solid #95A5A6; }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .stat-card {
+    flex: 1; min-width: 120px;
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px; text-align: center;
+  }
+  .stat-num { font-size: 28px; font-weight: 800; color: var(--blue-dark); }
+  .stat-lbl { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+  /* ── INSTRUMENT BANNER ── */
+  .inst-banner {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 22px;
+    margin-bottom: 20px;
+    border-left: 6px solid var(--blue-mid);
+  }
+  .inst-banner h2 { font-size: 17px; color: var(--blue-dark); font-weight: 700; }
+  .inst-banner .meta { font-size: 11.5px; color: var(--gray); margin-top: 4px; }
+
+  /* ── MINI STATS ── */
+  .mini-stats { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+  .mini-stat {
+    background: var(--blue-xlight); border-radius: 8px;
+    padding: 10px 16px; text-align: center; min-width: 90px;
+  }
+  .mini-stat .num { font-size: 22px; font-weight: 800; color: var(--blue-dark); }
+  .mini-stat .lbl { font-size: 10.5px; color: var(--gray); }
+
+  /* ── TABLES ── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--blue-light); color: var(--blue-dark);
+    font-weight: 700; padding: 9px 10px;
+    text-align: left; white-space: nowrap;
+  }
+  td { padding: 8px 10px; border-bottom: 1px solid #E8EDF2; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: var(--blue-xlight); }
+  tr:hover td { background: #d4e8f7; }
+
+  /* color-coded type badges */
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 600; white-space: nowrap;
+  }
+  .badge-pm      { background: #D5F5E3; color: #1E8449; }
+  .badge-repair  { background: #FADBD8; color: #922B21; }
+  .badge-remote  { background: #EAF2FF; color: #154360; }
+  .badge-visit   { background: #FEF9E7; color: #7D6608; }
+  .badge-sw      { background: #F4ECF7; color: #6C3483; }
+  .badge-plan    { background: #EAFAF1; color: #1E8449; }
+  .badge-reloc   { background: #FDFEFE; color: #566573; border: 1px solid #BDC3C7; }
+
+  /* PDF links */
+  .pdf-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #1565C0; text-decoration: none; font-weight: 600;
+    padding: 3px 8px; border-radius: 6px;
+    background: #E3F2FD;
+    transition: background 0.15s;
+  }
+  .pdf-link:hover { background: #BBDEFB; text-decoration: underline; }
+
+  /* checklist */
+  .checklist td:nth-child(2) { color: var(--green-dark); font-weight: 600; }
+
+  /* warning note */
+  .warn-note {
+    background: #FEF9E7; border: 1px solid #F9CA24;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 11.5px; color: #7D6608;
+    margin-top: 10px;
+  }
+
+  /* plan table */
+  .plan-month { text-align: center; font-size: 11px; }
+  .done { color: var(--green-dark); font-size: 15px; font-weight: 700; text-align: center; }
+  .sched { color: #2980B9; font-size: 15px; font-weight: 700; text-align: center; }
+
+  /* dashboard summary table */
+  .dash-tbl th { background: var(--blue-dark); color: white; }
+  .total-row td { font-weight: 700; background: var(--blue-light) !important; }
+
+  @media (max-width: 700px) {
+    .tabs { padding: 8px 10px 0; }
+    .panel { padding: 12px; }
+    .stats-row, .mini-stats { gap: 8px; }
+    table { font-size: 11px; }
+    .site-header { padding: 16px; }
+    .site-header h1 { font-size: 16px; }
+    th, td { padding: 6px 7px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>🏥 ระบบติดตามการบำรุงรักษาเครื่องมือแพทย์</h1>
+  <p>โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; Maintenance Tracking Dashboard &nbsp;·&nbsp; งานอณูชีวโมเลกุล</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" onclick="showTab('dashboard')">📊 Dashboard</button>
+  <button class="tab-btn" onclick="showTab('cobas6800')">🔵 cobas 6800</button>
+  <button class="tab-btn" onclick="showTab('cobasz480')">🔵 cobas z 480</button>
+  <button class="tab-btn" onclick="showTab('iponatic')">🟢 iPonatic III</button>
+  <button class="tab-btn" onclick="showTab('rocheplan')">📅 Roche Plan 2569</button>
+  <button class="tab-btn" onclick="showTab('bdfacs')">🔴 BD FACSCalibur</button>
+</nav>
+
+<!-- ════════════════════════════════════════════════
+     DASHBOARD
+════════════════════════════════════════════════ -->
+<div id="dashboard" class="panel active">
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num">🔬 4</div><div class="stat-lbl">ประเภทเครื่องมือ</div></div>
+    <div class="stat-card"><div class="stat-num">🔧 31</div><div class="stat-lbl">การบริการทั้งหมด</div></div>
+    <div class="stat-card"><div class="stat-num">✅ 12</div><div class="stat-lbl">PM Visit</div></div>
+    <div class="stat-card"><div class="stat-num">🔨 12</div><div class="stat-lbl">Repair / Service</div></div>
+    <div class="stat-card"><div class="stat-num">📡 7</div><div class="stat-lbl">Remote Support</div></div>
+    <div class="stat-card"><div class="stat-num">⏱ ~60h</div><div class="stat-lbl">ชั่วโมงบริการรวม</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📋 สรุปข้อมูลเครื่องมือแพทย์รายเครื่อง</div>
+    <div class="section-body">
+      <table class="dash-tbl">
+        <thead>
+          <tr>
+            <th>เครื่องมือ</th><th>ยี่ห้อ</th><th>รุ่น / Model</th><th>Serial No.</th>
+            <th>PM</th><th>Repair</th><th>Remote</th><th>รวม</th><th>Labor hrs</th><th>ช่วงเวลา</th><th>ช่างหลัก</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>cobas® 6800</strong></td><td>Roche Diagnostics (TH)</td><td>cobas 6800</td><td>1376</td>
+            <td>2</td><td>8</td><td>7</td><td><strong>17</strong></td><td>31.9h</td><td>ม.ค.68–พ.ค.69</td><td>Roche FSE</td>
+          </tr>
+          <tr>
+            <td><strong>cobas® z 480</strong></td><td>Roche Diagnostics (TH)</td><td>cobas z 480</td><td>54632</td>
+            <td>1</td><td>—</td><td>—</td><td><strong>1</strong></td><td>—</td><td>พ.ค.68</td><td>Roche FSE</td>
+          </tr>
+          <tr>
+            <td><strong>iPonatic® III</strong></td><td>Z-medic Co., Ltd.</td><td>iPonatic Portable Mol.</td><td>Q36AE032210010130</td>
+            <td>5</td><td>—</td><td>—</td><td><strong>5</strong></td><td>—</td><td>ก.พ.67–ม.ค.69</td><td>จารุวรรณ / ธนภูมิ / สุดารัตน์</td>
+          </tr>
+          <tr>
+            <td><strong>BD FACSCalibur™</strong></td><td>Becton Dickinson (TH)</td><td>FACSCalibur 3Color</td><td>E34297300589</td>
+            <td>4</td><td>3</td><td>—</td><td><strong>8</strong></td><td>27.5h</td><td>พ.ย.66–พ.ย.69</td><td>Janboon Pisitpong</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📊 สรุปประเภทการบริการ</div>
+    <div class="section-body">
+      <table class="dash-tbl">
+        <thead>
+          <tr><th>ประเภท</th><th>cobas 6800</th><th>cobas z 480</th><th>iPonatic III</th><th>BD FACSCalibur</th><th>รวม</th><th>หมายเหตุ</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>✅ Preventive Maintenance</td><td>2</td><td>1</td><td>5</td><td>4</td><td><strong>12</strong></td><td>ดำเนินการตามแผนทุกเครื่อง</td></tr>
+          <tr><td>🔨 Repair / Service Visit</td><td>8</td><td>—</td><td>—</td><td>3</td><td><strong>11</strong></td><td>Roche cobas 6800 และ BD FACSCalibur</td></tr>
+          <tr><td>📡 Remote / Tele Support</td><td>7</td><td>—</td><td>—</td><td>—</td><td><strong>7</strong></td><td>cobas 6800 เท่านั้น</td></tr>
+          <tr><td>🚚 Relocation / Courtesy</td><td>1</td><td>—</td><td>—</td><td>1</td><td><strong>2</strong></td><td>cobas 6800 Courtesy + BD Relocation</td></tr>
+          <tr class="total-row"><td>📋 รวมทั้งหมด</td><td>18</td><td>1</td><td>5</td><td>8</td><td><strong>32</strong></td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="text-align:center;color:var(--gray);font-size:11px;padding:8px;">
+    ห้องปฏิบัติการเทคนิคการแพทย์ · โรงพยาบาลพระจอมเกล้า เพชรบุรี · Maintenance Dashboard
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     COBAS 6800
+════════════════════════════════════════════════ -->
+<div id="cobas6800" class="panel">
+
+  <div class="inst-banner" style="border-left-color:#2874A6;">
+    <h2>🔵 Roche Diagnostics (Thailand) · cobas® 6800</h2>
+    <div class="meta">S/N: 1376 &nbsp;·&nbsp; รพ.พระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; Hotline: 1800-0193-99 &nbsp;·&nbsp; Line: @rcscthailand</div>
+  </div>
+
+  <div class="mini-stats">
+    <div class="mini-stat"><div class="num">📊 18</div><div class="lbl">บริการทั้งหมด</div></div>
+    <div class="mini-stat"><div class="num">🔨 8</div><div class="lbl">Service Visit</div></div>
+    <div class="mini-stat"><div class="num">✅ 2</div><div class="lbl">PM</div></div>
+    <div class="mini-stat"><div class="num">📡 7</div><div class="lbl">Remote</div></div>
+    <div class="mini-stat"><div class="num">⏱ 31.9h</div><div class="lbl">Labor</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📋 ประวัติการบริการ (Service History)</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>วันที่</th><th>ประเภท</th><th>Case No.</th><th>Work Order</th><th>อาการ</th><th>การแก้ไข</th><th>งานที่ดำเนินการ</th><th>ชั่วโมง</th><th>ค่าใช้จ่าย</th><th>ช่าง</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>16/01/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>CAS-0022102876</td><td>WO-31212303</td><td>ไม่ Initialize หลัง PM</td><td>Restart → standby สำเร็จ</td><td>Replace Control unit; ปรับ Reagent Storage; Consumable loading area</td><td>7.98</td><td>Free</td><td>Sompop Bangyeekhan</td></tr>
+          <tr><td>2</td><td>14/02/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>CAS-0022388810</td><td>WO-31515749</td><td>Magazine C error, pusher damper CDI3</td><td>Close reagent drawer loosely</td><td>Clean/adjust motor B/5/7; Drawer test; Run test</td><td>4.80</td><td>Free</td><td>Anurak Phaphai</td></tr>
+          <tr><td>3</td><td>12/03/2025</td><td><span class="badge badge-sw">SW Modification</span></td><td>—</td><td>—</td><td>Network equipment SW Modification</td><td>SW Modification</td><td>—</td><td>1.00</td><td>Free</td><td>—</td></tr>
+          <tr><td>4</td><td>20/03/2025</td><td><span class="badge badge-remote">Tele/RemoteDiag</span></td><td>—</td><td>—</td><td>Remote diagnostic</td><td>Tele support</td><td>—</td><td>2.25</td><td>Free</td><td>—</td></tr>
+          <tr><td>5</td><td>21/03/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>—</td><td>—</td><td>Transfer module Error</td><td>ตรวจสอบ transfer module</td><td>Transfer module inspection &amp; adjustment</td><td>2.50</td><td>Free</td><td>—</td></tr>
+          <tr><td>6</td><td>27/05/2025</td><td><span class="badge badge-pm">PM Visit</span></td><td>—</td><td>—</td><td>PM ครั้งที่ 1/2568</td><td>PM ตามแผน</td><td>Periodic Maintenance</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>7</td><td>23/06/2025</td><td><span class="badge badge-remote">Remote Support</span></td><td>—</td><td>—</td><td>Remote support</td><td>Remote</td><td>—</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>8</td><td>24/06/2025</td><td><span class="badge badge-remote">Remote Support</span></td><td>—</td><td>—</td><td>Transfer module error ระหว่าง HPV run</td><td>Remote support</td><td>—</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>9</td><td>27/06/2025</td><td><span class="badge badge-visit">Courtesy Visit</span></td><td>—</td><td>—</td><td>Courtesy Visit</td><td>ตรวจสอบโดยรวม</td><td>—</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>10</td><td>29/07/2025</td><td><span class="badge badge-remote">Remote Support</span></td><td>—</td><td>—</td><td>Remote support</td><td>—</td><td>—</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>11</td><td>17/08/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>—</td><td>—</td><td>Backup failed — S drive unavailable</td><td>Backup troubleshooting</td><td>System check; Backup fix</td><td>2.98</td><td>Free</td><td>—</td></tr>
+          <tr><td>12</td><td>26/08/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>—</td><td>—</td><td>Processing module error HPV — Transfer Carrier failure</td><td>ตรวจสอบ processing module</td><td>Module inspection; Carrier adjustment</td><td>2.98</td><td>Free</td><td>—</td></tr>
+          <tr><td>13</td><td>03/12/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>CAS-0024758063</td><td>WO-34968781</td><td>Supply บน processing plate park position A</td><td>ตรวจสอบ transfer module</td><td>Module inspection; Supply removal; Function check</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>14</td><td>17/12/2025</td><td><span class="badge badge-visit">Service Visit</span></td><td>—</td><td>—</td><td>Service Visit ธ.ค.68</td><td>ตรวจสอบและบำรุงรักษา</td><td>Inspection</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>15</td><td>25/02/2026</td><td><span class="badge badge-visit">Service Visit</span></td><td>—</td><td>—</td><td>Transfer module error — HIV-1 sample transfer</td><td>ตรวจสอบ transfer module</td><td>Transfer module inspection</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>16</td><td>10/03/2026</td><td><span class="badge badge-remote">Remote Support</span></td><td>CAS-0025386910</td><td>WO-35857115</td><td>HPV positive สูงผิดปกติ 2 batch</td><td>Review Colibri data → HPV confirmed</td><td>Colibri data review; Result verification</td><td>—</td><td>Free</td><td>—</td></tr>
+          <tr><td>17</td><td>16/03/2026</td><td><span class="badge badge-visit">Service Visit</span></td><td>—</td><td>—</td><td>Transfer module error — HIV-1 sample transfer</td><td>ตรวจสอบและซ่อม transfer module</td><td>Transfer module repair; Verification</td><td>8.48</td><td>Free</td><td>—</td></tr>
+          <tr><td>18</td><td>11/05/2026</td><td><span class="badge badge-remote">Remote Support</span></td><td>CAS-0025859593</td><td>WO-36576697</td><td>Error ระหว่าง Initialize หลัง PM</td><td>Restart → initialize สำเร็จ</td><td>Remote restart guidance</td><td>0.67</td><td>Free</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-amber">📎 เอกสารแนบ / Attachments</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>ประเภท</th><th>Work Order</th><th>วันที่</th><th>คำอธิบาย</th><th>📎 ไฟล์ PDF</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><span class="badge badge-visit">Service Report</span></td><td>WO-31212303</td><td>16/01/2025</td><td>Service Visit — ไม่ Initialize</td><td><a class="pdf-link" href="Cobas6800_16Jan2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_16Jan2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>2</td><td><span class="badge badge-visit">Service Report</span></td><td>WO-31515749</td><td>14/02/2025</td><td>Service Visit — Magazine C error</td><td><a class="pdf-link" href="Cobas6800_14Feb2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_14Feb2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>3</td><td><span class="badge badge-sw">SW Mod</span></td><td>—</td><td>12/03/2025</td><td>SW Modification FortiGate</td><td><a class="pdf-link" href="Cobas6800_12Mar2025_SWModification_FortiGate.pdf" target="_blank">📎 Cobas6800_12Mar2025_SWModification_FortiGate.pdf</a></td></tr>
+          <tr><td>4</td><td><span class="badge badge-remote">Remote</span></td><td>—</td><td>20/03/2025</td><td>Tele/Remote Diagnostic</td><td><a class="pdf-link" href="Cobas6800_20Mar2025_TeleRemoteDiag.pdf" target="_blank">📎 Cobas6800_20Mar2025_TeleRemoteDiag.pdf</a></td></tr>
+          <tr><td>5</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>21/03/2025</td><td>Service Visit — Transfer module error</td><td><a class="pdf-link" href="Cobas6800_21Mar2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_21Mar2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>6</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>27/05/2025</td><td>PM Visit 1/2568</td><td><a class="pdf-link" href="Cobas6800_27May2025_PMVisit.pdf" target="_blank">📎 Cobas6800_27May2025_PMVisit.pdf</a></td></tr>
+          <tr><td>7</td><td><span class="badge badge-remote">Remote</span></td><td>—</td><td>23/06/2025</td><td>Remote Support</td><td><a class="pdf-link" href="Cobas6800_23Jun2025_RemoteSupport.pdf" target="_blank">📎 Cobas6800_23Jun2025_RemoteSupport.pdf</a></td></tr>
+          <tr><td>8</td><td><span class="badge badge-remote">Remote</span></td><td>—</td><td>24/06/2025</td><td>Remote Support — Transfer error HPV</td><td><a class="pdf-link" href="Cobas6800_24Jun2025_RemoteSupport.pdf" target="_blank">📎 Cobas6800_24Jun2025_RemoteSupport.pdf</a></td></tr>
+          <tr><td>9</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>27/06/2025</td><td>Courtesy Visit</td><td><a class="pdf-link" href="Cobas6800_27Jun2025_CourtesyVisit.pdf" target="_blank">📎 Cobas6800_27Jun2025_CourtesyVisit.pdf</a></td></tr>
+          <tr><td>10</td><td><span class="badge badge-remote">Remote</span></td><td>—</td><td>29/07/2025</td><td>Remote Support</td><td><a class="pdf-link" href="Cobas6800_29Jul2025_RemoteSupport.pdf" target="_blank">📎 Cobas6800_29Jul2025_RemoteSupport.pdf</a></td></tr>
+          <tr><td>11</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>17/08/2025</td><td>Service Visit — Backup failed</td><td><a class="pdf-link" href="Cobas6800_17Aug2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_17Aug2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>12</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>26/08/2025</td><td>Service Visit — Processing module error</td><td><a class="pdf-link" href="Cobas6800_26Aug2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_26Aug2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>13</td><td><span class="badge badge-visit">Service Report</span></td><td>WO-34968781</td><td>03/12/2025</td><td>Service Visit — Supply on processing plate</td><td><a class="pdf-link" href="Cobas6800_03Dec2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_03Dec2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>14</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>17/12/2025</td><td>Service Visit ธ.ค.68</td><td><a class="pdf-link" href="Cobas6800_17Dec2025_ServiceVisit.pdf" target="_blank">📎 Cobas6800_17Dec2025_ServiceVisit.pdf</a></td></tr>
+          <tr><td>15</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>25/02/2026</td><td>Service Visit — Transfer error HIV</td><td><a class="pdf-link" href="Cobas6800_25Feb2026_ServiceVisit.pdf" target="_blank">📎 Cobas6800_25Feb2026_ServiceVisit.pdf</a></td></tr>
+          <tr><td>16</td><td><span class="badge badge-remote">Remote</span></td><td>WO-35857115</td><td>10/03/2026</td><td>Remote Support — HPV ผิดปกติ</td><td><a class="pdf-link" href="Cobas6800_10Mar2026_RemoteSupport.pdf" target="_blank">📎 Cobas6800_10Mar2026_RemoteSupport.pdf</a></td></tr>
+          <tr><td>17</td><td><span class="badge badge-visit">Service Report</span></td><td>—</td><td>16/03/2026</td><td>Service Visit — Transfer module repair</td><td><a class="pdf-link" href="Cobas6800_16Mar2026_ServiceVisit.pdf" target="_blank">📎 Cobas6800_16Mar2026_ServiceVisit.pdf</a></td></tr>
+          <tr><td>18</td><td><span class="badge badge-remote">Remote</span></td><td>WO-36576697</td><td>11/05/2026</td><td>Remote Support — Initialize error</td><td><a class="pdf-link" href="Cobas6800_11May2026_RemoteSupport.pdf" target="_blank">📎 Cobas6800_11May2026_RemoteSupport.pdf</a></td></tr>
+          <tr><td>19</td><td><span class="badge badge-plan">Maintenance Plan</span></td><td>—</td><td>12/01/2569</td><td>แผนบำรุงรักษา Roche 2569</td><td><a class="pdf-link" href="Cobas_MaintenancePlan_2569.pdf" target="_blank">📎 Cobas_MaintenancePlan_2569.pdf</a></td></tr>
+          <tr><td>20</td><td><span class="badge badge-plan">Service Plan</span></td><td>—</td><td>12/01/2569</td><td>Service Plan Roche 2569</td><td><a class="pdf-link" href="Cobas_ServicePlan_2569.pdf" target="_blank">📎 Cobas_ServicePlan_2569.pdf</a></td></tr>
+        </tbody>
+      </table>
+      <div class="warn-note">⚠ ไฟล์ PDF ต้องอยู่ใน folder เดียวกับไฟล์ HTML นี้จึงจะคลิกเปิดได้</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     COBAS Z 480
+════════════════════════════════════════════════ -->
+<div id="cobasz480" class="panel">
+
+  <div class="inst-banner" style="border-left-color:#2874A6;">
+    <h2>🔵 Roche Diagnostics (Thailand) · cobas® z 480</h2>
+    <div class="meta">S/N: 54632 &nbsp;·&nbsp; รพ.พระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; Hotline: 1800-0193-99</div>
+  </div>
+
+  <div class="mini-stats">
+    <div class="mini-stat"><div class="num">✅ 1</div><div class="lbl">PM Visit</div></div>
+    <div class="mini-stat"><div class="num">📅 1/ปี</div><div class="lbl">ความถี่ PM</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📋 ประวัติการบริการ (Service History)</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>วันที่</th><th>ประเภท</th><th>อาการ / Issue</th><th>งานที่ดำเนินการ</th><th>ชั่วโมง</th><th>ช่าง</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>27/05/2025</td><td><span class="badge badge-pm">PM Visit</span></td><td>PM ครั้งที่ 1/2568 ตามแผน</td><td>Periodic Maintenance — ดำเนินการพร้อม cobas 6800</td><td>—</td><td>Roche FSE</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-green">✅ รายการตรวจสอบ PM (PM Checklist)</div>
+    <div class="section-body">
+      <table class="checklist">
+        <thead><tr><th>รายการตรวจสอบ</th><th>ผล</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td>ตรวจสอบ fluid system + sheath pressure</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ตรวจสอบ optic/laser system</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>Beads location check</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-amber">📎 เอกสารแนบ / Attachments</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>#</th><th>ประเภท</th><th>Work Order</th><th>วันที่</th><th>คำอธิบาย</th><th>📎 ไฟล์ PDF</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>27/05/2025</td><td>PM Visit ครั้งที่ 1/2568</td><td><a class="pdf-link" href="CobasZ480_27May2025_PMVisit.pdf" target="_blank">📎 CobasZ480_27May2025_PMVisit.pdf</a></td></tr>
+          <tr><td>2</td><td><span class="badge badge-plan">Maintenance Plan</span></td><td>—</td><td>12/01/2569</td><td>แผนบำรุงรักษา Roche 2569</td><td><a class="pdf-link" href="Cobas_MaintenancePlan_2569.pdf" target="_blank">📎 Cobas_MaintenancePlan_2569.pdf</a></td></tr>
+        </tbody>
+      </table>
+      <div class="warn-note">⚠ ไฟล์ PDF ต้องอยู่ใน folder เดียวกับไฟล์ HTML นี้จึงจะคลิกเปิดได้</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     iPONATIC III
+════════════════════════════════════════════════ -->
+<div id="iponatic" class="panel">
+
+  <div class="inst-banner" style="border-left-color:#27AE60;">
+    <h2>🟢 Z-medic Co., Ltd. · iPonatic® Portable Molecular (iPonatic III)</h2>
+    <div class="meta">S/N: Q36AE032210010130 &nbsp;·&nbsp; รพ.พระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; Tel: 0-2197-8652-3 &nbsp;·&nbsp; PM: 2 ครั้ง/ปี</div>
+  </div>
+
+  <div class="mini-stats">
+    <div class="mini-stat"><div class="num">✅ 5</div><div class="lbl">PM ทั้งหมด</div></div>
+    <div class="mini-stat"><div class="num">📅 2/ปี</div><div class="lbl">ความถี่ PM</div></div>
+    <div class="mini-stat"><div class="num">🔬 PASS</div><div class="lbl">ทุกครั้ง</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📋 ประวัติการบริการ (Service History)</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>วันที่</th><th>PM ครั้งที่</th><th>App Ver.</th><th>PCR FW</th><th>Extract FW</th><th>ทำความสะอาด<br>ภายนอก</th><th>ทำความสะอาด<br>ภายใน</th><th>ทำความสะอาด<br>Carrier</th><th>Sensor<br>Check</th><th>UV<br>Check</th><th>เปิด-ปิด<br>Check</th><th>ผลรวม</th><th>ช่าง</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>13/02/2024</td><td>PM 1 / ปี 2567</td><td>V1.7.0</td><td>V1.1.5</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><strong style="color:var(--green-dark)">PASS</strong></td><td>จารุวรรณ สายรุ่งเรืองศิลป์</td></tr>
+          <tr><td>2</td><td>08/05/2024</td><td>PM 2 / ปี 2567</td><td>V1.7.0</td><td>—</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><strong style="color:var(--green-dark)">PASS</strong></td><td>จารุวรรณ สายรุ่งเรืองศิลป์</td></tr>
+          <tr><td>3</td><td>24/07/2024</td><td>PM 3 / ปี 2567</td><td>—</td><td>—</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><strong style="color:var(--green-dark)">PASS</strong></td><td>จารุวรรณ สายรุ่งเรืองศิลป์</td></tr>
+          <tr><td>4</td><td>02/10/2024</td><td>PM 4 / ปี 2567</td><td>V1.8.0</td><td>V1.1.7</td><td>V1.1.6</td><td>✓</td><td>—</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><strong style="color:var(--green-dark)">PASS</strong></td><td>ธนภูมิ เจริญสุข</td></tr>
+          <tr><td>5</td><td>19/01/2026</td><td>PM 1 / ปี 2569</td><td>V1.8.3</td><td>V1.1.8</td><td>V1.1.7</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td><strong style="color:var(--green-dark)">PASS</strong></td><td>สุดารัตน์ คำเลิศ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-green">✅ รายการตรวจสอบ PM (PM Checklist)</div>
+    <div class="section-body">
+      <table class="checklist">
+        <thead><tr><th>รายการตรวจสอบ</th><th>ผล</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td>ทำความสะอาดภายนอก 70% แอลกอฮอล์</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ทำความสะอาดช่องใส่ Carrier set</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ตรวจสอบ Sensor ช่องใส่ Carrier set</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ตรวจสอบ UV</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ตรวจสอบการเปิด-ปิดเครื่อง</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-amber">📎 เอกสารแนบ / Attachments</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>#</th><th>ประเภท</th><th>Work Order</th><th>วันที่</th><th>คำอธิบาย</th><th>📎 ไฟล์ PDF</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>13/02/2024</td><td>PM 1/2567 ช่าง: จารุวรรณ</td><td><a class="pdf-link" href="iPonatic3_1st-67_13Feb2024_PM.pdf" target="_blank">📎 iPonatic3_1st-67_13Feb2024_PM.pdf</a></td></tr>
+          <tr><td>2</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>08/05/2024</td><td>PM 2/2567 ช่าง: จารุวรรณ</td><td><a class="pdf-link" href="iPonatic3_2nd-67_08May2024_PM.pdf" target="_blank">📎 iPonatic3_2nd-67_08May2024_PM.pdf</a></td></tr>
+          <tr><td>3</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>24/07/2024</td><td>PM 3/2567 ช่าง: จารุวรรณ</td><td><a class="pdf-link" href="iPonatic3_3rd-67_24Jul2024_PM.pdf" target="_blank">📎 iPonatic3_3rd-67_24Jul2024_PM.pdf</a></td></tr>
+          <tr><td>4</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>02/10/2024</td><td>PM 4/2567 ช่าง: ธนภูมิ</td><td><a class="pdf-link" href="iPonatic3_4th-67_02Oct2024_PM.pdf" target="_blank">📎 iPonatic3_4th-67_02Oct2024_PM.pdf</a></td></tr>
+          <tr><td>5</td><td><span class="badge badge-pm">PM Report</span></td><td>—</td><td>19/01/2026</td><td>PM 1/2569 ช่าง: สุดารัตน์ คำเลิศ</td><td><a class="pdf-link" href="iPonatic3_1st-69_19Jan2026_PM.pdf" target="_blank">📎 iPonatic3_1st-69_19Jan2026_PM.pdf</a></td></tr>
+          <tr><td>6</td><td><span class="badge badge-plan">Maintenance Plan</span></td><td>—</td><td>08/08/2567</td><td>แผน PM 2568 Z-medic</td><td><a class="pdf-link" href="iPonatic3_MaintenancePlan_2568.pdf" target="_blank">📎 iPonatic3_MaintenancePlan_2568.pdf</a></td></tr>
+        </tbody>
+      </table>
+      <div class="warn-note">⚠ ไฟล์ PDF ต้องอยู่ใน folder เดียวกับไฟล์ HTML นี้จึงจะคลิกเปิดได้</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     ROCHE PLAN 2569
+════════════════════════════════════════════════ -->
+<div id="rocheplan" class="panel">
+
+  <div class="inst-banner" style="border-left-color:#2874A6;">
+    <h2>📅 แผนการบำรุงรักษาเครื่องมือ Roche ประจำปี พ.ศ. 2569</h2>
+    <div class="meta">อ้างอิง: RDT/PS/L470/2026 &nbsp;·&nbsp; ลงนาม: มนตรี รักใหม่ (หัวหน้างานเทคนิค) &nbsp;·&nbsp; 12 มกราคม 2569</div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📋 ตารางแผน PM รายเครื่อง</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>เครื่องมือ</th><th>S/N</th><th>PM/ปี</th>
+            <th class="plan-month">ม.ค.</th><th class="plan-month">ก.พ.</th><th class="plan-month">มี.ค.</th>
+            <th class="plan-month">เม.ย.</th><th class="plan-month">พ.ค.</th><th class="plan-month">มิ.ย.</th>
+            <th class="plan-month">ก.ค.</th><th class="plan-month">ส.ค.</th><th class="plan-month">ก.ย.</th>
+            <th class="plan-month">ต.ค.</th><th class="plan-month">พ.ย.</th><th class="plan-month">ธ.ค.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>cobas p 471</td><td>66300377</td><td>2</td><td class="done">✅</td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>2</td><td>cobas p 512</td><td>64300333</td><td>2</td><td class="done">✅</td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>3</td><td>cobas pro SSU (1)</td><td>C4P8-02</td><td>1</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>4</td><td>cobas pro ISE (1)</td><td>2386-05</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>5</td><td>cobas c 503 (1)</td><td>24A8-09</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>6</td><td>cobas e 801</td><td>44B9-02</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>7</td><td>Merck RO AFS 120E</td><td>F2KB96929D</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>8</td><td>cobas pro SSU (2)</td><td>C4R0-09</td><td>1</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>9</td><td>cobas pro ISE (2)</td><td>2396-03</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>10</td><td>cobas c 503 (2)</td><td>24C3-03</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>11</td><td>Merck RO AFS 80E</td><td>F4JB66194D</td><td>2</td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td></tr>
+          <tr><td>12</td><td>HENm (1)</td><td>H1221075</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td></tr>
+          <tr><td>13</td><td>HENm (2)</td><td>H1221106</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td></tr>
+          <tr><td>14</td><td>HENm (3)</td><td>H1222180</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td></tr>
+          <tr><td>15</td><td>HENm (4)</td><td>H1224118</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td></tr>
+          <tr><td>16</td><td>HENm Mobile</td><td>H1323003</td><td>1</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td></tr>
+          <tr><td>17</td><td>cobas z 480</td><td>54632</td><td>1</td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td>18</td><td>cobas 6800 ⭐</td><td>1376</td><td>2</td><td></td><td></td><td></td><td></td><td class="done">✅</td><td></td><td></td><td></td><td></td><td></td><td class="sched">📅</td><td></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:var(--gray);">✅ = ดำเนินการแล้ว &nbsp;|&nbsp; 📅 = กำหนดการ</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════
+     BD FACSCalibur
+════════════════════════════════════════════════ -->
+<div id="bdfacs" class="panel">
+
+  <div class="inst-banner" style="border-left-color:#C0392B;">
+    <h2>🔴 Becton Dickinson (Thailand) · BD FACSCalibur™ Cytometer 3 Color</h2>
+    <div class="meta">S/N: E34297300589 &nbsp;·&nbsp; รพ.พระจอมเกล้า เพชรบุรี &nbsp;·&nbsp; ผู้ประสานงาน: Kanchana Sonjai &nbsp;·&nbsp; Tel: 02-2645970-1 &nbsp;·&nbsp; BDDSservicedesk@bd.com</div>
+  </div>
+
+  <div class="mini-stats">
+    <div class="mini-stat" style="background:#FADBD8;"><div class="num">🔨 8</div><div class="lbl">บริการทั้งหมด</div></div>
+    <div class="mini-stat"><div class="num">✅ 4</div><div class="lbl">PM Visit</div></div>
+    <div class="mini-stat" style="background:#FADBD8;"><div class="num">🛠 3</div><div class="lbl">Repair</div></div>
+    <div class="mini-stat"><div class="num">⏱ 27.5h</div><div class="lbl">Labor</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-blue">📋 ประวัติการบริการ (Service History)</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>#</th><th>วันที่</th><th>Work Order</th><th>Case No.</th><th>ประเภท</th><th>รหัสงาน</th><th>อาการ / Symptom</th><th>งานที่ดำเนินการ</th><th>อะไหล่</th><th>Labor</th><th>Travel</th><th>สถานะ</th><th>ช่าง</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>10/11/2023</td><td>WO-03183247</td><td>02150792</td><td><span class="badge badge-pm">Preventive Maintenance</span></td><td>T111</td><td>PM ตามแผน</td><td>PM; ตรวจสอบ fluid/optic; Run Nile reds beads; Run QC</td><td>—</td><td>1 hr</td><td>1 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>2</td><td>23/04/2024</td><td>WO-03434115</td><td>02328265</td><td><span class="badge badge-reloc">Relocation</span></td><td>T108</td><td>ย้ายเครื่อง</td><td>Disconnect; ย้าย; เชื่อมต่อใหม่; ตรวจสอบ fluid/optic/laser; Run beads; FACSComp</td><td>—</td><td>2 hr</td><td>0.75 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>3</td><td>01/06/2024</td><td>WO-03488349</td><td>02367329</td><td><span class="badge badge-repair">Repair / Troubleshooting</span></td><td>T113</td><td>จอดำ — Monitor blank</td><td>ตรวจสอบ; พบ graphic card เสีย; เปลี่ยน ATI Radeon</td><td>ATI Radeon Graphics Card (Local)</td><td>1.5 hr</td><td>3 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>4</td><td>22/08/2024</td><td>WO-03589462</td><td>02422767</td><td><span class="badge badge-repair">Repair / Troubleshooting</span></td><td>T113</td><td>Printer ไม่พิมพ์</td><td>ติดตั้ง Printer ใหม่ Epson L1210 (S/N X8LC026107)</td><td>Epson L1210 S/N X8LC026107</td><td>3.5 hr</td><td>4.5 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>5</td><td>21/10/2024</td><td>WO-03651960</td><td>02494689</td><td><span class="badge badge-pm">Preventive Maintenance</span></td><td>T111</td><td>PM ตามแผน</td><td>PM; fluid + sheath 4.5 psi; optic/laser; electronic; Run beads; FACSComp</td><td>—</td><td>4 hr</td><td>1 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>6</td><td>30/04/2025</td><td>WO-03887946</td><td>02677643</td><td><span class="badge badge-pm">Preventive Maintenance</span></td><td>T111</td><td>PM ตามแผน</td><td>PM; fluid + sheath 4.5 psi; optic/laser; electronic; Run beads; FACSComp</td><td>—</td><td>4 hr</td><td>5 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>7</td><td>24/11/2025</td><td>WO-04237279</td><td>02934307</td><td><span class="badge badge-repair">Repair / Troubleshooting</span></td><td>T113</td><td>Pressure switch</td><td>เปลี่ยน Pressure on/off; ตรวจสอบ pressure; Run beads</td><td>02-60945-00 Assembly Vent Valve-Fascan (1 pc)</td><td>7 hr</td><td>3 hr</td><td>ทำงานปกติ</td><td>Janboon Pisitpong</td></tr>
+          <tr><td>8</td><td>04/11/2026</td><td>WO-04409562</td><td>03061476</td><td><span class="badge badge-pm">Preventive Maintenance</span></td><td>T111</td><td>PM ตามแผน</td><td>PM; fluid + sheath 4.5 psi; optic/laser; electronic; Run beads; FACSComp</td><td>—</td><td>4 hr</td><td>2 hr</td><td>ทำงานปกติ</td><td>Kitpakornkitti Jeeranuch</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-green">✅ รายการตรวจสอบ PM (PM Checklist)</div>
+    <div class="section-body">
+      <table class="checklist">
+        <thead><tr><th>รายการตรวจสอบ</th><th>ผล</th><th>หมายเหตุ</th></tr></thead>
+        <tbody>
+          <tr><td>ตรวจสอบ fluid system + sheath pressure 4.5 psi</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ตรวจสอบ optic/laser system</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>ตรวจสอบ electronic system</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>Run beads location check</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+          <tr><td>Run FACSComp — All parameters</td><td>✓ PASS</td><td>ทุก PM</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header hdr-amber">📎 เอกสารแนบ / Attachments</div>
+    <div class="section-body" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>#</th><th>ประเภท</th><th>Work Order</th><th>วันที่</th><th>คำอธิบาย</th><th>📎 ไฟล์ PDF</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="badge badge-pm">PM Report</span></td><td>WO-03183247</td><td>10/11/2023</td><td>PM ตามแผน ช่าง: Janboon</td><td><a class="pdf-link" href="BD_FACSCalibur_WO03183247_10Nov2023_PM.pdf" target="_blank">📎 BD_FACSCalibur_WO03183247_10Nov2023_PM.pdf</a></td></tr>
+          <tr><td>2</td><td><span class="badge badge-reloc">Field Service</span></td><td>WO-03434115</td><td>23/04/2024</td><td>Relocation</td><td><a class="pdf-link" href="BD_FACSCalibur_WO03434115_23Apr2024_Relocation.pdf" target="_blank">📎 BD_FACSCalibur_WO03434115_23Apr2024_Relocation.pdf</a></td></tr>
+          <tr><td>3</td><td><span class="badge badge-repair">Repair Report</span></td><td>WO-03488349</td><td>01/06/2024</td><td>Repair: Graphic card</td><td><a class="pdf-link" href="BD_FACSCalibur_WO03488349_01Jun2024_Repair_GraphicCard.pdf" target="_blank">📎 BD_FACSCalibur_WO03488349_01Jun2024_Repair_GraphicCard.pdf</a></td></tr>
+          <tr><td>4</td><td><span class="badge badge-repair">Repair Report</span></td><td>WO-03589462</td><td>22/08/2024</td><td>Repair: Printer</td><td><a class="pdf-link" href="BD_FACSCalibur_WO03589462_22Aug2024_Repair_Printer.pdf" target="_blank">📎 BD_FACSCalibur_WO03589462_22Aug2024_Repair_Printer.pdf</a></td></tr>
+          <tr><td>5</td><td><span class="badge badge-pm">PM Report</span></td><td>WO-03651960</td><td>21/10/2024</td><td>PM ตามแผน</td><td><a class="pdf-link" href="BD_FACSCalibur_WO03651960_21Oct2024_PM.pdf" target="_blank">📎 BD_FACSCalibur_WO03651960_21Oct2024_PM.pdf</a></td></tr>
+          <tr><td>6</td><td><span class="badge badge-pm">PM Report</span></td><td>WO-03887946</td><td>30/04/2025</td><td>PM ตามแผน</td><td><a class="pdf-link" href="BD_FACSCalibur_WO03887946_30Apr2025_PM.pdf" target="_blank">📎 BD_FACSCalibur_WO03887946_30Apr2025_PM.pdf</a></td></tr>
+          <tr><td>7</td><td><span class="badge badge-repair">Repair Report</span></td><td>WO-04237279</td><td>24/11/2025</td><td>Repair: Pressure switch</td><td><a class="pdf-link" href="BD_FACSCalibur_WO04237279_24Nov2025_Repair_PressureSwitch.pdf" target="_blank">📎 BD_FACSCalibur_WO04237279_24Nov2025_Repair_PressureSwitch.pdf</a></td></tr>
+          <tr><td>8</td><td><span class="badge badge-pm">PM Report</span></td><td>WO-04409562</td><td>04/11/2026</td><td>PM ตามแผน ช่าง: Kitpakornkitti</td><td><a class="pdf-link" href="BD_FACSCalibur_WO04409562_04Nov2026_PM.pdf" target="_blank">📎 BD_FACSCalibur_WO04409562_04Nov2026_PM.pdf</a></td></tr>
+          <tr><td>9</td><td><span class="badge badge-plan">PM Plan</span></td><td>—</td><td>11/06/2569</td><td>แผน PM 2569 — 2 ครั้ง/ปี</td><td><a class="pdf-link" href="BD_FACSCalibur_PMPlan_2569.pdf" target="_blank">📎 BD_FACSCalibur_PMPlan_2569.pdf</a></td></tr>
+        </tbody>
+      </table>
+      <div class="warn-note">⚠ ไฟล์ PDF ต้องอยู่ใน folder เดียวกับไฟล์ HTML นี้จึงจะคลิกเปิดได้</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
