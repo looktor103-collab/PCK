@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EQA — External Quality Assessment · ห้องปฏิบัติการ ร.พ.พระจอมเกล้า เพชรบุรี</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --rose:#c9687e;--rose-light:#fde8f0;--rose-mid:#f4a0b8;--rose-dark:#8b3a52;
+  --pink:#f2c4ce;--blush:#fdf6f8;
+  --mint:#d5f0e3;--mint-dark:#1e6b40;
+  --peach:#fdebd5;--peach-dark:#a05020;
+  --sky:#ddeeff;--sky-dark:#1a5a8a;
+  --purple-light:#f0ebff;--purple-dark:#5b3fa0;--purple-mid:#c5b0f0;
+  --gold-light:#fff8e0;--gold-dark:#8a6000;--gold-mid:#f0d060;
+  --teal-light:#e0f7f4;--teal-dark:#1a6b60;--teal-mid:#4db8aa;
+  --indigo-light:#eef2ff;--indigo-dark:#3730a3;--indigo-mid:#818cf8;
+  --text:#2d2028;--text2:#7a606a;--text3:#b09aa0;
+  --bg:#fdf8f9;--card:#ffffff;
+  --border:#eedde4;--border2:#f4c8d4;
+  --radius:14px;--radius-sm:9px;
+  --shadow:0 2px 16px rgba(180,80,100,.08);
+  --shadow-hover:0 6px 28px rgba(180,80,100,.16);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* ── HEADER ── */
+.page-header{
+  background:linear-gradient(135deg,#e8eeff 0%,#f0ebff 50%,#fdf0f8 100%);
+  padding:2rem 2.5rem 1.8rem;
+  border-bottom:1px solid #d8d0f0;
+  position:relative;overflow:hidden;
+}
+.page-header::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(91,63,160,.07);}
+.page-header::after{content:'';position:absolute;bottom:-40px;left:20%;width:140px;height:140px;border-radius:50%;background:rgba(129,140,248,.05);}
+.header-inner{position:relative;z-index:1;max-width:960px;margin:0 auto}
+.breadcrumb{font-size:12px;color:var(--indigo-dark);opacity:.7;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.breadcrumb a{color:inherit;text-decoration:none;opacity:.8}
+.breadcrumb a:hover{opacity:1;text-decoration:underline}
+.header-top{display:flex;align-items:center;gap:16px;margin-bottom:6px}
+.logo-wrap{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 14px rgba(67,56,202,.25);}
+.header-texts h1{font-size:20px;font-weight:700;color:var(--indigo-dark);line-height:1.3}
+.header-texts .sub{font-size:12px;color:#6366f1;margin-top:2px}
+.header-meta{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
+.meta-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.7);color:var(--text2);font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1px solid #d8d0f0;backdrop-filter:blur(4px);}
+
+/* ── CONTAINER ── */
+.container{max-width:960px;margin:0 auto;padding:2rem 1.5rem 4rem}
+
+/* ── SECTION TITLE ── */
+.section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;margin-top:8px;display:flex;align-items:center;gap:8px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── STAT STRIP ── */
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.2rem;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;}
+.stat-card .s-icon{font-size:24px;margin-bottom:4px}
+.stat-card .s-val{font-size:22px;font-weight:700;line-height:1}
+.stat-card .s-lbl{font-size:11px;color:var(--text3);font-weight:600;letter-spacing:.3px}
+.sc-indigo{border-left:3px solid #6366f1}.sc-indigo .s-val{color:var(--indigo-dark)}
+.sc-sky{border-left:3px solid #5aaced}.sc-sky .s-val{color:var(--sky-dark)}
+.sc-mint{border-left:3px solid #58c890}.sc-mint .s-val{color:var(--mint-dark)}
+.sc-gold{border-left:3px solid #e0b030}.sc-gold .s-val{color:var(--gold-dark)}
+
+/* ── MODULE GRID ── */
+.module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:2rem;}
+.module-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.6rem;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;}
+.module-card::before{content:'';position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;transform:translate(30px,-30px);opacity:.12;transition:opacity .2s;}
+.module-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-hover)}
+.module-card:hover::before{opacity:.2}
+
+.mc-sky{border-top:3px solid #5aaced}.mc-sky::before{background:#5aaced}
+.mc-indigo{border-top:3px solid #6366f1}.mc-indigo::before{background:#6366f1}
+.mc-mint{border-top:3px solid #58c890}.mc-mint::before{background:#58c890}
+.mc-purple{border-top:3px solid #9b7ae0}.mc-purple::before{background:#9b7ae0}
+.mc-gold{border-top:3px solid #e0b030}.mc-gold::before{background:#e0b030}
+
+.mc-head{display:flex;align-items:flex-start;gap:12px}
+.mc-icon-box{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.mc-sky .mc-icon-box{background:var(--sky)}
+.mc-indigo .mc-icon-box{background:var(--indigo-light)}
+.mc-mint .mc-icon-box{background:var(--mint)}
+.mc-purple .mc-icon-box{background:var(--purple-light)}
+.mc-gold .mc-icon-box{background:var(--gold-light)}
+
+.mc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.3}
+.mc-desc{font-size:12px;color:var(--text2);line-height:1.5}
+.mc-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.mc-tag{font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px;letter-spacing:.3px;}
+.tag-sky{background:var(--sky);color:var(--sky-dark)}
+.tag-indigo{background:var(--indigo-light);color:var(--indigo-dark)}
+.tag-mint{background:var(--mint);color:var(--mint-dark)}
+.tag-purple{background:var(--purple-light);color:var(--purple-dark)}
+.tag-gold{background:var(--gold-light);color:var(--gold-dark)}
+.tag-gray{background:#f0eded;color:#7a7a8a}
+.tag-pass{background:#d4edda;color:#155724}
+
+.mc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);}
+.mc-arrow{width:26px;height:26px;border-radius:50%;background:var(--blush);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s,transform .2s;}
+.module-card:hover .mc-arrow{background:var(--indigo-light);transform:translateX(3px)}
+
+.coming-soon{position:relative;pointer-events:none;opacity:.55;}
+.cs-badge{position:absolute;top:10px;right:10px;z-index:2;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f0eded;color:#9a8a8e;border:1px solid #e0d8da;letter-spacing:.4px;}
+
+/* ── INFO BOX ── */
+.info-box{background:linear-gradient(135deg,var(--indigo-light),#f5f3ff);border:1px solid #c7d2fe;border-radius:var(--radius-sm);padding:.9rem 1.2rem;display:flex;align-items:flex-start;gap:10px;margin-bottom:2rem;font-size:12.5px;color:var(--indigo-dark);}
+.info-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+
+/* ── QUICK LINKS ── */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:2rem}
+.qlink{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);transition:background .18s,border-color .18s,transform .18s;box-shadow:0 1px 6px rgba(180,80,100,.05);}
+.qlink:hover{background:var(--indigo-light);border-color:#c7d2fe;transform:translateY(-2px)}
+.qlink-icon{font-size:18px;flex-shrink:0}
+.qlink-text{font-size:12px;font-weight:600;color:var(--text2);line-height:1.3}
+
+/* ── FOOTER ── */
+.page-footer{text-align:center;font-size:11px;color:var(--text3);padding:1.5rem;border-top:1px solid var(--border);background:var(--blush);}
+
+@media(max-width:640px){
+  .stat-strip{grid-template-columns:1fr 1fr}
+  .page-header{padding:1.4rem 1.2rem}
+  .header-texts h1{font-size:16px}
+  .container{padding:1.2rem 1rem 3rem}
+}
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="header-inner">
+    <div class="breadcrumb">
+      <a href="index.html">🏥 Dashboard</a>
+      <span>›</span>
+      <span>📊 EQA</span>
+    </div>
+    <div class="header-top">
+      <div class="logo-wrap">📊</div>
+      <div class="header-texts">
+        <h1>External Quality Assessment (EQA)</h1>
+        <div class="sub">การประเมินคุณภาพภายนอก &nbsp;·&nbsp; Proficiency Testing · โรงพยาบาลพระจอมเกล้า เพชรบุรี</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="meta-chip">🏛️ สวส. (PT)</span>
+      <span class="meta-chip">🌐 QCMD — Glasgow, UK</span>
+      <span class="meta-chip">📅 ปี พ.ศ. 2566–2569</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="stat-strip">
+    <div class="stat-card sc-indigo">
+      <div class="s-icon">🧬</div>
+      <div class="s-val">1</div>
+      <div class="s-lbl">รายการทดสอบ EQA</div>
+    </div>
+    <div class="stat-card sc-sky">
+      <div class="s-icon">🏛️</div>
+      <div class="s-val" style="font-size:16px">สวส. + QCMD</div>
+      <div class="s-lbl">แหล่ง EQA Provider</div>
+    </div>
+    <div class="stat-card sc-mint">
+      <div class="s-icon">📋</div>
+      <div class="s-val">4</div>
+      <div class="s-lbl">ปีที่มีข้อมูล (2566–2569)</div>
+    </div>
+    <div class="stat-card sc-gold">
+      <div class="s-icon">🏆</div>
+      <div class="s-val">✅</div>
+      <div class="s-lbl">สถานะล่าสุด</div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <span class="info-icon">📌</span>
+    <div>
+      <strong>EQA คืออะไร?</strong> — External Quality Assessment หรือ Proficiency Testing (PT) คือการประเมินความถูกต้องของผลการทดสอบโดยองค์กรภายนอก
+      ผลการเข้าร่วมใช้ในการรับรองคุณภาพห้องปฏิบัติการตามมาตรฐาน ISO 15189
+    </div>
+  </div>
+
+  <!-- ── HIV Viral Load ── -->
+  <div class="section-title">🧬 HIV — Viral Load</div>
+  <div class="module-grid">
+
+    <a href="EQA_HIV_VL.html" class="module-card mc-sky">
+      <div class="mc-head">
+        <div class="mc-icon-box">🧫</div>
+        <div>
+          <div class="mc-title">EQA HIV Viral Load</div>
+          <div class="mc-desc">สรุปผลการประเมินคุณภาพภายนอก HIV-1 Viral Load<br>ข้อมูลจาก สวส. (PT) และ QCMD ทุก cycle</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-sky">cobas® HIV-1 VL</span>
+        <span class="mc-tag tag-indigo">สวส. PT</span>
+        <span class="mc-tag tag-indigo">QCMD</span>
+        <span class="mc-tag tag-pass">2566–2569</span>
+      </div>
+      <div class="mc-footer">
+        <span>15 sheets · PT + QCMD · ครบทุก cycle</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </a>
+
+    <div class="module-card mc-purple coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
+      <div class="mc-head">
+        <div class="mc-icon-box">🦠</div>
+        <div>
+          <div class="mc-title">EQA HPV DNA Test</div>
+          <div class="mc-desc">สรุปผล EQA สำหรับ cobas® HPV<br>จาก สวส. และ QCMD</div>
+        </div>
+      </div>
+      <div class="mc-tags">
+        <span class="mc-tag tag-purple">cobas® HPV</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
+      </div>
+      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
+    </div>
+
+  </div>
+
+  <!-- ── Quick Access ── -->
+  <div class="section-title">⚡ Quick Access</div>
+  <div class="quick-grid">
+    <a href="EQA_HIV_VL.html" class="qlink">
+      <span class="qlink-icon">🧫</span>
+      <span class="qlink-text">EQA HIV VL<br>ดูผลทุกปี</span>
+    </a>
+    <a href="index.html" class="qlink">
+      <span class="qlink-icon">🏥</span>
+      <span class="qlink-text">กลับ<br>Dashboard หลัก</span>
+    </a>
+  </div>
+
+</div>
+
+<div class="page-footer">
+  ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp;
+  EQA Module &nbsp;·&nbsp; 2026
+</div>
+
+</body>
+</html>
