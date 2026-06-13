@@ -101,9 +101,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .mc-arrow{width:26px;height:26px;border-radius:50%;background:var(--blush);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s,transform .2s;}
 .module-card:hover .mc-arrow{background:var(--indigo-light);transform:translateX(3px)}
 
-.coming-soon{position:relative;pointer-events:none;opacity:.55;}
-.cs-badge{position:absolute;top:10px;right:10px;z-index:2;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f0eded;color:#9a8a8e;border:1px solid #e0d8da;letter-spacing:.4px;}
-
 /* ── INFO BOX ── */
 .info-box{background:linear-gradient(135deg,var(--indigo-light),#f5f3ff);border:1px solid #c7d2fe;border-radius:var(--radius-sm);padding:.9rem 1.2rem;display:flex;align-items:flex-start;gap:10px;margin-bottom:2rem;font-size:12.5px;color:var(--indigo-dark);}
 .info-icon{font-size:18px;flex-shrink:0;margin-top:1px}
@@ -155,7 +152,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
   <div class="stat-strip">
     <div class="stat-card sc-indigo">
       <div class="s-icon">🧬</div>
-      <div class="s-val">1</div>
+      <div class="s-val">2</div>
       <div class="s-lbl">รายการทดสอบ EQA</div>
     </div>
     <div class="stat-card sc-sky">
@@ -207,21 +204,31 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       </div>
     </a>
 
-    <div class="module-card mc-purple coming-soon">
-      <span class="cs-badge">เร็วๆ นี้</span>
+  </div>
+
+  <!-- ── HPV DNA Test ── -->
+  <div class="section-title">🦠 HPV — DNA Test</div>
+  <div class="module-grid">
+
+    <a href="EQA_HPV_HPV.html" class="module-card mc-purple">
       <div class="mc-head">
         <div class="mc-icon-box">🦠</div>
         <div>
           <div class="mc-title">EQA HPV DNA Test</div>
-          <div class="mc-desc">สรุปผล EQA สำหรับ cobas® HPV<br>จาก สวส. และ QCMD</div>
+          <div class="mc-desc">สรุปผล EQA สำหรับ cobas® HPV PreservCyt<br>จาก QCMD (QAV094130) · Roche Cobas HPV (v4)</div>
         </div>
       </div>
       <div class="mc-tags">
         <span class="mc-tag tag-purple">cobas® HPV</span>
-        <span class="mc-tag tag-gray">Coming soon</span>
+        <span class="mc-tag tag-indigo">QCMD</span>
+        <span class="mc-tag tag-pass">5/5 PASS</span>
+        <span class="mc-tag tag-pass">2567–2569</span>
       </div>
-      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
-    </div>
+      <div class="mc-footer">
+        <span>5 challenges · Sensitivity &amp; Specificity 100%</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </a>
 
   </div>
 
@@ -231,6 +238,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
     <a href="EQA_HIV_VL.html" class="qlink">
       <span class="qlink-icon">🧫</span>
       <span class="qlink-text">EQA HIV VL<br>ดูผลทุกปี</span>
+    </a>
+    <a href="EQA_HPV_HPV.html" class="qlink">
+      <span class="qlink-icon">🦠</span>
+      <span class="qlink-text">EQA HPV<br>QCMD 2567–2569</span>
     </a>
     <a href="index.html" class="qlink">
       <span class="qlink-icon">🏥</span>
