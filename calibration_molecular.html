@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ข้อมูลการสอบเทียบ — งานอณูชีวโมเลกุล</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun', Arial, sans-serif; background: #f0f4f8; color: #1a1a2e; font-size: 14px; }
+
+  /* Header */
+  .page-header { background: linear-gradient(135deg, #1F4E79 0%, #2E75B6 100%); color: #fff; padding: 20px 32px 16px; }
+  .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+  .page-header p { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+
+  /* KPI strip */
+  .kpi-strip { display: flex; gap: 12px; padding: 16px 32px; background: #fff; border-bottom: 2px solid #e2e8f0; flex-wrap: wrap; }
+  .kpi { flex: 1; min-width: 130px; background: #f7fafc; border-radius: 10px; padding: 12px 16px; border-left: 4px solid #2E75B6; }
+  .kpi.pass { border-left-color: #375623; background: #f0fff4; }
+  .kpi.fail { border-left-color: #9C0006; background: #fff5f5; }
+  .kpi.rate { border-left-color: #d69e2e; background: #fffbeb; }
+  .kpi-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-value { font-size: 32px; font-weight: 800; margin-top: 2px; color: #1F4E79; }
+  .kpi.pass .kpi-value { color: #375623; }
+  .kpi.fail .kpi-value { color: #9C0006; }
+  .kpi.rate .kpi-value { color: #b7791f; }
+
+  /* Controls */
+  .controls { display: flex; gap: 10px; padding: 14px 32px; background: #fff; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; align-items: center; }
+  .search-box { padding: 7px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 13px; width: 220px; outline: none; }
+  .search-box:focus { border-color: #2E75B6; box-shadow: 0 0 0 2px rgba(46,117,182,.15); }
+  .filter-btn { padding: 7px 14px; border: 1px solid #cbd5e0; border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; transition: all .15s; }
+  .filter-btn:hover, .filter-btn.active { background: #1F4E79; color: #fff; border-color: #1F4E79; }
+  .filter-btn.fail-filter.active { background: #9C0006; border-color: #9C0006; }
+  .count-badge { margin-left: auto; font-size: 12px; color: #666; }
+
+  /* Table wrapper */
+  .table-wrap { padding: 0 32px 32px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,.08); }
+  thead th { background: #1F4E79; color: #fff; padding: 11px 10px; font-size: 12px; font-weight: 600; text-align: center; white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+  thead th:first-child { border-radius: 0; }
+  tbody tr { border-bottom: 1px solid #e8edf2; transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #ebf4ff !important; }
+  tbody td { padding: 9px 10px; font-size: 13px; vertical-align: middle; }
+  tbody tr:nth-child(even) { background: #f7fafc; }
+
+  /* Group header rows */
+  .group-row td { background: #2E75B6 !important; color: #fff; font-weight: 700; font-size: 13px; padding: 8px 12px; letter-spacing: 0.3px; }
+
+  /* PASS / FAIL badges */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 12px; letter-spacing: 0.3px; }
+  .badge.pass { background: #C6EFCE; color: #375623; }
+  .badge.fail { background: #FFC7CE; color: #9C0006; }
+  .badge.na   { background: #e2e8f0; color: #666; }
+
+  /* Hidden rows */
+  tr.hidden { display: none; }
+
+  /* Fail highlight */
+  tr.fail-row td { background: #fff5f5 !important; }
+  tr.fail-row:hover td { background: #ffe4e4 !important; }
+
+  /* Footer */
+  .page-footer { text-align: center; padding: 12px; font-size: 11px; color: #aaa; background: #fff; border-top: 1px solid #eee; margin-top: 8px; }
+
+  @media print {
+    .controls { display: none; }
+    .page-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    tbody tr:nth-child(even) { background: #f7fafc !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>📋 ข้อมูลการสอบเทียบเครื่องมือ — งานอณูชีวโมเลกุล</h1>
+  <p>โรงพยาบาลพระจอมเกล้า จังหวัดเพชรบุรี &nbsp;|&nbsp; Work Order No. 25/1390 &nbsp;|&nbsp; Crystal Calibration Sales and Service Co., Ltd. (NSC-TISI-TIS 17025, Cal. No. 0260)</p>
+</div>
+
+<div class="kpi-strip">
+  <div class="kpi"><div class="kpi-label">เครื่องมือทั้งหมด</div><div class="kpi-value">38</div></div>
+  <div class="kpi pass"><div class="kpi-label">ผ่านการสอบเทียบ (PASS)</div><div class="kpi-value">36</div></div>
+  <div class="kpi fail"><div class="kpi-label">ไม่ผ่านการสอบเทียบ (FAIL)</div><div class="kpi-value">2</div></div>
+  <div class="kpi rate"><div class="kpi-label">อัตราผ่าน</div><div class="kpi-value">94.7%</div></div>
+</div>
+
+<div class="controls">
+  <input class="search-box" id="searchBox" type="text" placeholder="🔍 ค้นหา... (ชื่อ, รหัส, ใบรับรอง)">
+  <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">ทั้งหมด (38)</button>
+  <button class="filter-btn" data-filter="Auto Pipette" onclick="setFilter('Auto Pipette',this)">Auto Pipette (13)</button>
+  <button class="filter-btn" data-filter="BSC" onclick="setFilter('BSC',this)">BSC (2)</button>
+  <button class="filter-btn" data-filter="Centrifuge" onclick="setFilter('Centrifuge',this)">Centrifuge (2)</button>
+  <button class="filter-btn" data-filter="Digital Thermometer" onclick="setFilter('Digital Thermometer',this)">Dig. Thermometer (11)</button>
+  <button class="filter-btn" data-filter="Laminar Flow" onclick="setFilter('Laminar Flow',this)">Laminar Flow (1)</button>
+  <button class="filter-btn" data-filter="Temperature Control" onclick="setFilter('Temperature Control',this)">Temp. Control (9)</button>
+  <button class="filter-btn fail-filter" data-filter="FAIL" onclick="setFilter('FAIL',this)">⚠ FAIL only (2)</button>
+  <span class="count-badge" id="countBadge">แสดง 38 รายการ</span>
+</div>
+
+<div class="table-wrap">
+<table id="mainTable">
+<thead>
+  <tr>
+    <th>#</th>
+    <th>ประเภทเครื่องมือ</th>
+    <th>เลขที่ใบรับรอง</th>
+    <th>ผู้ผลิต</th>
+    <th>รุ่น / Model</th>
+    <th>หมายเลขเครื่อง</th>
+    <th>รหัสครุภัณฑ์ / ID No.</th>
+    <th>จุดสอบเทียบ / ช่วงการวัด</th>
+    <th>MPE / เกณฑ์</th>
+    <th>ห้องติดตั้ง</th>
+    <th>วันที่สอบเทียบ</th>
+    <th>วันที่ออกใบรับรอง</th>
+    <th>ผลการประเมิน</th>
+  </tr>
+</thead>
+<tbody id="tableBody">
+
+<!-- ══ Auto Pipette ══════════════════════════════════════════════════════ -->
+<tr class="group-row" data-type="Auto Pipette"><td colspan="13">▸ Auto Pipette &nbsp;(13 รายการ)</td></tr>
+<tr data-type="Auto Pipette"><td>1</td><td>Auto Pipette</td><td>25-1390-001</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688A</td><td>ค18-ป001-1</td><td>1000 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>2</td><td>Auto Pipette</td><td>25-1390-002</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454G</td><td>ค18-ป001-2</td><td>100 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>3</td><td>Auto Pipette</td><td>25-1390-003</td><td>EPPENDORF</td><td>Research Plus 10</td><td>L41523Q</td><td>ค18-ป001-3</td><td>10 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>4</td><td>Auto Pipette</td><td>25-1390-004</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688B</td><td>ค18-ป001-4</td><td>1000 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>5</td><td>Auto Pipette</td><td>25-1390-005</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454J</td><td>ค18-ป001-5</td><td>100 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>6</td><td>Auto Pipette</td><td>25-1390-006</td><td>EPPENDORF</td><td>Research Plus 10</td><td>L41523R</td><td>ค18-ป001-6</td><td>10 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>7</td><td>Auto Pipette</td><td>25-1390-007</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688C</td><td>6525-004-0001-1/61</td><td>1000 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>8</td><td>Auto Pipette</td><td>25-1390-008</td><td>EPPENDORF</td><td>Research Plus 200</td><td>L62537D</td><td>6525-004-0002-1/61</td><td>200 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>9</td><td>Auto Pipette</td><td>25-1390-009</td><td>EPPENDORF</td><td>Research Plus 10</td><td>L41523S</td><td>6525-004-0003-1/61</td><td>10 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>10</td><td>Auto Pipette</td><td>25-1390-010</td><td>EPPENDORF</td><td>Research Plus 2.5</td><td>L30148A</td><td>6515-038-0001-1/65</td><td>2.5 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>11</td><td>Auto Pipette</td><td>25-1390-011</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454K</td><td>6515-038-0002-1/65</td><td>100 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>12</td><td>Auto Pipette</td><td>25-1390-012</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688D</td><td>N/A</td><td>1000 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Auto Pipette"><td>13</td><td>Auto Pipette</td><td>25-1390-013</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454L</td><td>N/A</td><td>100 µL</td><td>Fixed</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+<!-- ══ BSC ════════════════════════════════════════════════════════════════ -->
+<tr class="group-row" data-type="BSC"><td colspan="13">▸ Biological Safety Cabinet (BSC) &nbsp;(2 รายการ)</td></tr>
+<tr data-type="BSC"><td>14</td><td>BSC</td><td>25-1390-102</td><td>BIOBASE</td><td>BSC-1500IIA2-X</td><td>BSC15A20040572</td><td>6525-003-5205-2/63</td><td>Downflow / Inflow / HEPA</td><td>Class II/A2</td><td>Special Lab</td><td>27 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="BSC"><td>15</td><td>BSC</td><td>25-1390-103</td><td>BIOBASE</td><td>BSC-1300IIA2-X</td><td>BSC13A2003065</td><td>6525-003-5204-1/63</td><td>Downflow / Inflow / HEPA</td><td>Class II/A2</td><td>Special Lab</td><td>28 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+<!-- ══ Centrifuge ══════════════════════════════════════════════════════════ -->
+<tr class="group-row" data-type="Centrifuge"><td colspan="13">▸ Centrifuge &nbsp;(2 รายการ)</td></tr>
+<tr data-type="Centrifuge"><td>16</td><td>Centrifuge</td><td>25-1390-107</td><td>KOKUSAN</td><td>H-28F</td><td>135335</td><td>6515-006-0004-1/51</td><td>1100 RCF</td><td>±5% RCF</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Centrifuge"><td>17</td><td>Centrifuge</td><td>25-1390-118</td><td>DLAB</td><td>D3024</td><td>LW19AAL0000323</td><td>6515-006-0006-1/63</td><td>10000 RPM</td><td>±5% RPM</td><td>Special Lab</td><td>24 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+<!-- ══ Digital Thermometer ════════════════════════════════════════════════ -->
+<tr class="group-row" data-type="Digital Thermometer"><td colspan="13">▸ Digital Thermometer / Thermo-Hygrometer &nbsp;(11 รายการ)</td></tr>
+<tr data-type="Digital Thermometer"><td>18</td><td>Digital Thermometer</td><td>25-1390-143</td><td>—</td><td>With Sensor</td><td>—</td><td>B00448</td><td>-50, -40, -30 °C</td><td>MPE ±5 °C</td><td>Temp &amp; Humidity Cal Lab</td><td>4 Nov 2025</td><td>6 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>19</td><td>Digital Thermometer</td><td>25-1390-144</td><td>—</td><td>With Sensor</td><td>—</td><td>B00444</td><td>-50, -40, -30 °C</td><td>MPE ±5 °C</td><td>Temp &amp; Humidity Cal Lab</td><td>4 Nov 2025</td><td>6 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>20</td><td>Digital Thermometer</td><td>25-1390-048</td><td>—</td><td>With Sensor</td><td>—</td><td>B00447</td><td>-25, -20, -15 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>21</td><td>Digital Thermometer</td><td>25-1390-049</td><td>—</td><td>With Sensor</td><td>—</td><td>B00449</td><td>-25, -20, -15 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>22</td><td>Digital Thermometer</td><td>25-1390-063</td><td>—</td><td>With Sensor</td><td>—</td><td>B00436</td><td>2, 4, 8 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>23</td><td>Digital Thermometer</td><td>25-1390-051</td><td>—</td><td>With Sensor</td><td>—</td><td>B00443</td><td>2, 4, 8 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>24</td><td>Digital Thermometer</td><td>25-1390-052</td><td>—</td><td>With Sensor</td><td>—</td><td>B00445</td><td>2, 4, 8 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>25</td><td>Digital Thermometer</td><td>25-1390-053</td><td>—</td><td>With Sensor</td><td>—</td><td>B00446</td><td>2, 4, 8 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>26</td><td>Digital Thermometer</td><td>25-1390-050</td><td>—</td><td>With Sensor</td><td>—</td><td>B00450</td><td>2, 4, 8 °C</td><td>MPE ±5 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Digital Thermometer"><td>27</td><td>Thermo-Hygrometer</td><td>25-1390-139</td><td>—</td><td>With Sensor</td><td>—</td><td>B00988</td><td>23, 25 °C / 50, 65 %RH</td><td>Temp ±5°C / Hum ±5%RH</td><td>Humidity &amp; Temp Lab</td><td>3 Nov 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr class="fail-row" data-type="Digital Thermometer" data-result="FAIL"><td>28</td><td>Thermo-Hygrometer</td><td>25-1390-141</td><td>—</td><td>With Sensor</td><td>—</td><td>B00987</td><td>23, 25 °C / 50, 65 %RH</td><td>Temp ±5°C / Hum ±5%RH</td><td>Humidity &amp; Temp Lab</td><td>3 Nov 2025</td><td>5 Nov 2025</td><td><span class="badge fail">FAIL</span></td></tr>
+
+<!-- ══ Laminar Flow ════════════════════════════════════════════════════════ -->
+<tr class="group-row" data-type="Laminar Flow"><td colspan="13">▸ Laminar Flow &nbsp;(1 รายการ)</td></tr>
+<tr data-type="Laminar Flow"><td>29</td><td>Laminar Flow</td><td>25-1390-105</td><td>BIOBASE</td><td>BBS-V800</td><td>BBS8V1909291 D</td><td>6530-032-0009-1/63</td><td>Downflow / HEPA / UV</td><td>Horizontal</td><td>Special Lab</td><td>28 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+<!-- ══ Temperature Controlled Enclosure ══════════════════════════════════ -->
+<tr class="group-row" data-type="Temperature Control"><td colspan="13">▸ Temperature Controlled Enclosures — Enclosure (Combo) &nbsp;(2 รายการ)</td></tr>
+<tr class="fail-row" data-type="Temperature Control" data-result="FAIL"><td>30</td><td>Enclosure (Combo)</td><td>25-1390-162</td><td>LG</td><td>GR-212DLN</td><td>410IN00360</td><td>N/A</td><td>Top -20°C / Bottom 4°C</td><td>≤-18°C / 2-8°C</td><td>Special Lab</td><td>28 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge fail">FAIL</span></td></tr>
+<tr data-type="Temperature Control"><td>31</td><td>Enclosure (Combo)</td><td>25-1390-086</td><td>SHARP</td><td>SJ-S25E-SL</td><td>T 140602092</td><td>4110-001-0007-1/58</td><td>Top -20°C / Bottom 4°C</td><td>≤-18°C / 2-8°C</td><td>Special Lab</td><td>27 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+<tr class="group-row" data-type="Temperature Control"><td colspan="13">▸ Temperature Controlled Enclosures — Freezer &nbsp;(4 รายการ)</td></tr>
+<tr data-type="Temperature Control"><td>32</td><td>Freezer</td><td>25-1390-067</td><td>ANTECH</td><td>REF-203</td><td>N/A</td><td>6530-032-0002-1/63</td><td>-20 °C</td><td>≤ -18 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Temperature Control"><td>33</td><td>Freezer</td><td>25-1390-136</td><td>ANTECH</td><td>MDF-40U525</td><td>5452 5070 0009 272G 0007</td><td>6530-032-0003-1/63</td><td>-40 °C</td><td>≤ -35 °C</td><td>Special Lab</td><td>28 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Temperature Control"><td>34</td><td>Freezer</td><td>25-1390-070</td><td>Haier</td><td>DW-40L262</td><td>BE02Q4E1T00QEEAF0006</td><td>4110-007-0003-1/58</td><td>-40 °C</td><td>≤ -35 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Temperature Control"><td>35</td><td>Freezer</td><td>25-1390-066</td><td>TRIMOND</td><td>TCF-600N</td><td>FN6001E0000FEL3H0005</td><td>4110-007-0006-1/64</td><td>-20 °C</td><td>≤ -18 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+<tr class="group-row" data-type="Temperature Control"><td colspan="13">▸ Temperature Controlled Enclosures — Refrigerator &nbsp;(3 รายการ)</td></tr>
+<tr data-type="Temperature Control"><td>36</td><td>Refrigerator</td><td>25-1390-078</td><td>SANDENINTERCOOL</td><td>SPA-0303D41A</td><td>SPA0303-190602731</td><td>4110-007-0002-1/63</td><td>4 °C</td><td>2 – 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>31 Oct 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Temperature Control"><td>37</td><td>Refrigerator</td><td>25-1390-080</td><td>SANDENINTERCOOL</td><td>SPA-0303D41A</td><td>SPA0303-190602730</td><td>4110-007-0002-2/63</td><td>4 °C</td><td>2 – 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+<tr data-type="Temperature Control"><td>38</td><td>Refrigerator</td><td>25-1390-079</td><td>Sunhui</td><td>LD2 DC 70</td><td>5341</td><td>4110-007-0004-1/55</td><td>4 °C</td><td>2 – 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td>5 Nov 2025</td><td><span class="badge pass">PASS</span></td></tr>
+
+</tbody>
+</table>
+</div>
+
+<div class="page-footer">
+  จัดทำโดย งานอณูชีวโมเลกุล โรงพยาบาลพระจอมเกล้า จังหวัดเพชรบุรี &nbsp;|&nbsp; Work Order No. 25/1390 &nbsp;|&nbsp; ข้อมูล ณ วันที่สอบเทียบ: ตุลาคม – พฤศจิกายน 2568
+</div>
+
+<script>
+  let currentFilter = 'all';
+  let searchTerm = '';
+
+  function setFilter(type, btn) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    applyFilters();
+  }
+
+  document.getElementById('searchBox').addEventListener('input', function() {
+    searchTerm = this.value.toLowerCase();
+    applyFilters();
+  });
+
+  function applyFilters() {
+    const rows = document.querySelectorAll('#tableBody tr');
+    let count = 0;
+    rows.forEach(row => {
+      if (row.classList.contains('group-row')) {
+        // Group rows: show only if their type matches
+        const type = row.getAttribute('data-type');
+        if (currentFilter === 'all' || currentFilter === type) {
+          row.classList.remove('hidden');
+        } else {
+          row.classList.add('hidden');
+        }
+        return;
+      }
+
+      const type = row.getAttribute('data-type') || '';
+      const result = row.getAttribute('data-result') || '';
+      const text = row.innerText.toLowerCase();
+
+      let typeMatch = (currentFilter === 'all') ||
+                      (currentFilter === 'FAIL' && result === 'FAIL') ||
+                      (type === currentFilter);
+      let searchMatch = searchTerm === '' || text.includes(searchTerm);
+
+      if (typeMatch && searchMatch) {
+        row.classList.remove('hidden');
+        count++;
+      } else {
+        row.classList.add('hidden');
+      }
+    });
+
+    // Hide group-row if all data rows in group are hidden
+    rows.forEach(row => {
+      if (row.classList.contains('group-row')) {
+        const type = row.getAttribute('data-type');
+        const hasVisible = Array.from(rows).some(r =>
+          !r.classList.contains('group-row') &&
+          r.getAttribute('data-type') === type &&
+          !r.classList.contains('hidden')
+        );
+        if (!hasVisible) row.classList.add('hidden');
+        else row.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('countBadge').textContent = `แสดง ${count} รายการ`;
+  }
+</script>
+</body>
+</html>
