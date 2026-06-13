@@ -177,6 +177,14 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
   border:1px solid #e0d8da;letter-spacing:.4px;
 }
 
+/* new badge */
+.new-badge{
+  position:absolute;top:10px;right:10px;z-index:2;
+  font-size:10px;font-weight:700;padding:3px 10px;
+  border-radius:99px;background:#d5f0e3;color:#1e6b40;
+  border:1px solid #86efac;letter-spacing:.4px;
+}
+
 /* ── QUICK LINKS ── */
 .quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:2rem}
 .qlink{
@@ -244,8 +252,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
   <div class="stat-strip">
     <div class="stat-card sc-rose">
       <div class="s-icon">🧬</div>
-      <div class="s-val">2</div>
-      <div class="s-lbl">แบบฟอร์ม IQC ที่ใช้งาน</div>
+      <div class="s-val">3</div>
+      <div class="s-lbl">แบบฟอร์มที่ใช้งาน</div>
     </div>
     <div class="stat-card sc-sky">
       <div class="s-icon">📊</div>
@@ -269,7 +277,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
     <span class="notice-icon">💡</span>
     <div>
       <strong>เลือกแบบฟอร์มหรือโมดูลที่ต้องการ</strong> — Dashboard นี้รวมทุกเครื่องมือที่ใช้ในงานประกันคุณภาพห้องปฏิบัติการ
-      อัปเดตล่าสุด: พ.ค. 2569 &nbsp;|&nbsp; หากพบปัญหาการใช้งานกรุณาแจ้ง IT ห้องแล็บ
+      อัปเดตล่าสุด: มิ.ย. 2569 &nbsp;|&nbsp; หากพบปัญหาการใช้งานกรุณาแจ้ง IT ห้องแล็บ
     </div>
   </div>
 
@@ -409,24 +417,26 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       </div>
     </div>
 
-    <div class="module-card mc-sky coming-soon">
-      <span class="cs-badge">เร็วๆ นี้</span>
+    <!-- ✅ MAINTENANCE LOG — ACTIVE (NEW) -->
+    <a href="maintenance.html" class="module-card mc-sky">
+      <span class="new-badge">ใหม่ 🆕</span>
       <div class="mc-head">
-        <div class="mc-icon-box">📝</div>
+        <div class="mc-icon-box">🔧</div>
         <div>
-          <div class="mc-title">Maintenance Log</div>
-          <div class="mc-desc">บันทึกการบำรุงรักษาเครื่องมือ<br>Preventive / Corrective Maintenance</div>
+          <div class="mc-title">Maintenance Dashboard</div>
+          <div class="mc-desc">ประวัติการบำรุงรักษาเครื่องมือแพทย์<br>cobas 6800 · cobas z 480 · iPonatic III · BD FACSCalibur</div>
         </div>
       </div>
       <div class="mc-tags">
-        <span class="mc-tag tag-sky">Maintenance</span>
-        <span class="mc-tag tag-gray">Coming soon</span>
+        <span class="mc-tag tag-sky">4 เครื่องมือ</span>
+        <span class="mc-tag tag-sky">PM &amp; Repair Log</span>
+        <span class="mc-tag tag-gray">งานอณูชีวโมเลกุล</span>
       </div>
       <div class="mc-footer">
-        <span>—</span>
+        <span>อัปเดต มิ.ย. 2569</span>
         <div class="mc-arrow">→</div>
       </div>
-    </div>
+    </a>
 
     <div class="module-card mc-mint coming-soon">
       <span class="cs-badge">เร็วๆ นี้</span>
@@ -469,6 +479,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       <span class="qlink-icon">🧫</span>
       <span class="qlink-text">IQC HIV VL<br>บันทึกผลใหม่</span>
     </a>
+    <a href="maintenance.html" class="qlink">
+      <span class="qlink-icon">🔧</span>
+      <span class="qlink-text">Maintenance<br>Dashboard</span>
+    </a>
     <a href="#" class="qlink" style="opacity:.45;pointer-events:none">
       <span class="qlink-icon">🩸</span>
       <span class="qlink-text">IQC Hematology<br><em style="font-weight:400">เร็วๆ นี้</em></span>
@@ -480,18 +494,16 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 <!-- ══════════ FOOTER ══════════ -->
 <div class="page-footer">
   ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp;
-  Laboratory Dashboard v1.0 &nbsp;·&nbsp; 2026
+  Laboratory Dashboard v1.1 &nbsp;·&nbsp; 2026
 </div>
 
 <script>
-// Live clock + date
 function updateClock(){
   const now = new Date();
   const th = new Intl.DateTimeFormat('th-TH',{weekday:'short',day:'numeric',month:'short',year:'numeric',calendar:'buddhist'});
   const tm = now.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   document.getElementById('live-date').textContent = th.format(now);
   document.getElementById('live-time').textContent = tm;
-  // Buddhist year for stat
   const be = now.getFullYear() + 543;
   document.getElementById('year-stat').textContent = be;
 }
