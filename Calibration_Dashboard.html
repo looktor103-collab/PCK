@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📊 Calibration Dashboard — งานอณูชีวโมเลกุล</title>
+<link href='https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap' rel='stylesheet'>
+<style>
+  .back-bar{background:#1F4E79;padding:10px 32px}
+  .back-btn{color:#a8d0f0;text-decoration:none;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:6px;background:rgba(255,255,255,.12)}
+  .back-btn:hover{background:rgba(255,255,255,.22);color:#fff}
+  .pdf-note{background:#e8f4fd;border:1px solid #bee3f8;border-radius:7px;padding:9px 16px;margin:12px 32px;font-size:12px;color:#2c5f8a}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Sarabun','Segoe UI',Tahoma,sans-serif; background: #f0f4f8; color: #1a1a2e; font-size: 14px; }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1F4E79 0%, #2E75B6 100%);
+    color: white; padding: 24px 32px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+  .header p  { margin-top: 6px; font-size: 12px; opacity: 0.85; }
+
+  /* ── Summary cards ── */
+  .summary { display: flex; gap: 16px; padding: 20px 32px; flex-wrap: wrap; }
+  .card {
+    background: white; border-radius: 10px; padding: 16px 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08); flex: 1; min-width: 140px; text-align: center;
+  }
+  .card .num   { font-size: 36px; font-weight: 800; }
+  .card .label { font-size: 12px; color: #666; margin-top: 4px; }
+  .card.pass .num { color: #2d8a4e; }
+  .card.fail .num { color: #c0392b; }
+  .card.total .num { color: #1F4E79; }
+  .card.rate .num  { color: #d68000; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 4px; padding: 0 32px; border-bottom: 2px solid #ddd; margin-top: 8px; flex-wrap: wrap; }
+  .tab {
+    padding: 10px 18px; cursor: pointer; border-radius: 8px 8px 0 0;
+    background: #e8edf2; color: #555; font-size: 13px; font-weight: 600;
+    border: 2px solid transparent; border-bottom: none; transition: all .2s;
+    user-select: none;
+  }
+  .tab:hover { background: #d0dcea; }
+  .tab.active { background: white; color: #1F4E79; border-color: #ddd; border-bottom-color: white; margin-bottom: -2px; }
+
+  /* ── Panels ── */
+  .panels { padding: 24px 32px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Tables ── */
+  .section-title {
+    font-size: 15px; font-weight: 700; color: #1F4E79;
+    margin-bottom: 12px; padding-bottom: 6px;
+    border-bottom: 2px solid #2E75B6; display: flex; align-items: center; gap: 8px;
+  }
+  table { width: 100%; border-collapse: collapse; background: white;
+          border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.07); margin-bottom: 24px; }
+  thead tr { background: #1F4E79; color: white; }
+  thead th { padding: 11px 12px; text-align: left; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid #eef0f3; }
+  tbody tr:hover { background: #f5f8ff; }
+  tbody td { padding: 10px 12px; font-size: 13px; }
+  .sub-header td { background: #e8f0fe; font-weight: 700; color: #1F4E79; padding: 8px 12px; font-size: 12px; }
+
+  /* ── Status badges ── */
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  }
+  .badge.pass { background: #d4edda; color: #155724; }
+  .badge.fail { background: #f8d7da; color: #721c24; }
+
+  /* ── PDF link ── */
+  .pdf-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: #0563C1; text-decoration: none; font-size: 12px; font-weight: 500;
+    padding: 4px 10px; border-radius: 5px; background: #e8f0fe;
+    transition: background .15s;
+  }
+  .pdf-link:hover { background: #c7d9f8; text-decoration: underline; }
+  .pdf-icon { font-size: 14px; }
+
+  /* ── Warning box ── */
+  .warn-box {
+    background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px;
+    padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: #856404;
+  }
+  .warn-box strong { display: block; margin-bottom: 4px; }
+
+  /* ── Note ── */
+  .note { font-size: 11px; color: #999; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class='back-bar'><a class='back-btn' href='index.html'>← กลับหน้าหลัก Dashboard</a></div>
+<div class='pdf-note'>ℹ️ ปุ่ม "📄 ใบรับรอง" ใช้งานได้เฉพาะเมื่อเปิดจากเครื่องที่มีโฟลเดอร์ <b>pdf/</b> อยู่ในตำแหน่งเดียวกับไฟล์นี้</div>
+<div class="header">
+  <h1>📊 CALIBRATION DASHBOARD — งานอณูชีวโมเลกุล</h1>
+  <p>โรงพยาบาลพระจอมเกล้า จังหวัดเพชรบุรี &nbsp;|&nbsp; Work Order No. 25/1390 &nbsp;|&nbsp; Crystal Calibration Sales and Service Co., Ltd. (NSC-TISI-TIS 17025, Cal. No. 0260)</p>
+</div>
+
+<!-- Summary -->
+<div class="summary">
+  <div class="card total"><div class="num">38</div><div class="label">เครื่องมือทั้งหมด</div></div>
+  <div class="card pass"><div class="num">36</div><div class="label">PASS</div></div>
+  <div class="card fail"><div class="num">2</div><div class="label">FAIL</div></div>
+  <div class="card rate"><div class="num">94.7%</div><div class="label">อัตราผ่าน</div></div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('auto-pipette')">💉 Auto Pipette (13)</div>
+  <div class="tab" onclick="showTab('bsc')">🧪 BSC (2)</div>
+  <div class="tab" onclick="showTab('centrifuge')">🔄 Centrifuge (2)</div>
+  <div class="tab" onclick="showTab('digital-thermo')">🌡️ Digital Thermometer (11)</div>
+  <div class="tab" onclick="showTab('laminar')">💨 Laminar Flow (1)</div>
+  <div class="tab" onclick="showTab('temp-control')">❄️ Temperature Control (9)</div>
+</div>
+
+<div class="panels">
+
+<!-- ── AUTO PIPETTE ── -->
+<div id="auto-pipette" class="panel active">
+  <div class="section-title">💉 Auto Pipette — ข้อมูลการสอบเทียบ | วันที่: 24 October 2025</div>
+  <div class="warn-box"><strong>⚠ หมายเหตุ:</strong> ไฟล์ PDF ในคอลัมน์นี้จับคู่ตามลำดับ กรุณาตรวจสอบความถูกต้องก่อนใช้งาน</div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th><th>เลขที่ใบรับรอง</th><th>ผู้ผลิต</th><th>รุ่น</th>
+        <th>หมายเลขเครื่อง</th><th>รหัสครุภัณฑ์</th><th>ช่วงปริมาตร</th>
+        <th>ผล</th><th>ใบรับรอง PDF</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>25-1390-001</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688A</td><td>ค18-ป001-1</td><td>1000 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-01-1-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-002</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454G</td><td>ค18-ป001-2</td><td>100 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-01-2-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>3</td><td>25-1390-003</td><td>EPPENDORF</td><td>Research Plus 10</td><td>L41523Q</td><td>ค18-ป001-3</td><td>10 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-04-1-52.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>4</td><td>25-1390-004</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688B</td><td>ค18-ป001-4</td><td>1000 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-04-2-52.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>5</td><td>25-1390-005</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454J</td><td>ค18-ป001-5</td><td>100 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-01-4-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>6</td><td>25-1390-006</td><td>EPPENDORF</td><td>Research Plus 10</td><td>L41523R</td><td>ค18-ป001-6</td><td>10 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-01-5-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>7</td><td>25-1390-007</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688C</td><td>6525-004-0001-1/61</td><td>1000 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-01-6-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>8</td><td>25-1390-008</td><td>EPPENDORF</td><td>Research Plus 200</td><td>L62537D</td><td>6525-004-0002-1/61</td><td>200 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-01-7-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>9</td><td>25-1390-009</td><td>EPPENDORF</td><td>Research Plus 10</td><td>L41523S</td><td>6525-004-0003-1/61</td><td>10 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-0055345.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>10</td><td>25-1390-010</td><td>EPPENDORF</td><td>Research Plus 2.5</td><td>L30148A</td><td>6515-038-0001-1/65</td><td>2.5 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-0225582.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>11</td><td>25-1390-011</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454K</td><td>6515-038-0002-1/65</td><td>100 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-0225602.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>12</td><td>25-1390-012</td><td>EPPENDORF</td><td>Research Plus 1000</td><td>L80688D</td><td>N/A</td><td>1000 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-5009328.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>13</td><td>25-1390-013</td><td>EPPENDORF</td><td>Research Plus 100</td><td>L52454L</td><td>N/A</td><td>100 µL</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/auto pipet-5081521.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── BSC ── -->
+<div id="bsc" class="panel">
+  <div class="section-title">🧪 Biological Safety Cabinet (BSC)</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>เลขที่ใบรับรอง</th><th>ผู้ผลิต</th><th>รุ่น</th><th>หมายเลขเครื่อง</th><th>รหัสครุภัณฑ์</th><th>Class</th><th>ห้องติดตั้ง</th><th>วันที่ทดสอบ</th><th>ผล</th><th>ใบรับรอง PDF</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>25-1390-102</td><td>BIOBASE</td><td>BSC-1500IIA2-X</td><td>BSC15A20040572</td><td>6525-003-5205-2/63</td><td>Class II/A2</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/BSC-special lab1500.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-103</td><td>BIOBASE</td><td>BSC-1300IIA2-X</td><td>BSC13A2003065</td><td>6525-003-5204-1/63</td><td>Class II/A2</td><td>Special Lab</td><td>28 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/BSC-special lab1300.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── CENTRIFUGE ── -->
+<div id="centrifuge" class="panel">
+  <div class="section-title">🔄 Centrifuge</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>เลขที่ใบรับรอง</th><th>ผู้ผลิต</th><th>รุ่น</th><th>หมายเลขเครื่อง</th><th>รหัสครุภัณฑ์</th><th>จุดสอบเทียบ</th><th>ห้องติดตั้ง</th><th>วันที่สอบเทียบ</th><th>ผล</th><th>ใบรับรอง PDF</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>25-1390-107</td><td>KOKUSAN</td><td>H-28F</td><td>135335</td><td>6515-006-0004-1/51</td><td>1100 RCF</td><td>Special Lab</td><td>24 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/Centifuge-Special lab.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-118</td><td>DLAB</td><td>D3024</td><td>LW19AAL0000323</td><td>6515-006-0006-1/63</td><td>10000 RPM</td><td>Special Lab</td><td>24 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/Centifuge-Special lab3024.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── DIGITAL THERMOMETER ── -->
+<div id="digital-thermo" class="panel">
+  <div class="section-title">🌡️ Digital Thermometer / Thermo-Hygrometer</div>
+  <div class="warn-box"><strong>⚠ B00987 (Cert 25-1390-141): Humidity FAIL</strong> 50%RH: |correction| 12.17 &gt; MPE 5.0 &nbsp;/&nbsp; 65%RH: |correction| 12.44 &gt; MPE 5.0</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>เลขที่ใบรับรอง</th><th>รหัสครุภัณฑ์</th><th>ประเภท</th><th>ช่วงการวัด</th><th>ห้องสอบเทียบ</th><th>วันที่สอบเทียบ</th><th>ผล Temp</th><th>ผล Humidity</th><th>ผลรวม</th><th>ใบรับรอง PDF</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>25-1390-143</td><td>B00448</td><td>Digital Thermometer</td><td>-50, -40, -30 °C</td><td>Temp &amp; Humidity Cal Lab</td><td>4 Nov 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/Digital Themo-SP.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-144</td><td>B00444</td><td>Digital Thermometer</td><td>-50, -40, -30 °C</td><td>Temp &amp; Humidity Cal Lab</td><td>4 Nov 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/Digital Themo3-SP.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>3</td><td>25-1390-048</td><td>B00447</td><td>Digital Thermometer</td><td>-25, -20, -15 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00447.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>4</td><td>25-1390-049</td><td>B00449</td><td>Digital Thermometer</td><td>-25, -20, -15 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00449.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>5</td><td>25-1390-063</td><td>B00436</td><td>Digital Thermometer</td><td>2, 4, 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00436.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>6</td><td>25-1390-051</td><td>B00443</td><td>Digital Thermometer</td><td>2, 4, 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00443.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>7</td><td>25-1390-052</td><td>B00445</td><td>Digital Thermometer</td><td>2, 4, 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00445.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>8</td><td>25-1390-053</td><td>B00446</td><td>Digital Thermometer</td><td>2, 4, 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00446.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>9</td><td>25-1390-050</td><td>B00450</td><td>Digital Thermometer</td><td>2, 4, 8 °C</td><td>Special Lab</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td>N/A</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/digital thermomoter-SP-00450.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>10</td><td>25-1390-139</td><td>B00988</td><td>Thermo-Hygrometer</td><td>23, 25 °C / 50, 65 %RH</td><td>Humidity &amp; Temp Lab</td><td>3 Nov 2025</td><td><span class="badge pass">PASS</span></td><td><span class="badge pass">PASS</span></td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/Digital Themo5-SP.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr style="background:#fff5f5"><td>11</td><td>25-1390-141</td><td>B00987</td><td>Thermo-Hygrometer</td><td>23, 25 °C / 50, 65 %RH</td><td>Humidity &amp; Temp Lab</td><td>3 Nov 2025</td><td><span class="badge pass">PASS</span></td><td><span class="badge fail">FAIL</span></td><td><span class="badge fail">FAIL</span></td><td><a class="pdf-link" href="pdf/Digital Themo6-SP.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── LAMINAR FLOW ── -->
+<div id="laminar" class="panel">
+  <div class="section-title">💨 Laminar Flow</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>เลขที่ใบรับรอง</th><th>ผู้ผลิต</th><th>รุ่น</th><th>หมายเลขเครื่อง</th><th>รหัสครุภัณฑ์</th><th>ทิศทางลม</th><th>ห้องติดตั้ง</th><th>วันที่ทดสอบ</th><th>ผล</th><th>ใบรับรอง PDF</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>25-1390-105</td><td>BIOBASE</td><td>BBS-V800</td><td>BBS8V1909291 D</td><td>6530-032-0009-1/63</td><td>Horizontal</td><td>Special Lab</td><td>28 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/Lamina Flow-special lab.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── TEMPERATURE CONTROL ── -->
+<div id="temp-control" class="panel">
+  <div class="section-title">❄️ Temperature Controlled Enclosures</div>
+  <div class="warn-box"><strong>⚠ LG GR-212DLN (Cert 25-1390-162): FAIL</strong> Bottom compartment — Position #1 = 8.41°C &gt; Upper Limit 8.0°C (MPE 2–8°C)</div>
+  <table>
+    <thead>
+      <tr><th>#</th><th>เลขที่ใบรับรอง</th><th>ประเภท</th><th>ผู้ผลิต</th><th>รุ่น</th><th>หมายเลขเครื่อง</th><th>รหัสครุภัณฑ์</th><th>จุดสอบเทียบ</th><th>MPE</th><th>วันที่สอบเทียบ</th><th>ผล</th><th>ใบรับรอง PDF</th></tr>
+    </thead>
+    <tbody>
+      <tr class="sub-header"><td colspan="12">▸ Enclosure</td></tr>
+      <tr style="background:#fff5f5"><td>1</td><td>25-1390-162</td><td>Enclosure</td><td>LG</td><td>GR-212DLN</td><td>410IN00360</td><td>N/A</td><td>Top -20°C / Bottom 4°C</td><td>≤-18°C / 2-8°C</td><td>28 Oct 2025</td><td><span class="badge fail">FAIL</span></td><td><a class="pdf-link" href="pdf/temperature control enclosrue-SP.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-086</td><td>Enclosure</td><td>SHARP</td><td>SJ-S25E-SL</td><td>T 140602092</td><td>4110-001-0007-1/58</td><td>Top -20°C / Bottom 4°C</td><td>≤-18°C / 2-8°C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control enclosrue-SP-07-1-58.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+
+      <tr class="sub-header"><td colspan="12">▸ Freezer</td></tr>
+      <tr><td>1</td><td>25-1390-067</td><td>Freezer</td><td>ANTECH</td><td>REF-203</td><td>N/A</td><td>6530-032-0002-1/63</td><td>-20 °C</td><td>≤-18 °C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Freeze-SP-02-1-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-136</td><td>Freezer</td><td>ANTECH</td><td>MDF-40U525</td><td>5452 5070...</td><td>6530-032-0003-1/63</td><td>-40 °C</td><td>≤-35 °C</td><td>28 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Freeze-SP.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>3</td><td>25-1390-070</td><td>Freezer</td><td>Haier</td><td>DW-40L262</td><td>BE02Q4E1...</td><td>4110-007-0003-1/58</td><td>-40 °C</td><td>≤-35 °C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Freeze-SP-03-1-58.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>4</td><td>25-1390-066</td><td>Freezer</td><td>TRIMOND</td><td>TCF-600N</td><td>FN6001E0...</td><td>4110-007-0006-1/64</td><td>-20 °C</td><td>≤-18 °C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Freeze-SP-06-1-64.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+
+      <tr class="sub-header"><td colspan="12">▸ Refrigerator</td></tr>
+      <tr><td>1</td><td>25-1390-078</td><td>Refrigerator</td><td>SANDENINTERCOOL</td><td>SPA-0303D41A</td><td>SPA0303-190602731</td><td>4110-007-0002-1/63</td><td>4 °C</td><td>2-8 °C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Refregerator-SP-02-1-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>2</td><td>25-1390-080</td><td>Refrigerator</td><td>SANDENINTERCOOL</td><td>SPA-0303D41A</td><td>SPA0303-190602730</td><td>4110-007-0002-2/63</td><td>4 °C</td><td>2-8 °C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Refregerator-SP-02-2-63.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+      <tr><td>3</td><td>25-1390-079</td><td>Refrigerator</td><td>Sunhui</td><td>LD2 DC 70</td><td>5341</td><td>4110-007-0004-1/55</td><td>4 °C</td><td>2-8 °C</td><td>27 Oct 2025</td><td><span class="badge pass">PASS</span></td><td><a class="pdf-link" href="pdf/temperature control Refregerator-SP-04-1-55.pdf"><span class="pdf-icon">📄</span>ใบรับรอง</a></td></tr>
+    </tbody>
+  </table>
+</div>
+
+</div><!-- /panels -->
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
