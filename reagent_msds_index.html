@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>รายการ MSDS และ Reagent</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 24px;
+    color: #222;
+  }
+  h1 {
+    text-align: center;
+    color: #1a3a6b;
+    margin-bottom: 8px;
+    font-size: 1.6rem;
+  }
+  .subtitle {
+    text-align: center;
+    color: #555;
+    margin-bottom: 32px;
+    font-size: 0.95rem;
+  }
+  .section {
+    margin-bottom: 36px;
+  }
+  .section-title {
+    background: #1a3a6b;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 6px 6px 0 0;
+    font-size: 1.05rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .icon { font-size: 1.2rem; }
+  .category-block {
+    background: #fff;
+    border: 1px solid #d0d8e8;
+    border-top: none;
+  }
+  .category-block:last-child {
+    border-radius: 0 0 6px 6px;
+  }
+  .category-header {
+    background: #e8eef8;
+    padding: 8px 18px;
+    font-weight: bold;
+    color: #1a3a6b;
+    font-size: 0.92rem;
+    border-top: 1px solid #d0d8e8;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th {
+    background: #f0f4fb;
+    padding: 9px 16px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: #444;
+    border-bottom: 1px solid #d0d8e8;
+  }
+  td {
+    padding: 9px 16px;
+    border-bottom: 1px solid #eef0f4;
+    font-size: 0.88rem;
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7f9fe; }
+  a {
+    color: #1a6bb5;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  a:hover { text-decoration: underline; color: #0e4a80; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+  .badge-msds { background: #fff3cd; color: #856404; }
+  .badge-reagent { background: #d1e7dd; color: #0a5236; }
+  .badge-pi { background: #cfe2ff; color: #084298; }
+  .pdf-icon { color: #e53e3e; margin-right: 4px; }
+  .footer {
+    text-align: center;
+    color: #888;
+    font-size: 0.8rem;
+    margin-top: 32px;
+  }
+</style>
+</head>
+<body>
+
+<h1>📋 รายการเอกสาร MSDS และ Reagent</h1>
+<p class="subtitle">จัดหมวดหมู่ตามชนิด Reagent | คลิก 🔗 เพื่อเปิดเอกสาร PDF</p>
+
+<!-- ====== SECTION 1: MSDS ====== -->
+<div class="section">
+  <div class="section-title">
+    <span class="icon">⚠️</span> MSDS (Material Safety Data Sheet) — เอกสารความปลอดภัยสารเคมี
+  </div>
+
+  <!-- Flow Cytometry MSDS -->
+  <div class="category-block">
+    <div class="category-header">🔬 Flow Cytometry Reagents</div>
+    <table>
+      <tr>
+        <th>#</th><th>ชื่อสาร / Reagent</th><th>ประเภทเอกสาร</th><th>เปิดเอกสาร</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Lysis Buffer</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS_Lysis buffer.pdf" target="_blank">🔗 MSDS_Lysis buffer.pdf</a></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>MGP (Mobile Gun Phase)</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS_MGP.pdf" target="_blank">🔗 MSDS_MGP.pdf</a></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>Specimen Diluent</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS_Specimen diluent.pdf" target="_blank">🔗 MSDS_Specimen diluent.pdf</a></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>Wash Reagent</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS_Wash reagent.pdf" target="_blank">🔗 MSDS_Wash reagent.pdf</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Molecular / cobas MSDS -->
+  <div class="category-block">
+    <div class="category-header">🧬 Molecular Diagnostics (cobas / Roche)</div>
+    <table>
+      <tr>
+        <th>#</th><th>ชื่อสาร / Reagent</th><th>ประเภทเอกสาร</th><th>เปิดเอกสาร</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>cobas HIV-1</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS_cobas HIV-1.pdf" target="_blank">🔗 MSDS_cobas HIV-1.pdf</a></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>cobas HPV</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS_cobas HPV.pdf" target="_blank">🔗 MSDS_cobas HPV.pdf</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- COVID-19 MSDS -->
+  <div class="category-block">
+    <div class="category-header">🦠 Infectious Disease — COVID-19</div>
+    <table>
+      <tr>
+        <th>#</th><th>ชื่อสาร / Reagent</th><th>ประเภทเอกสาร</th><th>เปิดเอกสาร</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>2019-nCoV (SARS-CoV-2)</td>
+        <td><span class="badge badge-msds">MSDS</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/MSDS  2019-nCoV.pdf" target="_blank">🔗 MSDS 2019-nCoV.pdf</a></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ====== SECTION 2: REAGENT / PRODUCT INSERT ====== -->
+<div class="section">
+  <div class="section-title">
+    <span class="icon">🧪</span> Reagent Documents — Package Insert / คู่มือการใช้งาน
+  </div>
+
+  <!-- BD Flow Cytometry -->
+  <div class="category-block">
+    <div class="category-header">🔬 Flow Cytometry — BD Biosciences</div>
+    <table>
+      <tr>
+        <th>#</th><th>ชื่อ Reagent</th><th>การใช้งาน</th><th>ประเภทเอกสาร</th><th>เปิดเอกสาร</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>BD Calibrite™ 3-Color Kit</td>
+        <td>ปรับ Calibration เครื่อง Flow Cytometer</td>
+        <td><span class="badge badge-reagent">Reagent PI</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/BD Calibrite™ 3-color kit-ec9d4b75.pdf" target="_blank">🔗 BD Calibrite™ 3-color kit-ec9d4b75.pdf</a></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>BD FACSClean™</td>
+        <td>น้ำยาทำความสะอาดระบบ FACS</td>
+        <td><span class="badge badge-reagent">Reagent PI</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/BD FACSClean™-6b97fea7.pdf" target="_blank">🔗 BD FACSClean™-6b97fea7.pdf</a></td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>BD FACS™ Lysing Solution</td>
+        <td>น้ำยา Lyse เม็ดเลือดแดง</td>
+        <td><span class="badge badge-reagent">Reagent PI</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/BD FACS™ Lysing-9be88d68.pdf" target="_blank">🔗 BD FACS™ Lysing-9be88d68.pdf</a></td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>BD Tritest™ CD3/CD4/CD45</td>
+        <td>Antibody panel สำหรับนับ T lymphocyte</td>
+        <td><span class="badge badge-reagent">Reagent PI</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/BD Tritest™ CD3CD4CD45-d874fbc6.pdf" target="_blank">🔗 BD Tritest™ CD3CD4CD45-d874fbc6.pdf</a></td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>BD Trucount™ Tubes</td>
+        <td>Tube สำหรับ Absolute Count</td>
+        <td><span class="badge badge-reagent">Reagent PI</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/BD Trucount™ Tubes-c639f26c.pdf" target="_blank">🔗 BD Trucount™ Tubes-c639f26c.pdf</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Molecular / cobas -->
+  <div class="category-block">
+    <div class="category-header">🧬 Molecular Diagnostics (cobas / Roche)</div>
+    <table>
+      <tr>
+        <th>#</th><th>ชื่อ Reagent</th><th>การใช้งาน</th><th>ประเภทเอกสาร</th><th>เปิดเอกสาร</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>cobas HPV Test</td>
+        <td>ตรวจ Human Papillomavirus (HPV) DNA</td>
+        <td><span class="badge badge-pi">Package Insert</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/cobas HPV.pdf" target="_blank">🔗 cobas HPV.pdf</a></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>cobas HIV-1 Quantitative NAT</td>
+        <td>ตรวจ HIV-1 Viral Load (cobas 5800/6800/8800)</td>
+        <td><span class="badge badge-pi">Package Insert</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/HIV-1 Quantitative nucleic acid test for use on the cobas® 580068008800 Systems Rev 4.1.pdf" target="_blank">🔗 HIV-1 cobas NAT Rev 4.1.pdf</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- COVID-19 -->
+  <div class="category-block">
+    <div class="category-header">🦠 Infectious Disease — COVID-19</div>
+    <table>
+      <tr>
+        <th>#</th><th>ชื่อ Reagent</th><th>การใช้งาน</th><th>ประเภทเอกสาร</th><th>เปิดเอกสาร</th>
+      </tr>
+      <tr>
+        <td>1</td>
+        <td>Novel Coronavirus (2019-nCoV) Nucleic Acid Diagnostic Kit</td>
+        <td>ตรวจหาแอนติเจน SARS-CoV-2 (Rapid Test)</td>
+        <td><span class="badge badge-pi">Package Insert</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/[PI] S3102E Noval Coronavirus V08-20220718-28c7af73.pdf" target="_blank">🔗 [PI] S3102E Noval Coronavirus V08-20220718.pdf</a></td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Sample Release Reagent — S1014E</td>
+        <td>น้ำยา Release ตัวอย่าง สำหรับใช้กับ COVID-19 Ag Test (RUO)</td>
+        <td><span class="badge badge-reagent">Manual</span></td>
+        <td><a href="file:///C:/Users/lookt/AppData/Roaming/Claude/local-agent-mode-sessions/208fede5-a6b5-4868-8532-7b61630b87bd/70e5568d-aa46-46fd-9334-021919d831ec/local_1c76a74f-9bd4-4aa5-a5e8-6a639da62013/uploads/Manual-Sample-Release-Reagent-S1014E-RUO-20200623.pdf" target="_blank">🔗 Manual-Sample-Release-Reagent-S1014E-RUO.pdf</a></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="footer">จัดทำโดย Claude · อัปเดตวันที่ 14 มิถุนายน 2569</div>
+
+</body>
+</html>
