@@ -25,13 +25,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;min-height:100vh}
 
-/* ── HEADER ── */
-.page-header{
-  background:linear-gradient(135deg,#f8d0dc 0%,#fce4ec 50%,#fdf0f8 100%);
-  padding:2rem 2.5rem 1.8rem;
-  border-bottom:1px solid var(--border2);
-  position:relative;overflow:hidden;
-}
+.page-header{background:linear-gradient(135deg,#f8d0dc 0%,#fce4ec 50%,#fdf0f8 100%);padding:2rem 2.5rem 1.8rem;border-bottom:1px solid var(--border2);position:relative;overflow:hidden;}
 .page-header::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(201,104,126,.08);}
 .page-header::after{content:'';position:absolute;bottom:-40px;left:20%;width:140px;height:140px;border-radius:50%;background:rgba(244,160,184,.06);}
 .header-inner{position:relative;z-index:1;max-width:960px;margin:0 auto}
@@ -43,14 +37,11 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .meta-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.7);color:var(--text2);font-size:11px;font-weight:600;padding:4px 12px;border-radius:99px;border:1px solid var(--border2);backdrop-filter:blur(4px);}
 #live-time{font-weight:700;color:var(--rose-dark)}
 
-/* ── CONTAINER ── */
 .container{max-width:960px;margin:0 auto;padding:2rem 1.5rem 4rem}
 
-/* ── SECTION TITLE ── */
 .section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;margin-top:8px;display:flex;align-items:center;gap:8px;}
 .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* ── STAT STRIP ── */
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:2rem;}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.2rem;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:4px;}
 .stat-card .s-icon{font-size:24px;margin-bottom:4px}
@@ -61,7 +52,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .sc-mint{border-left:3px solid #58c890}.sc-mint .s-val{color:var(--mint-dark)}
 .sc-gold{border-left:3px solid #e0b030}.sc-gold .s-val{color:var(--gold-dark)}
 
-/* ── MODULE GRID ── */
 .module-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:2rem;}
 .module-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.6rem;box-shadow:var(--shadow);cursor:pointer;transition:transform .2s,box-shadow .2s,border-color .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;}
 .module-card::before{content:'';position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;transform:translate(30px,-30px);opacity:.12;transition:opacity .2s;}
@@ -101,7 +91,6 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .tag-gray{background:#f0eded;color:#7a7a8a}
 .tag-teal{background:var(--teal-light);color:var(--teal-dark)}
 .tag-pass{background:#d4edda;color:#155724}
-.tag-fail{background:#f8d7da;color:#721c24}
 .tag-navy{background:#e8edf8;color:#1a3a6b}
 
 .mc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);}
@@ -113,18 +102,15 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .coming-soon{position:relative;pointer-events:none;opacity:.55;}
 .cs-badge{position:absolute;top:10px;right:10px;z-index:2;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f0eded;color:#9a8a8e;border:1px solid #e0d8da;letter-spacing:.4px;}
 
-/* ── QUICK LINKS ── */
 .quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:2rem}
 .qlink{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.8rem 1rem;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);transition:background .18s,border-color .18s,transform .18s;box-shadow:0 1px 6px rgba(180,80,100,.05);}
 .qlink:hover{background:var(--rose-light);border-color:var(--rose-mid);transform:translateY(-2px)}
 .qlink-icon{font-size:18px;flex-shrink:0}
 .qlink-text{font-size:12px;font-weight:600;color:var(--text2);line-height:1.3}
 
-/* ── NOTICE ── */
 .notice{background:linear-gradient(135deg,var(--gold-light),#fffbf0);border:1px solid var(--gold-mid);border-radius:var(--radius-sm);padding:.9rem 1.2rem;display:flex;align-items:flex-start;gap:10px;margin-bottom:2rem;font-size:12.5px;color:var(--gold-dark);}
 .notice-icon{font-size:18px;flex-shrink:0;margin-top:1px}
 
-/* ── FOOTER ── */
 .page-footer{text-align:center;font-size:11px;color:var(--text3);padding:1.5rem;border-top:1px solid var(--border);background:var(--blush);}
 
 @media(max-width:640px){
@@ -230,7 +216,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       </div>
     </a>
 
-    <!-- ★ แทนที่การ์ด Hematology ด้วย HPV IQC Dashboard ★ -->
+    <!-- HPV IQC Dashboard แทนที่ Hematology -->
     <a href="HPV_IQC_Dashboard.html" class="module-card mc-navy">
       <div class="mc-head">
         <div class="mc-icon-box">📈</div>
@@ -316,8 +302,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       </div>
     </a>
 
-    <div class="module-card mc-purple coming-soon">
-      <span class="cs-badge">เร็วๆ นี้</span>
+    <!-- EQA การ์ดที่ user บอกว่าหาย — ใส่กลับ -->
+    <a href="EQA_index.html" class="module-card mc-purple">
       <div class="mc-head">
         <div class="mc-icon-box">📊</div>
         <div>
@@ -328,10 +314,14 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       <div class="mc-tags">
         <span class="mc-tag tag-purple">EQA</span>
         <span class="mc-tag tag-purple">PT</span>
-        <span class="mc-tag tag-gray">Coming soon</span>
+        <span class="mc-tag tag-pass">Excellent 100%</span>
+        <span class="mc-tag tag-gray">สวส. · QCMD · 2566–2569</span>
       </div>
-      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
-    </div>
+      <div class="mc-footer">
+        <span>สรุปผลทุกปี</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </a>
 
     <a href="maintenance.html" class="module-card mc-sky">
       <div class="mc-head">
@@ -347,22 +337,25 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
     </a>
 
-    <div class="module-card mc-mint coming-soon">
-      <span class="cs-badge">เร็วๆ นี้</span>
+    <!-- SOP การ์ดที่ user บอกว่าหาย — ใส่กลับ -->
+    <a href="reagent_msds_index.html" class="module-card mc-mint">
       <div class="mc-head">
-        <div class="mc-icon-box">📄</div>
+        <div class="mc-icon-box">📋</div>
         <div>
-          <div class="mc-title">SOP & Document Library</div>
-          <div class="mc-desc">คลังเอกสาร SOP, Work Instruction<br>และแบบฟอร์มมาตรฐาน</div>
+          <div class="mc-title">MSDS & Reagent Documents</div>
+          <div class="mc-desc">รายการ MSDS และ Package Insert<br>Flow Cytometry · cobas Molecular · COVID-19</div>
         </div>
       </div>
       <div class="mc-tags">
-        <span class="mc-tag tag-mint">SOP</span>
-        <span class="mc-tag tag-mint">Documents</span>
-        <span class="mc-tag tag-gray">Coming soon</span>
+        <span class="mc-tag tag-mint">MSDS</span>
+        <span class="mc-tag tag-mint">Reagent PI</span>
+        <span class="mc-tag tag-gray">16 เอกสาร</span>
       </div>
-      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
-    </div>
+      <div class="mc-footer">
+        <span>ลิงก์ PDF ผ่าน Google Drive</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </a>
 
   </div>
 
@@ -381,16 +374,24 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       <span class="qlink-icon">📊</span>
       <span class="qlink-text">IQC HPV<br>ข้อมูล Excel</span>
     </a>
-    <a href="inventory.html" class="qlink">
-      <span class="qlink-icon">📦</span>
-      <span class="qlink-text">Inventory<br>2026</span>
-    </a>
     <a href="IQC_HIV_VL_Generator.html" class="qlink">
       <span class="qlink-icon">🧫</span>
       <span class="qlink-text">IQC HIV VL<br>บันทึกผลใหม่</span>
     </a>
-    <a href="Calibration_Dashboard.html" class="qlink">
+    <a href="inventory.html" class="qlink">
+      <span class="qlink-icon">📦</span>
+      <span class="qlink-text">Inventory<br>2026</span>
+    </a>
+    <a href="EQA_index.html" class="qlink">
       <span class="qlink-icon">📊</span>
+      <span class="qlink-text">EQA / PT<br>Summary</span>
+    </a>
+    <a href="reagent_msds_index.html" class="qlink">
+      <span class="qlink-icon">📋</span>
+      <span class="qlink-text">MSDS &amp;<br>Reagent Docs</span>
+    </a>
+    <a href="Calibration_Dashboard.html" class="qlink">
+      <span class="qlink-icon">🔬</span>
       <span class="qlink-text">Calibration<br>Dashboard</span>
     </a>
   </div>
