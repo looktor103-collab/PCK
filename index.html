@@ -75,7 +75,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .mc-peach{border-top:3px solid #e8844a}.mc-peach::before{background:#e8844a}
 .mc-gold{border-top:3px solid #e0b030}.mc-gold::before{background:#e0b030}
 .mc-teal{border-top:3px solid var(--teal-mid)}.mc-teal::before{background:var(--teal-mid)}
-.mc-indigo{border-top:3px solid #6366f1}.mc-indigo::before{background:#6366f1}
+.mc-navy{border-top:3px solid #1a3a6b}.mc-navy::before{background:#1a3a6b}
 
 .mc-head{display:flex;align-items:flex-start;gap:12px}
 .mc-icon-box{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
@@ -86,7 +86,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .mc-peach .mc-icon-box{background:var(--peach)}
 .mc-gold .mc-icon-box{background:var(--gold-light)}
 .mc-teal .mc-icon-box{background:var(--teal-light)}
-.mc-indigo .mc-icon-box{background:#eef2ff}
+.mc-navy .mc-icon-box{background:#e8edf8}
 
 .mc-title{font-size:14px;font-weight:700;color:var(--text);line-height:1.3}
 .mc-desc{font-size:12px;color:var(--text2);line-height:1.5}
@@ -102,13 +102,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .tag-teal{background:var(--teal-light);color:var(--teal-dark)}
 .tag-pass{background:#d4edda;color:#155724}
 .tag-fail{background:#f8d7da;color:#721c24}
-.tag-indigo{background:#eef2ff;color:#4338ca}
+.tag-navy{background:#e8edf8;color:#1a3a6b}
 
 .mc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);}
 .mc-arrow{width:26px;height:26px;border-radius:50%;background:var(--blush);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s,transform .2s;}
 .module-card:hover .mc-arrow{background:var(--rose-light);transform:translateX(3px)}
 .mc-teal:hover .mc-arrow{background:var(--teal-light) !important}
-.mc-indigo:hover .mc-arrow{background:#eef2ff !important}
+.mc-navy:hover .mc-arrow{background:#e8edf8 !important}
 
 .coming-soon{position:relative;pointer-events:none;opacity:.55;}
 .cs-badge{position:absolute;top:10px;right:10px;z-index:2;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:#f0eded;color:#9a8a8e;border:1px solid #e0d8da;letter-spacing:.4px;}
@@ -160,7 +160,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
   <div class="stat-strip">
     <div class="stat-card sc-rose">
       <div class="s-icon">🧬</div>
-      <div class="s-val">2</div>
+      <div class="s-val">3</div>
       <div class="s-lbl">แบบฟอร์ม IQC ที่ใช้งาน</div>
     </div>
     <div class="stat-card sc-sky">
@@ -230,21 +230,25 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       </div>
     </a>
 
-    <div class="module-card mc-mint coming-soon">
-      <span class="cs-badge">เร็วๆ นี้</span>
+    <!-- ★ แทนที่การ์ด Hematology ด้วย HPV IQC Dashboard ★ -->
+    <a href="HPV_IQC_Dashboard.html" class="module-card mc-navy">
       <div class="mc-head">
-        <div class="mc-icon-box">🩸</div>
+        <div class="mc-icon-box">📈</div>
         <div>
-          <div class="mc-title">IQC — Hematology</div>
-          <div class="mc-desc">บันทึกผล QC สำหรับเครื่องนับเม็ดเลือด<br>(CBC / Diff)</div>
+          <div class="mc-title">HPV IQC Dashboard</div>
+          <div class="mc-desc">กราฟ Levey-Jennings &amp; Westgard Multi-Rule<br>วิเคราะห์ QC trend แบบ interactive</div>
         </div>
       </div>
       <div class="mc-tags">
-        <span class="mc-tag tag-mint">Hematology</span>
-        <span class="mc-tag tag-gray">Coming soon</span>
+        <span class="mc-tag tag-navy">Levey-Jennings</span>
+        <span class="mc-tag tag-navy">Westgard Rules</span>
+        <span class="mc-tag tag-pass">IQC Analytics</span>
       </div>
-      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
-    </div>
+      <div class="mc-footer">
+        <span>ดู trend &amp; violations รายเดือน</span>
+        <div class="mc-arrow">→</div>
+      </div>
+    </a>
 
   </div>
 
@@ -312,7 +316,8 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       </div>
     </a>
 
-    <a href="EQA_index.html" class="module-card mc-purple">
+    <div class="module-card mc-purple coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
       <div class="mc-head">
         <div class="mc-icon-box">📊</div>
         <div>
@@ -323,14 +328,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       <div class="mc-tags">
         <span class="mc-tag tag-purple">EQA</span>
         <span class="mc-tag tag-purple">PT</span>
-        <span class="mc-tag tag-pass">Excellent 100%</span>
-        <span class="mc-tag tag-gray">สวส. · QCMD · 2566–2569</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
       </div>
-      <div class="mc-footer">
-        <span>สรุปผลทุกปี</span>
-        <div class="mc-arrow">→</div>
-      </div>
-    </a>
+      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
+    </div>
 
     <a href="maintenance.html" class="module-card mc-sky">
       <div class="mc-head">
@@ -344,27 +345,24 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
         <span class="mc-tag tag-sky">Maintenance</span>
       </div>
       <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
-    </div>
+    </a>
 
-    <!-- ★ MSDS & Reagent Documents ★ -->
-    <a href="reagent_msds_index.html" class="module-card mc-indigo">
+    <div class="module-card mc-mint coming-soon">
+      <span class="cs-badge">เร็วๆ นี้</span>
       <div class="mc-head">
-        <div class="mc-icon-box">📋</div>
+        <div class="mc-icon-box">📄</div>
         <div>
-          <div class="mc-title">MSDS & Reagent Documents</div>
-          <div class="mc-desc">รายการ MSDS และ Package Insert<br>Flow Cytometry · cobas Molecular · COVID-19</div>
+          <div class="mc-title">SOP & Document Library</div>
+          <div class="mc-desc">คลังเอกสาร SOP, Work Instruction<br>และแบบฟอร์มมาตรฐาน</div>
         </div>
       </div>
       <div class="mc-tags">
-        <span class="mc-tag tag-indigo">MSDS</span>
-        <span class="mc-tag tag-indigo">Reagent PI</span>
-        <span class="mc-tag tag-gray">16 เอกสาร</span>
+        <span class="mc-tag tag-mint">SOP</span>
+        <span class="mc-tag tag-mint">Documents</span>
+        <span class="mc-tag tag-gray">Coming soon</span>
       </div>
-      <div class="mc-footer">
-        <span>ลิงก์ PDF ผ่าน Google Drive</span>
-        <div class="mc-arrow">→</div>
-      </div>
-    </a>
+      <div class="mc-footer"><span>—</span><div class="mc-arrow">→</div></div>
+    </div>
 
   </div>
 
@@ -374,6 +372,10 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
     <a href="IQC_cobas_HPV .html" class="qlink">
       <span class="qlink-icon">🧬</span>
       <span class="qlink-text">IQC HPV<br>บันทึกผลใหม่</span>
+    </a>
+    <a href="HPV_IQC_Dashboard.html" class="qlink">
+      <span class="qlink-icon">📈</span>
+      <span class="qlink-text">HPV IQC Dashboard<br>Levey-Jennings</span>
     </a>
     <a href="IQC_COBAS_HPV.xlsx" class="qlink">
       <span class="qlink-icon">📊</span>
@@ -391,21 +393,13 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
       <span class="qlink-icon">📊</span>
       <span class="qlink-text">Calibration<br>Dashboard</span>
     </a>
-    <a href="reagent_msds_index.html" class="qlink">
-      <span class="qlink-icon">📋</span>
-      <span class="qlink-text">MSDS &amp; Reagent<br>Documents</span>
-    </a>
-    <a href="#" class="qlink" style="opacity:.45;pointer-events:none">
-      <span class="qlink-icon">🩸</span>
-      <span class="qlink-text">IQC Hematology<br><em style="font-weight:400">เร็วๆ นี้</em></span>
-    </a>
   </div>
 
 </div>
 
 <div class="page-footer">
   ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp;
-  Laboratory Dashboard v1.3 &nbsp;·&nbsp; 2026
+  Laboratory Dashboard v1.4 &nbsp;·&nbsp; 2026
 </div>
 
 <script>
