@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Inventory 2026 v3 — ร.พ.พระจอมเกล้า เพชรบุรี</title>
+<title>Inventory 2026 v3.1 — ร.พ.พระจอมเกล้า เพชรบุรี</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -89,9 +89,9 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .mod-nav::-webkit-scrollbar{height:3px}
 .mod-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:2px}
 .mod-item{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:.75rem 1.1rem;font-size:13px;font-weight:600;
-  color:rgba(255,255,255,.72);cursor:pointer;user-select:none;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:.8rem 1.15rem;font-size:13px;font-weight:600;letter-spacing:.01em;
+  color:rgba(255,255,255,.74);cursor:pointer;user-select:none;
   border-bottom:3px solid transparent;transition:all .18s;
 }
 .mod-item:hover{color:white;background:rgba(255,255,255,.08)}
@@ -197,6 +197,8 @@ tr.lot-row td{background:#fdf8f9 !important;font-size:12px;color:var(--text2);bo
 tr.lot-row td:first-child{padding-left:32px}
 .lot-tag{display:inline-block;font-family:'Consolas',monospace;font-size:11px;font-weight:700;background:var(--purple-light);color:var(--purple-dark);padding:1px 8px;border-radius:5px;border:1px solid var(--purple-mid)}
 .fefo-tag{display:inline-block;font-size:10px;font-weight:700;background:var(--mint);color:var(--mint-dark);padding:1px 7px;border-radius:99px;margin-left:5px}
+.new-tag{display:inline-block;font-size:10px;font-weight:700;background:var(--gold-light);color:var(--gold-dark);padding:1px 7px;border-radius:99px;border:1px solid var(--gold-mid);margin-left:5px}
+.new-item-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--gold-light);border:1px dashed var(--gold-mid);border-radius:var(--radius-sm);padding:.6rem .85rem;margin-bottom:12px;font-size:12px;color:var(--gold-dark)}
 /* BADGES */
 .sbadge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
 .sb-order  {background:var(--sky);color:var(--sky-dark);border:1px solid #90c8e8}
@@ -204,6 +206,7 @@ tr.lot-row td:first-child{padding-left:32px}
 .sb-done   {background:var(--mint);color:var(--mint-dark);border:1px solid #90c8a8}
 .sb-borrow {background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--purple-mid)}
 .sb-overdue{background:var(--red-bg);color:var(--red-txt);border:1px solid #f4a0b0}
+.sb-ship   {background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--purple-mid)}
 .sb-none   {background:#f0eded;color:#8a8a9a;border:1px solid #ddd}
 .sb-in     {background:var(--mint);color:var(--mint-dark);border:1px solid #90c8a8}
 .sb-out    {background:var(--rose-light);color:var(--rose-dark);border:1px solid var(--rose-mid)}
@@ -223,8 +226,10 @@ tr.lot-row td:first-child{padding-left:32px}
 .pb-cd4{background:#cff4fc;color:#0c5460;border:1px solid #9ee}
 .pb-other{background:#f0eded;color:#7a7a8a;border:1px solid #ddd}
 .exp-ok{color:var(--text2)}
-.exp-warn{color:var(--peach-dark);font-weight:600}
-.exp-alert{color:var(--red-txt);font-weight:700}
+.exp-warn{color:var(--peach-dark);font-weight:600}          /* ส้ม  — ภายใน 60 วัน */
+.exp-caution{color:var(--gold-dark);font-weight:700}        /* เหลือง — ภายใน 30 วัน */
+.exp-alert{color:var(--red-txt);font-weight:700}            /* แดง  — เลยกำหนดแล้ว */
+.stk-caution{color:var(--gold-dark);font-weight:700}
 .item-cell{font-weight:600}
 .cost-cell{font-weight:600;color:var(--gold-dark);white-space:nowrap}
 .qty-in{color:var(--mint-dark);font-weight:700}
@@ -415,6 +420,97 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
 .toast.info{border-left:3px solid #5aaced;color:var(--sky-dark)}
 @keyframes slideIn{from{transform:translateX(80px);opacity:0}to{transform:none;opacity:1}}
 .page-footer{text-align:center;font-size:11px;color:var(--text3);padding:1.5rem;border-top:1px solid var(--border);background:var(--blush)}
+/* ═══════════ EXECUTIVE DASHBOARD ═══════════ */
+.viz{
+  --surface:#ffffff; --page:#fdf8f9;
+  --ink-1:#1c1419; --ink-2:#5c4b53; --ink-3:#8d7b83;
+  --grid:#ece3e7; --axis:#d8cad1;
+  /* categorical — ลำดับนี้ผ่านการตรวจ CVD/contrast ทั้ง 5 ข้อ ห้ามสลับลำดับ */
+  --s1:#a05020; --s2:#1a5a8a; --s3:#8a6000; --s4:#5b3fa0; --s5:#1e6b40; --s6:#c9687e;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --demote:#c9bcc3;
+}
+.exec-band{
+  position:relative;background:linear-gradient(120deg,#ffffff 0%,#fffaf0 55%,#fdf2f6 100%);
+  border:1px solid var(--border);border-left:4px solid #d89010;border-radius:var(--radius);
+  padding:1.5rem 1.8rem;margin-bottom:1.1rem;
+  display:flex;gap:2rem;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  box-shadow:0 1px 3px rgba(140,70,90,.06);
+}
+.exec-eyebrow{font-size:11px;font-weight:700;letter-spacing:.09em;color:#a07a20;text-transform:uppercase;margin-bottom:.55rem}
+.exec-hero{display:flex;align-items:baseline;gap:.5rem;line-height:1}
+.exec-hero-val{font-size:56px;font-weight:700;color:var(--rose-dark);letter-spacing:-.02em}
+.exec-hero-val.calm{color:var(--mint-dark)}
+.exec-hero-unit{font-size:16px;font-weight:600;color:var(--text2)}
+.exec-hero-label{font-size:14px;font-weight:600;color:var(--text);margin-top:.5rem}
+.exec-sub{font-size:12.5px;color:var(--text2);margin-top:.3rem;line-height:1.75;max-width:46ch}
+.exec-side{display:flex;gap:2rem;flex-wrap:wrap}
+.exec-stat{min-width:104px}
+.exec-stat .v{font-size:22px;font-weight:700;color:var(--text);line-height:1.1}
+.exec-stat .l{font-size:11px;color:var(--text3);font-weight:600;margin-top:3px;letter-spacing:.02em}
+.exec-rule{width:1px;align-self:stretch;background:var(--border)}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:12px;margin-bottom:1.1rem}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1rem 1.1rem;box-shadow:0 1px 3px rgba(140,70,90,.05);
+  display:flex;flex-direction:column;gap:.35rem;min-height:104px;
+}
+.kpi-label{font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.kpi-val{font-size:27px;font-weight:700;color:var(--text);line-height:1.05}
+.kpi-val .u{font-size:13px;font-weight:600;color:var(--text3);margin-left:4px}
+.kpi-foot{font-size:11.5px;color:var(--text2);margin-top:auto;display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.dot-good{background:var(--good)}.dot-warn{background:var(--warn)}
+.dot-serious{background:var(--serious)}.dot-crit{background:var(--crit)}
+.kpi-meter{height:6px;border-radius:99px;background:#efe6ea;overflow:hidden;margin-top:2px}
+.kpi-meter > i{display:block;height:100%;border-radius:99px}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:0 1px 3px rgba(140,70,90,.05);overflow:hidden;margin-bottom:1.1rem}
+.panel-head{padding:.95rem 1.2rem .8rem;border-bottom:1px solid var(--border);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.panel-title{font-size:13.5px;font-weight:700;color:var(--text);letter-spacing:.01em}
+.panel-desc{font-size:11.5px;color:var(--text3);margin-top:2px}
+.panel-body{padding:1.1rem 1.2rem 1.2rem}
+.chart-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;margin-bottom:0;align-items:start}
+@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
+
+.viz-legend{display:flex;flex-wrap:wrap;gap:.45rem 1.1rem;margin-top:.9rem}
+.viz-legend .lg{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
+.viz-legend .sw{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.viz-legend .lgv{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+.viz-empty{padding:2.2rem 1rem;text-align:center;color:var(--text3);font-size:12.5px}
+.viz-tip{
+  position:fixed;z-index:3000;pointer-events:none;opacity:0;transition:opacity .12s;
+  background:#2d2028;color:#fff;font-size:12px;line-height:1.55;
+  padding:.5rem .7rem;border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.22);max-width:230px;
+}
+.viz-tip.on{opacity:1}
+.viz-tip b{color:#ffd98a}
+.col-hit{fill:transparent;cursor:pointer}
+.col-hit:hover + .col-mark, .col-g:hover .col-mark{filter:brightness(1.12)}
+.tbl-toggle{background:none;border:none;font-family:'Sarabun',sans-serif;font-size:11.5px;
+  font-weight:600;color:var(--sky-dark);cursor:pointer;padding:0;text-decoration:underline}
+
+.act-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(325px,1fr));gap:12px;margin-bottom:1.1rem;align-items:start}
+
+.act-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  padding:.6rem 1.2rem;border-bottom:1px solid var(--border);font-size:12.5px}
+.act-row:last-child{border-bottom:none}
+.act-row .an{font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
+.act-row .am{font-size:11px;color:var(--text3);margin-top:1px;margin-left:15px}
+.act-val{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.act-more{padding:.55rem 1.2rem;font-size:11.5px;color:var(--text3);background:var(--blush)}
+@media(max-width:760px){
+  .exec-band{padding:1.25rem 1.2rem;gap:1.1rem}
+  .exec-rule{display:none}
+  .exec-hero-val{font-size:44px}
+  .exec-side{gap:1.4rem}
+  .exec-stat{min-width:88px}
+  .kpi{min-height:auto}
+}
+
 /* ===== PRINTABLE DOCUMENT ===== */
 #printArea{display:none}
 .doc-paper{
@@ -466,7 +562,13 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
   <div class="header-inner">
     <div class="header-top">
       <a href="/PCK/index.html" class="back-btn">← Dashboard</a>
-      <div class="logo-wrap">🧬</div>
+      <div class="logo-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3h6M10 3v5.2L5.6 17A2.4 2.4 0 0 0 7.8 20.5h8.4A2.4 2.4 0 0 0 18.4 17L14 8.2V3"/>
+          <path d="M7.6 14h8.8"/>
+        </svg>
+      </div>
       <div class="header-texts">
         <h1>Molecular Lab Inventory 2026</h1>
         <div class="sub">ระบบควบคุมสต็อกน้ำยา สารควบคุมคุณภาพ และวัสดุสิ้นเปลือง — รับเข้า · เบิกออก · บิล/ใบเบิก</div>
@@ -494,27 +596,64 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
   <div id="setupBanner"></div>
 
   <!-- ══════════ DASHBOARD ══════════ -->
-  <div class="mod-pane" id="mod-dash">
-    <div class="mod-title"><h2>📊 ภาพรวมคลัง</h2></div>
-    <div class="mod-sub">สรุปยอดคงเหลือ การเคลื่อนไหว และรายการที่ต้องดำเนินการ</div>
-    <div class="stat-strip" id="dashStats"></div>
-    <div class="alert-grid" id="dashAlerts"></div>
-    <div class="table-card">
-      <div class="card-head">
-        <h3>🕒 การเคลื่อนไหวล่าสุด 15 รายการ</h3>
+  <div class="mod-pane viz" id="mod-dash">
+
+    <section class="exec-band">
+      <div class="exec-main">
+        <div class="exec-eyebrow">สถานะคลังประจำวัน · <span id="execDate">—</span></div>
+        <div class="exec-hero"><span class="exec-hero-val" id="execHeroVal">0</span><span class="exec-hero-unit">รายการ</span></div>
+        <div class="exec-hero-label" id="execHeroLabel">ต้องสั่งซื้อวันนี้</div>
+        <div class="exec-sub" id="execSub">—</div>
+      </div>
+      <div class="exec-rule"></div>
+      <div class="exec-side" id="execSide"></div>
+    </section>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="chart-grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">ปริมาณการเบิกใช้รายเดือน</div>
+            <div class="panel-desc">รวมทุกรายการ ปีงบประมาณ 2569 · หน่วยตามที่บันทึกเบิก</div>
+          </div>
+          <button class="tbl-toggle" onclick="toggleUsageTable()" id="usageToggle">ดูเป็นตาราง</button>
+        </div>
+        <div class="panel-body">
+          <div id="usageChart"></div>
+          <div id="usageTableWrap" style="display:none;margin-top:1rem;overflow-x:auto">
+            <table class="inv-table" style="min-width:auto"><thead id="usageHead"></thead><tbody id="usageBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">องค์ประกอบคลังตามหมวดหมู่</div>
+            <div class="panel-desc">จำนวนรายการที่มีของคงเหลือในคลัง</div>
+          </div>
+        </div>
+        <div class="panel-body"><div id="catChart"></div></div>
+      </div>
+    </div>
+
+    <div class="act-grid" id="dashAlerts"></div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <div class="panel-title">ความเคลื่อนไหวล่าสุด</div>
+          <div class="panel-desc">15 รายการล่าสุดของการรับเข้า เบิกออก และปรับยอด</div>
+        </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-mint btn-sm" onclick="openMove('IN')">📥 รับเข้า</button>
-          <button class="btn btn-rose btn-sm" onclick="openMove('OUT')">📤 เบิกออก</button>
+          <button class="btn btn-mint btn-sm" onclick="openMove('IN')">บันทึกรับเข้า</button>
+          <button class="btn btn-rose btn-sm" onclick="openMove('OUT')">บันทึกเบิกออก</button>
         </div>
       </div>
       <div class="table-scroll">
         <table class="inv-table"><thead id="dashTxnHead"></thead><tbody id="dashTxnBody"></tbody></table>
-      </div>
-    </div>
-    <div class="table-card">
-      <div class="card-head"><h3>📈 สรุปการใช้น้ำยารายเดือน (ปี 2026)</h3></div>
-      <div class="table-scroll">
-        <table class="inv-table"><thead id="usageHead"></thead><tbody id="usageBody"></tbody></table>
       </div>
     </div>
   </div>
@@ -640,13 +779,14 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       <select class="filter-sel" id="filterCat" onchange="onFilterCat(this.value)"><option value="">หมวดหมู่ทั้งหมด</option></select>
       <select class="filter-sel" id="filterStatus" onchange="onFilterStatus(this.value)">
         <option value="">สถานะทั้งหมด</option>
-        <option>สั่งซื้อ</option><option>รอรับ</option><option>รับแล้ว</option>
-        <option>ยืม</option><option>ค้างส่ง</option>
+        <option>สั่งซื้อแล้ว</option><option>อนุมัติแล้ว</option><option>จัดส่งแล้ว</option>
+        <option>นำส่งแล้ว</option><option>ยืม</option><option>ค้างส่ง</option>
       </select>
       <select class="filter-sel" id="filterItem" onchange="onFilterItem(this.value)" style="max-width:220px"><option value="">รายการสินค้าทั้งหมด</option></select>
       <span class="toolbar-spacer"></span>
       <button class="btn btn-sky btn-sm" onclick="syncAll()" title="ดึงข้อมูลล่าสุดจาก Google Sheets">🔄 Sync</button>
       <button class="btn btn-outline btn-sm" onclick="triggerImport()">📥 Import Excel</button>
+      <button class="btn btn-purple btn-sm" onclick="rdToStock()" title="แปลงคอลัมน์ RD ของเดือนนี้เป็นรายการรับเข้าคลัง">🔁 RD → รับเข้าคลัง</button>
       <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export Excel</button>
       <button class="btn btn-gold" onclick="openAddModal()">＋ เพิ่มรายการ</button>
     </div>
@@ -668,18 +808,112 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       <select class="filter-sel" id="itemCat" onchange="itemFilterFn('cat',this.value)"><option value="">หมวดหมู่ทั้งหมด</option></select>
       <span class="toolbar-spacer"></span>
       <button class="btn btn-outline btn-sm" onclick="seedItems()" title="สร้างทะเบียนจากรายการที่มีอยู่">🪄 สร้างทะเบียนอัตโนมัติ</button>
-      <button class="btn btn-gold" onclick="openItem()">＋ เพิ่มรายการใหม่</button>
+      <button class="btn btn-gold" onclick="openItem()">＋ เพิ่มรายการสินค้าใหม่</button>
     </div>
     <div class="table-card">
       <div class="table-scroll"><table class="inv-table"><thead id="itemHead"></thead><tbody id="itemBody"></tbody></table></div>
       <div class="table-footer" id="itemFooter"></div>
     </div>
   </div>
+
+
+  <!-- ══════════ REPORTS ══════════ -->
+  <div class="mod-pane" id="mod-report" style="display:none">
+    <div class="mod-title"><h2>📈 รายงานและการวิเคราะห์</h2></div>
+    <div class="mod-sub">ตอบคำถามเดียวที่สำคัญที่สุด — <b>“วันนี้ต้องสั่งหรือยัง?”</b> โดยคิดเผื่อระยะเวลารอของจากบริษัทแล้ว</div>
+    <div class="toolbar">
+      <select class="filter-sel" id="repWindow" onchange="reportFilter('window',this.value)" title="ช่วงเวลาที่ใช้คำนวณอัตราการเบิก">
+        <option value="30">ใช้ยอดเบิกย้อนหลัง 30 วัน</option>
+        <option value="60">ใช้ยอดเบิกย้อนหลัง 60 วัน</option>
+        <option value="90" selected>ใช้ยอดเบิกย้อนหลัง 90 วัน</option>
+        <option value="180">ใช้ยอดเบิกย้อนหลัง 180 วัน</option>
+        <option value="365">ใช้ยอดเบิกย้อนหลัง 1 ปี</option>
+      </select>
+      <select class="filter-sel" id="repCat" onchange="reportFilter('cat',this.value)"><option value="">หมวดหมู่ทั้งหมด</option></select>
+      <span class="toolbar-spacer"></span>
+      <button class="btn btn-gold btn-sm" onclick="poFromReorder()" title="สร้างใบสั่งซื้อจากรายการที่ถึงเวลาสั่ง">🛒 สร้าง PO จากรายการที่ต้องสั่ง</button>
+      <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>
+    </div>
+    <div class="stat-strip" id="repStats"></div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>🚨 Reorder Alert — Stock Coverage Days (คิดเผื่อ Lead Time แล้ว)</h3>
+        <span style="font-size:11.5px;color:var(--text2)">พอใช้อีก = คงเหลือ ÷ ใช้เฉลี่ยต่อวัน · เตือนเมื่อ ≤ รอของ + safety stock</span>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="repReorderHead"></thead><tbody id="repReorderBody"></tbody></table></div>
+      <div class="table-footer" id="repReorderFoot"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>📊 วิเคราะห์ประสิทธิภาพการใช้น้ำยา (Usage Performance Analysis)</h3>
+        <span style="font-size:11.5px;color:var(--text2)">ทะเบียนสินค้า × แผนสั่งซื้อ × ทะเบียนเบิก-จ่าย</span>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="repPerfHead"></thead><tbody id="repPerfBody"></tbody></table></div>
+      <div class="table-footer" id="repPerfFoot"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>📅 แผนสั่งซื้อ vs รับเข้าจริง vs เบิกจริง รายเดือน</h3>
+        <select class="filter-sel" id="repItem" onchange="reportFilter('item',this.value)" style="max-width:260px"></select>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="repMonthHead"></thead><tbody id="repMonthBody"></tbody></table></div>
+      <div class="table-footer" id="repMonthFoot"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ PURCHASE ORDERS ══════════ -->
+  <div class="mod-pane" id="mod-po" style="display:none">
+    <div class="mod-title"><h2>🛒 ใบสั่งซื้อ และการติดตามของค้างรับ</h2></div>
+    <div class="mod-sub">คุมได้ถึงระดับบรรทัด — สั่งไปเท่าไร รับมาแล้วเท่าไร ค้างอีกเท่าไร · รับของแล้วระบบลงสต็อกและออก Lot ให้ทันที</div>
+    <div class="toolbar">
+      <div class="search-wrap"><span class="search-icon">🔍</span>
+        <input type="text" id="poSearch" placeholder="ค้นหาเลข PO / บริษัท / รายการ..." oninput="poFilter('q',this.value)">
+      </div>
+      <select class="filter-sel" id="poStatusF" onchange="poFilter('status',this.value)">
+        <option value="">สถานะทั้งหมด</option>
+      </select>
+      <select class="filter-sel" id="poSupF" onchange="poFilter('supplier',this.value)">
+        <option value="">บริษัททั้งหมด</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <button class="btn btn-outline btn-sm" onclick="poFromPlan()" title="ดึงรายการจากแผนสั่งซื้อเดือนที่เลือก">📅 สร้างจากแผนเดือน</button>
+      <button class="btn btn-gold" onclick="openPO()">＋ ใบสั่งซื้อใหม่</button>
+    </div>
+    <div class="stat-strip" id="poStats"></div>
+    <div class="table-card">
+      <div class="table-scroll"><table class="inv-table"><thead id="poHead"></thead><tbody id="poBody"></tbody></table></div>
+      <div class="table-footer" id="poFooter"></div>
+    </div>
+    <div class="table-card">
+      <div class="card-head"><h3>📦 รายการที่ยังค้างรับทั้งหมด (Open PO lines)</h3></div>
+      <div class="table-scroll"><table class="inv-table"><thead id="openHead"></thead><tbody id="openBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ══════════ SUPPLIERS ══════════ -->
+  <div class="mod-pane" id="mod-sup" style="display:none">
+    <div class="mod-title"><h2>🏢 ทะเบียนบริษัทคู่ค้า</h2></div>
+    <div class="mod-sub">ใช้เลือกในใบสั่งซื้อ ใบรับน้ำยา และการรับเข้าคลัง</div>
+    <div class="toolbar">
+      <div class="search-wrap"><span class="search-icon">🔍</span>
+        <input type="text" id="supSearch" placeholder="ค้นหาชื่อบริษัท / เบอร์ / อีเมล..." oninput="supFilter(this.value)">
+      </div>
+      <span class="toolbar-spacer"></span>
+      <button class="btn btn-gold" onclick="openSupplier()">＋ เพิ่มบริษัท</button>
+    </div>
+    <div class="table-card">
+      <div class="table-scroll"><table class="inv-table"><thead id="supHead"></thead><tbody id="supBody"></tbody></table></div>
+      <div class="table-footer" id="supFooter"></div>
+    </div>
+  </div>
 </div>
 
 <div class="page-footer">
   ห้องปฏิบัติการเทคนิคการแพทย์ &nbsp;·&nbsp; โรงพยาบาลพระจอมเกล้า เพชรบุรี &nbsp;·&nbsp;
-  Molecular Inventory System v3.0 &nbsp;·&nbsp; 2026
+  Molecular Inventory System v3.1 &nbsp;·&nbsp; 2026
 </div>
 
 <!-- ═══════ PLAN ADD/EDIT MODAL ═══════ -->
@@ -703,8 +937,8 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
         <div class="field"><label>สถานะ</label>
           <select id="f_status">
             <option value="">-- เลือก --</option>
-            <option>สั่งซื้อ</option><option>รอรับ</option><option>รับแล้ว</option>
-            <option>ยืม</option><option>ค้างส่ง</option>
+            <option>สั่งซื้อแล้ว</option><option>อนุมัติแล้ว</option><option>จัดส่งแล้ว</option>
+            <option>นำส่งแล้ว</option><option>ยืม</option><option>ค้างส่ง</option>
           </select>
         </div>
       </div>
@@ -756,6 +990,7 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
           <input type="text" id="m_item" list="itemList" placeholder="พิมพ์หรือเลือกรายการ..." autocomplete="off" oninput="onMoveItemChange()">
         </div>
       </div>
+      <div id="m_newBar" class="new-item-bar" style="display:none"></div>
       <div id="m_availBox" class="avail-box" style="display:none"></div>
       <div class="fgrid g3">
         <div class="field" id="m_lotWrapIn"><label>Lot No. *</label><input type="text" id="m_lot" placeholder="เช่น N1234567"></div>
@@ -920,6 +1155,13 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
           <select id="i_active"><option value="1">ใช้งาน</option><option value="0">ยกเลิกใช้</option></select>
         </div>
       </div>
+      <div class="sec-div">📈 ข้อมูลวางแผนการสั่งซื้อ</div>
+      <div class="fgrid g3">
+        <div class="field"><label>Lead time (วันรอของ)</label><input type="number" id="i_lead" min="0" step="1" placeholder="เช่น 30"></div>
+        <div class="field"><label>Safety stock (กันขาด)</label><input type="number" id="i_safety" min="0" step="0.01" placeholder="เช่น 2"></div>
+        <div class="field"><label>ใช้เฉลี่ย/เดือน</label><input type="number" id="i_usage" min="0" step="0.01" placeholder="เช่น 3"></div>
+      </div>
+      <div class="avail-box" id="i_ropHint">จุดสั่งซื้อ (ROP) = ใช้เฉลี่ยต่อวัน × Lead time + Safety stock — กรอกครบแล้วระบบจะเตือนให้สั่งก่อนของหมดเอง</div>
       <div class="fgrid g1">
         <div class="field"><label>หมายเหตุ</label><textarea id="i_note" placeholder="เงื่อนไขการเก็บ / ข้อควรระวัง"></textarea></div>
       </div>
@@ -956,7 +1198,10 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
         <div class="step-num">1</div>
         <div class="step-body">
           <h4>เปิด Google Sheet แล้วไปที่ Extensions → Apps Script</h4>
-          <p>ระบบ v3 ใช้ชีตเพิ่ม 3 ชีต: <strong>ITEMS</strong> (ทะเบียนสินค้า), <strong>TXN</strong> (รับเข้า-เบิกออก), <strong>BILLS</strong> (บิล/ใบเบิก) — สคริปต์จะสร้างให้อัตโนมัติเมื่อบันทึกครั้งแรก</p>
+          <p>ระบบใช้ชีตเพิ่ม 7 ชีต: <strong>ITEMS</strong> (ทะเบียนสินค้า), <strong>TXN</strong> (รับเข้า-เบิกออก),
+          <strong>BILLS</strong> (บิล/ใบเบิก), <strong>SUPPLIERS</strong> (คู่ค้า),
+          <strong>PO_HEADERS / PO_ITEMS / PO_RECEIPTS</strong> (ใบสั่งซื้อและการรับของ)
+          — รันฟังก์ชัน <strong>setupSystem()</strong> ครั้งเดียว ระบบจะสร้างให้ทั้งหมด และ<strong>ใช้ชีตเดิมที่มีอยู่แล้ว</strong> (ชีต1 / JAN2026 …) ไม่สร้างซ้ำ</p>
           <a href="https://docs.google.com/spreadsheets/d/1MtyzPb0uHlTVpS18ib5k8SNibD02w95iSoHMofEK4AE/edit" target="_blank" class="btn btn-outline btn-sm">🔗 เปิด Google Sheet</a>
         </div>
       </div>
@@ -965,94 +1210,351 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
         <div class="step-body">
           <h4>คัดลอกโค้ดนี้ วางใน Script Editor (ลบโค้ดเดิมออกก่อน)</h4>
           <button class="copy-btn" onclick="copyCode()">📋 คัดลอกโค้ด</button>
-          <div class="code-block" id="codeBlock">const SS_ID = '1MtyzPb0uHlTVpS18ib5k8SNibD02w95iSoHMofEK4AE';
+          <div class="code-block" id="codeBlock">/*  ═══════════════════════════════════════════════════════════════════
+    Molecular Lab Inventory 2026 — Apps Script (Code.gs) ฉบับสมบูรณ์
+    ห้องปฏิบัติการอณูชีววิทยา · โรงพยาบาลพระจอมเกล้า เพชรบุรี
+
+    วิธีติดตั้ง
+      1) วางไฟล์นี้ทั้งไฟล์ใน Code.gs (ลบโค้ดเดิมออกก่อน)
+      2) เพิ่มไฟล์ HTML ชื่อ  index   (เมนู ＋ &gt; HTML)
+         แล้ววางเนื้อหาทั้งหมดของ INVENTORY_2026_v3.html ลงไป
+      3) รันฟังก์ชัน setupSystem() หนึ่งครั้ง เพื่อสร้าง/ตรวจสอบชีต
+      4) Deploy &gt; New deployment &gt; Web app
+           Execute as      : Me
+           Who has access  : Anyone        ← ไม่ตั้งข้อนี้ URL จะตอบ 404
+    ═══════════════════════════════════════════════════════════════════ */
+
+/** ใส่ ID ของ Google Sheet เฉพาะกรณีสคริปต์ไม่ได้ผูกกับชีต (standalone) */
+const SS_ID = '';
+
+function ss_() {
+  const active = SpreadsheetApp.getActiveSpreadsheet();
+  if (active) return active;
+  if (!SS_ID) throw new Error('สคริปต์ไม่ได้ผูกกับ Google Sheet — กรุณาใส่ค่า SS_ID ที่บรรทัดบนสุด');
+  return SpreadsheetApp.openById(SS_ID);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   1) ชื่อชีตที่แอปใช้  ↔  ชื่อชีตจริงที่อาจมีอยู่แล้วในไฟล์
+      (กันปัญหาไฟล์เดิมชื่อ ชีต1 / JAN2026 แล้วสร้างชีตใหม่ซ้ำซ้อน)
+   ───────────────────────────────────────────────────────────────────── */
+const TAB_ALIAS = {
+  overview: ['overview', 'ชีต1', 'ชีท1', 'Sheet1'],
+  JAN: ['JAN', 'JAN2026'],   FEB: ['FEB', 'FEB2026'],
+  MAR: ['MAR', 'MAR2026', 'MARCH2026'],
+  APR: ['APR', 'APR2026', 'APRIL2026'],
+  MAY: ['MAY', 'MAY2026'],   JUN: ['JUN', 'JUN2026', 'JUNE2026'],
+  JUL: ['JUL', 'JUL2026', 'JULY2026'],
+  AUG: ['AUG', 'AUG2026'],   SEP: ['SEP', 'SEP2026', 'SEPT2026'],
+  OCT: ['OCT', 'OCT2026'],   NOV: ['NOV', 'NOV2026'],
+  DEC: ['DEC', 'DEC2026'],
+};
 const MONTH_TABS = ['overview','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const DATA_TABS  = ['ITEMS','TXN','BILLS'];
+const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS'];
 const ALL_TABS   = MONTH_TABS.concat(DATA_TABS);
 
-function doGet(e) {
-  try {
-    const ss  = SpreadsheetApp.openById(SS_ID);
-    const act = e.parameter &amp;&amp; e.parameter.action;
-    if (act === 'items') return jsonOut({ ok:true, items: readItemNames(ss) });
-    const tab = e.parameter &amp;&amp; e.parameter.tab;
-    if (tab) return jsonOut({ ok:true, tab:tab, rows: readTab(ss, tab) });
-    const all = {};
-    ALL_TABS.forEach(function(t){ all[t] = readTab(ss, t); });
-    return jsonOut({ ok:true, data:all });
-  } catch(err) { return jsonOut({ ok:false, error: err.toString() }); }
+function sheetNames_(tab) { return TAB_ALIAS[tab] || [tab]; }
+
+function resolveSheet_(ss, tab, createIfMissing) {
+  const names = sheetNames_(tab);
+  for (var i = 0; i &lt; names.length; i++) {
+    var ws = ss.getSheetByName(names[i]);
+    if (ws) return ws;
+  }
+  return createIfMissing ? ss.insertSheet(names[0]) : null;
 }
 
-function doPost(e) {
-  try {
-    const body = JSON.parse(e.postData.contents);
-    const ss   = SpreadsheetApp.openById(SS_ID);
-    if (body.action === 'save') { writeTab(ss, body.tab, body.rows); return jsonOut({ ok:true }); }
-    if (body.action === 'saveAll') {
-      Object.keys(body.data).forEach(function(t){ writeTab(ss, t, body.data[t]); });
-      return jsonOut({ ok:true });
-    }
-    return jsonOut({ ok:false, error:'unknown action' });
-  } catch(err) { return jsonOut({ ok:false, error: err.toString() }); }
+/* ─────────────────────────────────────────────────────────────────────
+   2) หัวตารางภาษาไทย  ↔  key ที่แอปใช้
+      ชีตยังอ่านเป็นภาษาไทยได้เหมือนเดิม แอปก็ยังทำงานได้
+   ───────────────────────────────────────────────────────────────────── */
+const TH2EN = {
+  'รายการสำคัญ':'priority', 'วันที่สั่งซื้อ':'orderDate', 'หมวดหมู่':'category',
+  'สถานะ':'status', 'รายการ':'item', 'จำนวน':'qty', 'หน่วย':'unit',
+  'exp.':'exp', 'exp':'exp', 'วันหมดอายุ':'exp',
+  'ถึงภายในวันที่':'dueDate', 'กำหนดส่ง':'dueDate',
+  'ผู้ติดต่อ':'contact', 'โน้ต':'note', 'note':'note', 'หมายเหตุ':'note',
+  'rd':'rd', 'เลข po':'po', 'po':'po', 'เลขที่ po':'po',
+  'ค่าใช้จ่าย':'cost', 'ราคา':'cost', 'id':'id',
+};
+const EN2TH = {
+  priority:'รายการสำคัญ', orderDate:'วันที่สั่งซื้อ', category:'หมวดหมู่', status:'สถานะ',
+  item:'รายการ', qty:'จำนวน', unit:'หน่วย', exp:'EXP.', dueDate:'ถึงภายในวันที่',
+  contact:'ผู้ติดต่อ', note:'โน้ต', rd:'RD', po:'เลข PO', cost:'ค่าใช้จ่าย', id:'id',
+};
+/** ลำดับคอลัมน์มาตรฐานตอนสร้างชีตใหม่ */
+const MONTH_HEADERS = ['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','EXP.','ถึงภายในวันที่','ผู้ติดต่อ','โน้ต','RD'];
+const OVERVIEW_HEADERS = ['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','เลข PO','ค่าใช้จ่าย','จำนวน','ผู้ติดต่อ','โน้ต'];
+
+function isPlanTab_(tab) { return MONTH_TABS.indexOf(tab) &gt;= 0; }
+
+function keyFor_(header) {
+  const raw = String(header == null ? '' : header).replace(/\s+/g, ' ').trim();
+  const low = raw.toLowerCase();
+  return TH2EN[low] || TH2EN[raw] || raw;   // หัวที่เป็นอังกฤษอยู่แล้วผ่านไปตรง ๆ
+}
+function labelFor_(key, tab) {
+  if (isPlanTab_(tab) &amp;&amp; EN2TH[key]) return EN2TH[key];
+  return key;
 }
 
-/* ---- called from the sidebar/web app when embedded in Apps Script ---- */
-function getAllData(){
-  const ss = SpreadsheetApp.openById(SS_ID);
+/* ─────────────────────────────────────────────────────────────────────
+   3) อ่าน / เขียนชีต
+   ───────────────────────────────────────────────────────────────────── */
+function cellToString_(v) {
+  if (v === null || v === undefined) return '';
+  return String(v);   // คืนค่าดิบตามที่ชีตส่งมา (ไม่แปลงรูปแบบวันที่)
+}
+
+function readTab(ss, tab) {
+  const ws = resolveSheet_(ss, tab, false);
+  if (!ws || ws.getLastRow() &lt; 2 || ws.getLastColumn() &lt; 1) return [];
+  const width   = ws.getLastColumn();
+  const headers = ws.getRange(1, 1, 1, width).getValues()[0].map(keyFor_);
+  const values  = ws.getRange(2, 1, ws.getLastRow() - 1, width).getValues();
+  const out = [];
+  values.forEach(function (r) {
+    if (!r.some(function (c) { return c !== '' &amp;&amp; c !== null; })) return;
+    const obj = {};
+    headers.forEach(function (hk, i) { if (hk) obj[hk] = cellToString_(r[i]); });
+    out.push(obj);
+  });
+  return out;
+}
+
+/**
+ * เขียนทับทั้งชีต โดย **รักษาหัวตารางเดิมและลำดับคอลัมน์เดิมไว้**
+ * คอลัมน์พิเศษที่ผู้ใช้เพิ่มเองจะไม่หาย (ค่าที่แอปไม่รู้จักจะถูกเว้นว่างเฉพาะแถวที่ไม่มีข้อมูลนั้น)
+ */
+function writeTab(ss, tab, rows) {
+  const ws = resolveSheet_(ss, tab, true);
+  rows = rows || [];
+
+  // คีย์จากหัวตารางเดิม (ถ้ามี)
+  var existingKeys = [], existingLabels = [];
+  if (ws.getLastColumn() &gt; 0 &amp;&amp; ws.getLastRow() &gt;= 1) {
+    const hdr = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+    hdr.forEach(function (hv) {
+      const label = String(hv == null ? '' : hv).trim();
+      if (!label) return;
+      existingLabels.push(label);
+      existingKeys.push(keyFor_(label));
+    });
+  }
+
+  // คีย์ทั้งหมดที่ต้องเขียน = ของเดิม + ของใหม่ที่ยังไม่มี
+  const keys = existingKeys.slice();
+  const labels = existingLabels.slice();
+  rows.forEach(function (r) {
+    Object.keys(r).forEach(function (k) {
+      if (keys.indexOf(k) === -1) { keys.push(k); labels.push(labelFor_(k, tab)); }
+    });
+  });
+  if (!keys.length) return;
+
+  const out = [labels];
+  rows.forEach(function (r) {
+    out.push(keys.map(function (k) {
+      const v = r[k];
+      return (v === undefined || v === null) ? '' : v;
+    }));
+  });
+
+  ws.clearContents();
+  ws.getRange(1, 1, out.length, labels.length).setValues(out);
+  ws.getRange(1, 1, 1, labels.length).setFontWeight('bold');
+  ws.setFrozenRows(1);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   4) ฟังก์ชันที่หน้าเว็บเรียกผ่าน google.script.run  (โหมดฝังใน Apps Script)
+   ───────────────────────────────────────────────────────────────────── */
+function getAllData() {
+  const ss = ss_();
   const all = {};
-  ALL_TABS.forEach(function(t){ all[t] = readTab(ss, t); });
+  ALL_TABS.forEach(function (t) { all[t] = readTab(ss, t); });
   return all;
 }
-function saveTab(tab, rows){ writeTab(SpreadsheetApp.openById(SS_ID), tab, rows); return true; }
-function getItemList(){ return readItemNames(SpreadsheetApp.openById(SS_ID)); }
-function getUserInfo(){ return { email: Session.getActiveUser().getEmail() }; }
-function doGetHtml(){ return HtmlService.createHtmlOutputFromFile('index'); }
-
-function readItemNames(ss){
+function saveTab(tab, rows) { writeTab(ss_(), tab, rows); return true; }
+function saveAll(data) {
+  const ss = ss_();
+  Object.keys(data).forEach(function (t) { writeTab(ss, t, data[t]); });
+  return true;
+}
+function getUserInfo() {
+  try { return { email: Session.getActiveUser().getEmail() }; }
+  catch (e) { return { email: '' }; }
+}
+function getItemList() {
+  const ss = ss_();
   const names = [];
-  const it = readTab(ss, 'ITEMS');
-  it.forEach(function(r){ if (r.name) names.push(r.name); });
+  readTab(ss, 'ITEMS').forEach(function (r) {
+    const n = String(r.name || '').trim();
+    if (n &amp;&amp; names.indexOf(n) === -1) names.push(n);
+  });
   const sp = ss.getSheetByName('SP_inventry');
   if (sp &amp;&amp; sp.getLastRow() &gt; 1) {
-    sp.getRange(2,1,sp.getLastRow()-1,1).getValues().forEach(function(r){
-      const v = (r[0]||'').toString().trim();
+    sp.getRange(2, 1, sp.getLastRow() - 1, 1).getValues().forEach(function (r) {
+      const v = String(r[0] || '').replace(/\s+/g, ' ').trim();
       if (v &amp;&amp; names.indexOf(v) === -1) names.push(v);
     });
   }
   return names;
 }
 
-function readTab(ss, tabName) {
-  const ws = ss.getSheetByName(tabName);
-  if (!ws || ws.getLastRow() &lt; 2) return [];
-  const headers = ws.getRange(1,1,1,ws.getLastColumn()).getValues()[0].map(function(h){ return h.toString(); });
-  const data    = ws.getRange(2,1,ws.getLastRow()-1,ws.getLastColumn()).getValues();
-  return data.filter(function(r){ return r.some(function(c){ return c !== ''; }); })
-             .map(function(r){
-                const obj = {};
-                headers.forEach(function(h,i){ obj[h] = r[i] !== undefined ? String(r[i]) : ''; });
-                return obj;
-             });
+/* ─────────────────────────────────────────────────────────────────────
+   5) Web App  (โหมดหน้าเว็บ และโหมด JSON API สำหรับไฟล์ HTML ภายนอก)
+   ───────────────────────────────────────────────────────────────────── */
+function doGet(e) {
+  const p = (e &amp;&amp; e.parameter) || {};
+
+  // โหมด API — เรียกด้วย ?api=1 ใช้กับไฟล์ HTML ที่โฮสต์ที่อื่น (Cloudflare/GitHub)
+  if (p.api || p.tab || p.action) {
+    try {
+      const ss = ss_();
+      if (p.action === 'items') return jsonOut({ ok: true, items: getItemList() });
+      if (p.tab) return jsonOut({ ok: true, tab: p.tab, rows: readTab(ss, p.tab) });
+      return jsonOut({ ok: true, data: getAllData() });
+    } catch (err) {
+      return jsonOut({ ok: false, error: err.toString() });
+    }
+  }
+
+  // โหมดหน้าเว็บ — ต้องมีไฟล์ HTML ชื่อ index อยู่ในโปรเจกต์
+  return HtmlService.createHtmlOutputFromFile('index')
+    .setTitle('Molecular Lab Inventory 2026')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-function writeTab(ss, tabName, rows) {
-  let ws = ss.getSheetByName(tabName);
-  if (!ws) ws = ss.insertSheet(tabName);
-  ws.clearContents();
-  if (!rows || rows.length === 0) return;
-  const headers = Object.keys(rows[0]);
-  const vals = [headers].concat(rows.map(function(r){
-    return headers.map(function(h){ return r[h] === undefined || r[h] === null ? '' : r[h]; });
-  }));
-  ws.getRange(1,1,vals.length,headers.length).setValues(vals);
-  ws.getRange(1,1,1,headers.length).setFontWeight('bold');
-  ws.setFrozenRows(1);
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const ss = ss_();
+    if (body.action === 'save')    { writeTab(ss, body.tab, body.rows); return jsonOut({ ok: true }); }
+    if (body.action === 'saveAll') { saveAll(body.data);                return jsonOut({ ok: true }); }
+    return jsonOut({ ok: false, error: 'unknown action' });
+  } catch (err) {
+    return jsonOut({ ok: false, error: err.toString() });
+  }
 }
 
 function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
-}</div>
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   6) ตั้งค่าระบบ / เมนูในชีต
+   ───────────────────────────────────────────────────────────────────── */
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('🧬 Inventory')
+      .addItem('⚙️ ตั้งค่าชีตของระบบ', 'setupSystem')
+      .addItem('🔍 ตรวจสอบความพร้อม', 'healthCheck')
+      .addToUi();
+  } catch (e) {}
+}
+
+function setupSystem() {
+  const ss = ss_();
+  const sheetsConfig = {
+    'ITEMS':       ['id','code','name','category','unit','testsPerUnit','minQty','maxQty','storage','location','vendor','catNo','price','active','note','lead_time','safety_stock','planned_monthly_usage'],
+    'TXN':         ['id','date','type','item','category','qty','unit','price','person','vendor','purpose','docNo','reason','lot','exp','location','note','po','billId','ts'],
+    'BILLS':       ['id','type','docNo','date','dept','vendor','person1','person2','ref','note','status','total','lines','ts'],
+    'SUPPLIERS':   ['id','supplier_name','phone','email'],
+    'PO_HEADERS':  ['id','po_number','po_date','supplier_id','supplier_name','status','note','source_sheet'],
+    'PO_ITEMS':    ['id','po_id','product_id','product_name','category','quantity','unit','unit_price','total_price','exp_date','due_date','rd','item_note'],
+    'PO_RECEIPTS': ['id','item_id','receipt_date','received_qty','remaining_qty','status','ref_doc','note'],
+  };
+
+  const created = [], kept = [];
+
+  // ชีตข้อมูลระบบ
+  Object.keys(sheetsConfig).forEach(function (name) {
+    var ws = ss.getSheetByName(name);
+    if (!ws) {
+      ws = ss.insertSheet(name);
+      ws.appendRow(sheetsConfig[name]);
+      ws.getRange(1, 1, 1, sheetsConfig[name].length).setFontWeight('bold');
+      ws.setFrozenRows(1);
+      created.push(name);
+    } else {
+      // เติมเฉพาะคอลัมน์ที่ยังไม่มี ไม่ไปยุ่งกับข้อมูลเดิม
+      ensureHeaders_(ws, sheetsConfig[name]);
+      kept.push(name);
+    }
+  });
+
+  // ชีตภาพรวม + รายเดือน (ใช้ชีตเดิมถ้ามีอยู่แล้ว เช่น ชีต1 / JAN2026)
+  MONTH_TABS.forEach(function (tab) {
+    const wanted = (tab === 'overview') ? OVERVIEW_HEADERS : MONTH_HEADERS;
+    var ws = resolveSheet_(ss, tab, false);
+    if (!ws) {
+      ws = ss.insertSheet(sheetNames_(tab)[0]);
+      ws.appendRow(wanted);
+      ws.getRange(1, 1, 1, wanted.length).setFontWeight('bold');
+      ws.setFrozenRows(1);
+      created.push(sheetNames_(tab)[0]);
+    } else {
+      ensureHeaders_(ws, wanted);
+      kept.push(ws.getName());
+    }
+  });
+
+  // ลบชีตเปล่าที่ติดมาจากการแปลง Excel
+  ['Sheet1', 'ชีต2', 'ชีท2'].forEach(function (n) {
+    const wsx = ss.getSheetByName(n);
+    if (wsx &amp;&amp; wsx.getLastRow() === 0 &amp;&amp; ss.getSheets().length &gt; 1) {
+      try { ss.deleteSheet(wsx); } catch (e) {}
+    }
+  });
+
+  const msg = 'ตั้งค่าชีตเรียบร้อย\n\nสร้างใหม่ ' + created.length + ' ชีต'
+            + (created.length ? ':\n• ' + created.join('\n• ') : '')
+            + '\n\nใช้ชีตเดิม ' + kept.length + ' ชีต';
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
+  return msg;
+}
+
+/** เติมหัวคอลัมน์ที่ยังไม่มี ต่อท้ายของเดิม (ไม่สลับลำดับ ไม่ลบของเดิม) */
+function ensureHeaders_(ws, wanted) {
+  if (ws.getLastRow() === 0) {
+    ws.appendRow(wanted);
+    ws.getRange(1, 1, 1, wanted.length).setFontWeight('bold');
+    ws.setFrozenRows(1);
+    return;
+  }
+  const width = Math.max(1, ws.getLastColumn());
+  const hdr = ws.getRange(1, 1, 1, width).getValues()[0].map(function (v) { return String(v || '').trim(); });
+  const have = hdr.map(keyFor_);
+  const add = [];
+  wanted.forEach(function (label) {
+    if (have.indexOf(keyFor_(label)) === -1) add.push(label);
+  });
+  if (!add.length) return;
+  ws.getRange(1, width + 1, 1, add.length).setValues([add]).setFontWeight('bold');
+  ws.setFrozenRows(1);
+}
+
+/** ตรวจว่าทุกอย่างพร้อมใช้งานไหม — ดูผลได้ที่ Executions log หรือกล่องข้อความ */
+function healthCheck() {
+  const ss = ss_();
+  const lines = ['📋 ตรวจสอบระบบ Inventory', ''];
+  ALL_TABS.forEach(function (t) {
+    const ws = resolveSheet_(ss, t, false);
+    lines.push((ws ? '✅' : '❌') + ' ' + t
+      + (ws ? '  → ชีต "' + ws.getName() + '"  ' + Math.max(0, ws.getLastRow() - 1) + ' แถว' : '  → ยังไม่มี (รัน setupSystem)'));
+  });
+  var hasIndex = false;
+  try { HtmlService.createHtmlOutputFromFile('index'); hasIndex = true; } catch (e) {}
+  lines.push('', (hasIndex ? '✅' : '❌') + ' ไฟล์ HTML ชื่อ index ' + (hasIndex ? 'พร้อมใช้งาน' : '— ยังไม่ได้เพิ่ม หน้าเว็บจะเปิดไม่ได้'));
+  const msg = lines.join('\n');
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
+  return msg;
+}
+</div>
         </div>
       </div>
       <div class="setup-step">
@@ -1061,8 +1563,11 @@ function jsonOut(obj) {
           <h4>Deploy เป็น Web App</h4>
           <p>
             คลิก <strong>Deploy</strong> → <strong>New deployment</strong> → เลือกประเภท <strong>Web app</strong><br>
-            ตั้งค่า: <strong>Execute as: Me</strong> | <strong>Who has access: Anyone</strong><br>
-            กด <strong>Deploy</strong> → คัดลอก <strong>Web app URL</strong>
+            ตั้งค่า: <strong>Execute as: Me</strong> | <strong>Who has access: Anyone</strong> ← ถ้าไม่ตั้งข้อนี้ URL จะตอบ 404<br>
+            กด <strong>Deploy</strong> → คัดลอก <strong>Web app URL</strong><br><br>
+            <strong>ใช้ได้ 2 แบบ</strong><br>
+            • <strong>เปิดจาก Apps Script เลย</strong> — เพิ่มไฟล์ HTML ชื่อ <code>index</code> ในโปรเจกต์ แล้ววางไฟล์นี้ทั้งไฟล์ลงไป จากนั้นเปิด Web app URL ได้เลย ไม่ต้องตั้งค่า URL ด้านล่าง<br>
+            • <strong>โฮสต์ไฟล์เองที่อื่น</strong> (Cloudflare / GitHub) — เอา Web app URL มาวางในช่องขั้นที่ 4
           </p>
         </div>
       </div>
@@ -1081,6 +1586,121 @@ function jsonOut(obj) {
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeSetup()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ PO MODAL ═══════ -->
+<div class="overlay" id="poOverlay">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-head">
+      <span class="modal-title" id="poTitle">🛒 ใบสั่งซื้อ</span>
+      <button class="modal-close" onclick="closePO()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-indicator" id="poDocNo">เลขที่ —</div>
+      <div class="fgrid g3">
+        <div class="field"><label>วันที่สั่งซื้อ *</label><input type="date" id="p_date"></div>
+        <div class="field"><label>บริษัท / ผู้ขาย *</label>
+          <select id="p_supplier" onchange="onPOSupplier()"></select>
+        </div>
+        <div class="field"><label>สถานะ</label><select id="p_status"></select></div>
+      </div>
+      <div class="fgrid g3">
+        <div class="field"><label>เลขที่ PO (แก้ได้)</label><input type="text" id="p_number" placeholder="PO-2569-0001"></div>
+        <div class="field"><label>อ้างอิงแผนเดือน</label><select id="p_source"></select></div>
+        <div class="field"><label>หมายเหตุหัวเอกสาร</label><input type="text" id="p_note" placeholder="เช่น งบปี 2569 รอบ 2"></div>
+      </div>
+      <div class="sec-div">📋 รายการที่สั่ง</div>
+      <div style="overflow-x:auto">
+        <table class="line-table" id="poLineTable">
+          <thead><tr>
+            <th style="width:28px">#</th>
+            <th style="min-width:180px">รายการ *</th>
+            <th style="width:120px">หมวดหมู่</th>
+            <th style="width:75px">จำนวน *</th>
+            <th style="width:80px">หน่วย</th>
+            <th style="width:95px">ราคา/หน่วย</th>
+            <th style="width:95px">รวม</th>
+            <th style="width:120px">กำหนดส่งภายใน</th>
+            <th style="width:38px"></th>
+          </tr></thead>
+          <tbody id="poLineBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="addPOLine()">＋ เพิ่มบรรทัด</button>
+        <div class="line-total" id="poLineTotal">รวมทั้งสิ้น 0.00 บาท</div>
+      </div>
+      <div class="avail-box" style="margin-top:12px">ℹ️ บันทึก PO แล้วจะยังไม่เข้าสต็อก — ของเข้าสต็อกเมื่อกดปุ่ม <b>📥 รับของ</b> ที่รายการ PO นั้น (รับกี่ครั้งก็ได้ ระบบคิดยอดค้างรับให้)</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closePO()">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="savePO()">💾 บันทึกใบสั่งซื้อ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ PO RECEIVE MODAL ═══════ -->
+<div class="overlay" id="recvOverlay">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-head">
+      <span class="modal-title" id="recvTitle">📥 รับของตามใบสั่งซื้อ</span>
+      <button class="modal-close" onclick="closeRecv()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-indicator" id="recvInfo">—</div>
+      <div class="fgrid g3">
+        <div class="field"><label>วันที่รับของ *</label><input type="date" id="rc_date"></div>
+        <div class="field"><label>เลขที่บิล / ใบส่งของ</label><input type="text" id="rc_doc" placeholder="INV-xxxx"></div>
+        <div class="field"><label>ผู้ตรวจรับ</label><input type="text" id="rc_person" list="staffList" placeholder="ชื่อผู้รับของ"></div>
+      </div>
+      <div class="sec-div">📦 กรอกเฉพาะบรรทัดที่รับมาจริงในครั้งนี้</div>
+      <div style="overflow-x:auto">
+        <table class="line-table">
+          <thead><tr>
+            <th style="min-width:170px">รายการ</th>
+            <th style="width:65px">สั่ง</th>
+            <th style="width:70px">รับแล้ว</th>
+            <th style="width:70px">ค้างรับ</th>
+            <th style="width:85px">รับครั้งนี้</th>
+            <th style="width:110px">Lot No.</th>
+            <th style="width:125px">วันหมดอายุ</th>
+          </tr></thead>
+          <tbody id="recvBody"></tbody>
+        </table>
+      </div>
+      <div class="fgrid g1" style="margin-top:10px">
+        <div class="field"><label>หมายเหตุการรับของ</label><textarea id="rc_note" placeholder="เช่น กล่องบุบ 1 ใบ / ของมาไม่ครบ รอส่งรอบหน้า"></textarea></div>
+      </div>
+      <div class="avail-box" id="recvHint">ℹ️ ระบบจะสร้างรายการ <b>รับเข้าคลัง</b> ให้อัตโนมัติทุกบรรทัดที่กรอกจำนวน และอัปเดตสถานะ PO เป็น “รับบางส่วน” หรือ “รับครบแล้ว” ให้เอง</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeRecv()">ยกเลิก</button>
+      <button class="btn btn-mint" onclick="saveRecv()">✅ ยืนยันรับของ + เข้าสต็อก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SUPPLIER MODAL ═══════ -->
+<div class="overlay" id="supOverlay">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-head">
+      <span class="modal-title" id="supTitle">🏢 เพิ่มบริษัทคู่ค้า</span>
+      <button class="modal-close" onclick="closeSupplier()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fgrid g1">
+        <div class="field"><label>ชื่อบริษัท *</label><input type="text" id="sp_name" placeholder="เช่น Roche Diagnostics (Thailand)"></div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>เบอร์โทร</label><input type="text" id="sp_phone" placeholder="02-xxx-xxxx"></div>
+        <div class="field"><label>อีเมล</label><input type="email" id="sp_email" placeholder="sales@company.com"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeSupplier()">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveSupplier()">💾 บันทึก</button>
     </div>
   </div>
 </div>
@@ -1122,6 +1742,9 @@ const MODULES = [
   { key:'in',    label:'รับเข้า',            icon:'📥' },
   { key:'out',   label:'เบิกออก',            icon:'📤' },
   { key:'bills', label:'บิล/ใบเบิก',         icon:'🧾' },
+  { key:'po',    label:'ใบสั่งซื้อ/ค้างรับ',   icon:'🛒' },
+  { key:'report',label:'รายงาน/วิเคราะห์',     icon:'📈' },
+  { key:'sup',   label:'บริษัทคู่ค้า',        icon:'🏢' },
   { key:'plan',  label:'แผนสั่งซื้อรายเดือน', icon:'📅' },
   { key:'items', label:'ทะเบียนสินค้า',      icon:'🏷️' },
 ];
@@ -1141,22 +1764,40 @@ const MONTHS = [
   { key:'DEC', label:'ธ.ค.',  full:'ธันวาคม 2026',   num:12 },
 ];
 const MONTH_TABS = MONTHS.map(m => m.key);
-const DATA_TABS  = ['ITEMS','TXN','BILLS'];
+const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS'];
 const ALL_TABS   = MONTH_TABS.concat(DATA_TABS);
+const PO_STATUS  = ['ร่าง','สั่งซื้อแล้ว','รับบางส่วน','รับครบแล้ว','ยกเลิก'];
 
 const CATEGORIES = ['HIV VL','CD4','HPV','วัสดุสิ้นเปลือง','สารควบคุมคุณภาพ','อื่นๆ'];
 const CAT_MAP = {
   'HIV VL':'cc-hivvl','CD4':'cc-cd4','HPV':'cc-hpv',
   'วัสดุสิ้นเปลือง':'cc-consum','สารควบคุมคุณภาพ':'cc-qc'
 };
-const STATUS_MAP = { 'สั่งซื้อ':'sb-order','รอรับ':'sb-wait','รับแล้ว':'sb-done','ยืม':'sb-borrow','ค้างส่ง':'sb-overdue' };
+const STATUS_MAP = {
+  'สั่งซื้อแล้ว':'sb-order', 'สั่งซื้อ':'sb-order',
+  'อนุมัติแล้ว':'sb-wait',  'รอรับ':'sb-wait',
+  'จัดส่งแล้ว':'sb-ship',
+  'นำส่งแล้ว':'sb-done',    'รับแล้ว':'sb-done',
+  'ยืม':'sb-borrow', 'ค้างส่ง':'sb-overdue',
+};
+const ST_PENDING = ['สั่งซื้อแล้ว','สั่งซื้อ','อนุมัติแล้ว','รอรับ','จัดส่งแล้ว'];
+const ST_DONE    = ['นำส่งแล้ว','รับแล้ว'];
+const ST_ISSUE   = ['ยืม','ค้างส่ง'];
+const ALL_STATUS = ['สั่งซื้อแล้ว','อนุมัติแล้ว','จัดส่งแล้ว','นำส่งแล้ว','ยืม','ค้างส่ง'];
 const DOCTYPE = {
   REQ:{ name:'ใบเบิกน้ำยา / วัสดุสิ้นเปลือง', short:'ใบเบิก',  icon:'📤', prefix:'REQ', effect:'OUT' },
   GRN:{ name:'ใบรับน้ำยา / ใบตรวจรับพัสดุ',   short:'ใบรับ',   icon:'📥', prefix:'GRN', effect:'IN'  },
   PR :{ name:'ใบขอซื้อน้ำยา / วัสดุ',          short:'ใบขอซื้อ', icon:'🛒', prefix:'PR',  effect:''    },
 };
-const NEAR_EXP_DAYS = 90;   // เตือนล่วงหน้า (วัน)
-const CRIT_EXP_DAYS = 30;   // วิกฤต (วัน)
+// ── การคำนวณอัตราการใช้และจุดสั่งซื้อ ──
+const COVERAGE_WINDOW   = 90;   // ใช้ยอดเบิกจริงย้อนหลังกี่วันมาหาค่าเฉลี่ยต่อวัน
+const DEFAULT_LEAD_DAYS = 30;   // lead time ที่ใช้เมื่อยังไม่ได้กรอกในทะเบียนสินค้า
+const TARGET_COVER_DAYS = 60;   // อยากให้มีของพอใช้กี่วัน "หลังจาก" ของใหม่มาถึง
+const WATCH_BUFFER_DAYS = 14;   // เผื่ออีกกี่วันจึงจะขึ้นสถานะ "เฝ้าดู"
+
+const NEAR_EXP_DAYS = 60;   // ส้ม   — ใกล้หมดอายุภายใน 60 วัน
+const CRIT_EXP_DAYS = 30;   // เหลือง — ภายใน 30 วัน
+// เลยวันหมดอายุแล้ว = แดง (exp-alert)
 
 const STORAGE_KEY_URL = 'inv2026_script_url';
 const STORAGE_KEY_PRE = 'inv2026_';
@@ -1164,69 +1805,78 @@ const STORAGE_KEY_PRE = 'inv2026_';
 /* ─────────── DEFAULT DATA (แผนสั่งซื้อเดิม) ─────────── */
 const DEFAULT_DATA = {
   overview:[
-    {id:'ov1',priority:'CD4',orderDate:'2025-12-01',category:'HIV VL',status:'รับแล้ว',item:'Cobas omni pipette Tip',po:'1319237948',cost:'105702.09',qty:'447',exp:'',dueDate:'',contact:'',rd:'',note:'อ้างถึงบิล 1318665038'}
+    {id:"ove1",priority:"CD4",orderDate:"2025-12-01",category:"HIV VL",status:"นำส่งแล้ว",item:"Cobas omni pipette Tip",qty:"447",po:"1319237948",cost:"105702.09",exp:"",dueDate:"",contact:"",rd:"",note:"อ้างถึงบืล 1318665038"},
   ],
   JAN:[
-    {id:'j1',priority:'P0',orderDate:'2026-01-15',category:'HIV VL',status:'สั่งซื้อ',item:'HIV-1 VL 192T',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'รับ 2 ค้าง 1',note:''},
-    {id:'j2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'MGP',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'2',note:''},
-    {id:'j3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'NHP NEG',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'0',note:''},
-    {id:'j4',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas HBV/HCV/HIV-1 control kit',qty:'6',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'3',note:''},
-    {id:'j5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas 6800/8800 lysis reagent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'10',note:''},
-    {id:'j6',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas 6800/8800 diluent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'10',note:''},
-    {id:'j7',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas wash reagent',qty:'10',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'10',note:''},
-    {id:'j8',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Solid waste bag',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'1',note:''},
+    {id:"jan1",priority:"P0",orderDate:"2025-12-23",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HIV-1 VL 192T",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"รับ 2 ค้าง 1",note:""},
+    {id:"jan2",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"MGP",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"2",note:""},
+    {id:"jan3",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"NHP NEG",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"0",note:""},
+    {id:"jan4",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas HBV/HCV/HIV-1 control kit",qty:"6",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"3",note:""},
+    {id:"jan5",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas 6800/8800 lysis reagent",qty:"20",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"10",note:""},
+    {id:"jan6",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas 6800/8800 diluent",qty:"20",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"10",note:""},
+    {id:"jan7",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas wash reagent",qty:"10",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"10",note:""},
+    {id:"jan8",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Solid waste bag",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"1",note:""},
   ],
   FEB:[
-    {id:'f1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อ',item:'HIV-1 VL 192T',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f2',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'MGP',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f3',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'NHP NEG',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f4',priority:'',orderDate:'',category:'สารควบคุมคุณภาพ',status:'สั่งซื้อ',item:'Cobas HBV/HCV/HIV-1 control kit',qty:'8',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas 6800/8800 lysis reagent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f6',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas 6800/8800 diluent',qty:'20',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f7',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'Cobas wash reagent',qty:'10',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f8',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Solid waste bag',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'f9',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni pipette Tip',qty:'4',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:"feb1",priority:"P0",orderDate:"2026-01-28",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HIV-1 VL 192T",qty:"4",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb2",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"MGP",qty:"4",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb3",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"NHP NEG",qty:"4",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb4",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas HBV/HCV/HIV-1 control kit",qty:"8",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb5",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas 6800/8800 lysis reagent",qty:"20",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb6",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas 6800/8800 diluent",qty:"20",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb7",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas wash reagent",qty:"10",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb8",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Solid waste bag",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb9",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni pipette Tip",qty:"4",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb10",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni Amplification plate",qty:"4",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb11",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni processing plate",qty:"4",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb12",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HP black laserjet toner cartridge",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"feb13",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Tip 1000 ul",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
   ],
   MAR:[
-    {id:'m1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อ',item:'HIV-1 VL 192T',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'m2',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni Amplification plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'m3',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni processing plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'m4',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Solid waste bag',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:"mar1",priority:"P0",orderDate:"2026-01-28",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HIV-1 VL 192T",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"mar2",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni Amplification plate",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"mar3",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni processing plate",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"mar4",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Solid waste bag",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
   ],
   APR:[
-    {id:'a1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อ',item:'HIV-1 VL 192T',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'a2',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni Amplification plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'a3',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni processing plate',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'a4',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni pipette Tip',qty:'30',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'a5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'MGP',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:"apr1",priority:"P0",orderDate:"2026-01-28",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HIV-1 VL 192T",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"apr2",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni Amplification plate",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"apr3",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni processing plate",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"apr4",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni pipette Tip",qty:"30",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"apr5",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"MGP",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
   ],
   MAY:[
-    {id:'may1',priority:'P0',orderDate:'2026-01-28',category:'HIV VL',status:'สั่งซื้อ',item:'HIV-1 VL 192T',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'may2',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni Amplification plate',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'may3',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni processing plate',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'may4',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas omni pipette Tip',qty:'3',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'may5',priority:'',orderDate:'',category:'HIV VL',status:'สั่งซื้อ',item:'MGP',qty:'2',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'may6',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'Cobas Omni secondary tube',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
-    {id:'may7',priority:'',orderDate:'',category:'วัสดุสิ้นเปลือง',status:'สั่งซื้อ',item:'HP black laserjet toner cartridge',qty:'1',po:'',cost:'',exp:'',dueDate:'',contact:'',rd:'',note:''},
+    {id:"may1",priority:"P0",orderDate:"2026-01-28",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HIV-1 VL 192T",qty:"2",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"may2",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni Amplification plate",qty:"2",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"may3",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni processing plate",qty:"2",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"may4",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas omni pipette Tip",qty:"3",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"may5",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"MGP",qty:"2",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"may6",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"Cobas Omni secondary tube",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
+    {id:"may7",priority:"",orderDate:"",category:"HIV VL",status:"สั่งซื้อแล้ว",item:"HP black laserjet toner cartridge",qty:"1",po:"",cost:"",exp:"",dueDate:"",contact:"",rd:"",note:""},
   ],
   JUN:[],JUL:[],AUG:[],SEP:[],OCT:[],NOV:[],DEC:[],
-  ITEMS:[], TXN:[], BILLS:[]
+  ITEMS:[], TXN:[], BILLS:[],
+  SUPPLIERS:[], PO_HEADERS:[], PO_ITEMS:[], PO_RECEIPTS:[]
 };
 
 /* รายการตั้งต้นสำหรับสร้างทะเบียนอัตโนมัติ */
 const SEED_ITEMS = [
-  ['HIV-1 VL 192T','HIV VL','กล่อง',192,2,6,'2-8 °C'],
-  ['MGP','HIV VL','กล่อง',0,2,6,'2-8 °C'],
-  ['NHP NEG','HIV VL','กล่อง',0,2,6,'2-8 °C'],
-  ['Cobas HBV/HCV/HIV-1 control kit','สารควบคุมคุณภาพ','กล่อง',0,3,8,'-20 °C'],
-  ['Cobas 6800/8800 lysis reagent','HIV VL','ขวด',0,10,20,'อุณหภูมิห้อง (15-30 °C)'],
-  ['Cobas 6800/8800 diluent','HIV VL','ขวด',0,10,20,'อุณหภูมิห้อง (15-30 °C)'],
-  ['Cobas wash reagent','HIV VL','ขวด',0,5,10,'อุณหภูมิห้อง (15-30 °C)'],
+  /* ── รายการที่พบในไฟล์ INVENTORY_2026 จริง ── */
+  ['HIV-1 VL 192T','HIV VL','กล่อง',192,3,8,'2-8 °C'],
+  ['MGP','HIV VL','กล่อง',0,3,8,'2-8 °C'],
+  ['NHP NEG','HIV VL','กล่อง',0,3,8,'2-8 °C'],
+  ['Cobas HBV/HCV/HIV-1 control kit','สารควบคุมคุณภาพ','กล่อง',0,4,10,'-20 °C'],
+  ['Cobas 6800/8800 lysis reagent','HIV VL','ขวด',0,10,25,'อุณหภูมิห้อง (15-30 °C)'],
+  ['Cobas 6800/8800 diluent','HIV VL','ขวด',0,10,25,'อุณหภูมิห้อง (15-30 °C)'],
+  ['Cobas wash reagent','HIV VL','ขวด',0,5,12,'อุณหภูมิห้อง (15-30 °C)'],
   ['Cobas omni pipette Tip','วัสดุสิ้นเปลือง','กล่อง',0,10,40,'อุณหภูมิห้อง (15-30 °C)'],
-  ['Cobas omni Amplification plate','วัสดุสิ้นเปลือง','กล่อง',0,2,6,'อุณหภูมิห้อง (15-30 °C)'],
-  ['Cobas omni processing plate','วัสดุสิ้นเปลือง','กล่อง',0,2,6,'อุณหภูมิห้อง (15-30 °C)'],
+  ['Cobas omni Amplification plate','วัสดุสิ้นเปลือง','กล่อง',0,3,8,'อุณหภูมิห้อง (15-30 °C)'],
+  ['Cobas omni processing plate','วัสดุสิ้นเปลือง','กล่อง',0,3,8,'อุณหภูมิห้อง (15-30 °C)'],
   ['Cobas Omni secondary tube','วัสดุสิ้นเปลือง','กล่อง',0,1,4,'อุณหภูมิห้อง (15-30 °C)'],
   ['Solid waste bag','วัสดุสิ้นเปลือง','ถุง',0,1,4,'อุณหภูมิห้อง (15-30 °C)'],
+  ['Tip 1000 ul','วัสดุสิ้นเปลือง','แพ็ค',0,2,6,'อุณหภูมิห้อง (15-30 °C)'],
+  ['HP black laserjet toner cartridge','วัสดุสิ้นเปลือง','ชิ้น',0,1,2,'อุณหภูมิห้อง (15-30 °C)'],
+  /* ── งาน HPV / CD4 (ยังไม่อยู่ในไฟล์ แต่ห้องแล็บใช้อยู่) ── */
   ['HPV','HPV','กล่อง',0,2,5,'2-8 °C'],
   ['Cobas HPV Positive control Kit','สารควบคุมคุณภาพ','กล่อง',0,1,3,'-20 °C'],
   ['Cobas buffer negative control kit','สารควบคุมคุณภาพ','กล่อง',0,1,3,'-20 °C'],
@@ -1236,8 +1886,6 @@ const SEED_ITEMS = [
   ['Control Normal CD4','สารควบคุมคุณภาพ','กล่อง',0,1,3,'2-8 °C'],
   ['FACSFlow','CD4','ถุง',0,2,6,'อุณหภูมิห้อง (15-30 °C)'],
   ['FACSClean','CD4','ขวด',0,1,3,'อุณหภูมิห้อง (15-30 °C)'],
-  ['Tip 1000 ul','วัสดุสิ้นเปลือง','แพ็ค',0,4,12,'อุณหภูมิห้อง (15-30 °C)'],
-  ['HP black laserjet toner cartridge','วัสดุสิ้นเปลือง','ชิ้น',0,1,2,'อุณหภูมิห้อง (15-30 °C)'],
 ];
 
 /* ─────────── STATE ─────────── */
@@ -1252,6 +1900,12 @@ let state = {
   item:{ q:'', cat:'' },
   move:{ mode:'IN', id:null },
   billEdit:{ id:null, type:'REQ', lines:[] },
+  po:{ q:'', status:'', supplier:'' },
+  report:{ cat:'', item:'' },
+  poEdit:{ id:null, lines:[] },
+  poRecv:{ id:null },
+  supEdit:{ id:null },
+  itemEditId:null,
 };
 
 /* ─────────── GAS MODE ─────────── */
@@ -1314,7 +1968,7 @@ async function loadFromGoogle(){
     try{
       const data = await gsRun('getAllData');
       if(data && typeof data==='object'){
-        Object.keys(data).forEach(k => saveLocal(k, k==='BILLS' ? normalizeBills(data[k]) : data[k]));
+        Object.keys(data).forEach(k => saveLocal(k, normalizeDates(k, k==='BILLS' ? normalizeBills(data[k]) : data[k])));
         setSyncStatus('ok'); showToast('☁️ โหลดข้อมูลสำเร็จ','success');
       }
     }catch(e){ setSyncStatus('err'); showToast('❌ โหลดไม่สำเร็จ: '+e,'error'); }
@@ -1326,10 +1980,10 @@ async function loadFromGoogle(){
   renderSetupBanner(false);
   setSyncStatus('ing'); showLoading('กำลังโหลดข้อมูลจาก Google Sheets...');
   try{
-    const res = await fetch(url, { redirect:'follow' });
+    const res = await fetch(url + (url.indexOf('?')>=0?'&':'?') + 'api=1', { redirect:'follow' });
     const data = await res.json();
     if(data.ok){
-      Object.keys(data.data).forEach(k => saveLocal(k, k==='BILLS' ? normalizeBills(data.data[k]) : data.data[k]));
+      Object.keys(data.data).forEach(k => saveLocal(k, normalizeDates(k, k==='BILLS' ? normalizeBills(data.data[k]) : data.data[k])));
       setSyncStatus('ok'); showToast('☁️ โหลดข้อมูลจาก Google Sheets แล้ว','success');
     } else {
       setSyncStatus('err','❌ '+data.error); showToast('⚠️ Sheets ตอบกลับผิดปกติ','error');
@@ -1366,28 +2020,79 @@ async function syncAll(){
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function fmt(n,d){ return num(n).toLocaleString('th-TH',{minimumFractionDigits:d||0,maximumFractionDigits:d===undefined?2:d}); }
-function today(){ return new Date().toISOString().slice(0,10); }
+function today(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+/** รับค่าวันที่ทุกรูปแบบที่ Google Sheets ส่งมา แล้วคืนเป็น yyyy-MM-dd
+    (ชีตยังเก็บรูปแบบเดิมของตัวเอง — แปลงเฉพาะตอนแอปเอาไปใช้) */
+function toISODate(v){
+  if(v===null || v===undefined || v==='') return '';
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m=s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  // รูปแบบดิบจาก Google Sheets: "Tue Dec 23 2025 00:00:00 GMT+0700 (Indochina Time)"
+  // อ่านวัน-เดือน-ปีตามที่เขียนไว้ตรง ๆ ไม่แปลง timezone (กันวันเพี้ยนไป 1 วัน)
+  const MN={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+  const t=s.match(/^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+  if(t && MN[t[1].toLowerCase()]){
+    const p=n=>String(n).padStart(2,'0');
+    return `${t[3]}-${p(MN[t[1].toLowerCase()])}-${p(t[2])}`;
+  }
+  const d=new Date(s);
+  if(isNaN(d.getTime())) return '';
+  const p=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+const DATE_FIELDS = {
+  _plan:['orderDate','exp','dueDate'],
+  TXN:['date','exp'], BILLS:['date'],
+  PO_HEADERS:['po_date'], PO_ITEMS:['exp_date','due_date'], PO_RECEIPTS:['receipt_date'],
+};
+/** ทำให้ฟิลด์วันที่ของข้อมูลที่โหลดมาจากชีตเป็น yyyy-MM-dd ก่อนเข้าแอป */
+function normalizeDates(tab, rows){
+  const fields = (MONTH_TABS.indexOf(tab)>=0) ? DATE_FIELDS._plan : DATE_FIELDS[tab];
+  if(!fields || !Array.isArray(rows)) return rows;
+  return rows.map(r=>{
+    const o=Object.assign({},r);
+    fields.forEach(k=>{ if(o[k]) o[k]=toISODate(o[k]); });
+    if(tab==='BILLS' && Array.isArray(o.lines))
+      o.lines=o.lines.map(l=>Object.assign({},l,{exp: l.exp?toISODate(l.exp):''}));
+    return o;
+  });
+}
+/** สร้าง Date จากวันที่ตามปฏิทิน (local midnight) — ไม่เพี้ยนข้ามเขตเวลา */
+function localDate(d){
+  const iso=toISODate(d);
+  if(!iso) return null;
+  const a=iso.split('-');
+  return new Date(+a[0], +a[1]-1, +a[2]);
+}
 function formatDate(d){
   if(!d) return '—';
-  try{ const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',calendar:'buddhist'}); }
-  catch(e){ return d; }
+  const dt=localDate(d);
+  if(!dt) return String(d);
+  return dt.toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric',calendar:'buddhist'});
 }
 function formatDateLong(d){
   if(!d) return '—';
-  try{ const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric',calendar:'buddhist'}); }
-  catch(e){ return d; }
+  const dt=localDate(d);
+  if(!dt) return String(d);
+  return dt.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric',calendar:'buddhist'});
 }
 function daysTo(d){
-  if(!d) return null;
+  const dt=localDate(d);
+  if(!dt) return null;
   const now=new Date(); now.setHours(0,0,0,0);
-  const dt=new Date(d); if(isNaN(dt)) return null; dt.setHours(0,0,0,0);
-  return Math.floor((dt-now)/86400000);
+  return Math.round((dt-now)/86400000);
 }
 function expClass(exp){
   const dd = daysTo(exp);
   if(dd===null) return 'exp-ok';
-  if(dd < CRIT_EXP_DAYS) return 'exp-alert';
-  if(dd < NEAR_EXP_DAYS) return 'exp-warn';
+  if(dd < 0)             return 'exp-alert';    // เลยกำหนด — แดง
+  if(dd < CRIT_EXP_DAYS) return 'exp-caution';  // ภายใน 30 วัน — เหลือง
+  if(dd < NEAR_EXP_DAYS) return 'exp-warn';     // ภายใน 60 วัน — ส้ม
   return 'exp-ok';
 }
 function catChip(c){ return c ? `<span class="cchip ${CAT_MAP[c]||'cc-other'}">${esc(c)}</span>` : '—'; }
@@ -1437,6 +2142,8 @@ function buildStock(){
     const n=(it.name||'').trim(); if(!n) return;
     if(!map[n]) map[n] = { name:n, category:it.category||'', unit:it.unit||'', lots:{} };
   });
+  const oo = openOrderMap();
+  const cm = consumptionMap();
   return Object.values(map).map(s => {
     const m = itemMaster(s.name) || {};
     const lots = Object.values(s.lots)
@@ -1448,13 +2155,56 @@ function buildStock(){
       });
     const total = lots.reduce((x,l)=>x+l.qty,0);
     const min = num(m.minQty), max = num(m.maxQty);
+    const lead = num(m.lead_time), safety = num(m.safety_stock), usage = num(m.planned_monthly_usage);
+    // จุดสั่งซื้อ: ใช้เฉลี่ยต่อวัน × lead time + safety stock (ถ้ากรอกไม่ครบ ใช้ Min แทน)
+    const rop = (usage>0 && lead>0) ? (usage/30*lead + safety) : (safety>0 ? safety : 0);
+    const reorderAt = Math.max(min, rop);
+    const onOrder = oo[s.name] || 0;
     let status = 'ok';
     if(total <= 0) status='out';
-    else if(min > 0 && total <= min) status='low';
+    else if(reorderAt > 0 && total <= reorderAt) status='low';
+    const target = max>0 ? max : (rop>0 ? rop*2 : 0);
+    let suggest = (status!=='ok' && target>0) ? Math.max(0, target - total - onOrder) : 0;
+
+    /* ── Stock Coverage Days + Reorder Alert เผื่อ Lead Time ──
+       อัตราการใช้ต่อวัน: ใช้ยอดเบิกจริงย้อนหลัง COVERAGE_WINDOW วันก่อน
+       ถ้ายังไม่มีประวัติเบิก จึงถอยไปใช้ "แผนใช้ต่อเดือน" ที่ตั้งไว้ในทะเบียน */
+    const c = cm[s.name] || { win:0, total:0, avgDaily:0, last:'', count:0 };
+    const planDaily  = usage>0 ? usage/30 : 0;
+    const avgDaily   = c.avgDaily>0 ? c.avgDaily : planDaily;
+    const rateSource = c.avgDaily>0 ? 'actual' : (planDaily>0 ? 'plan' : 'none');
+    const leadDays   = lead>0 ? lead : DEFAULT_LEAD_DAYS;
+    const safetyDays = (avgDaily>0 && safety>0) ? safety/avgDaily : 0;
+    const triggerDays= leadDays + safetyDays;              // ต่ำกว่านี้ = ต้องสั่งแล้ว
+    const coverDays     = avgDaily>0 ? total/avgDaily : null;
+    const coverIncoming = avgDaily>0 ? (total+onOrder)/avgDaily : null;
+    const stockoutDate  = (avgDaily>0 && total>0) ? shiftISO(Math.floor(coverDays)) : '';
+
+    let urgency;
+    if(avgDaily <= 0){
+      // ยังไม่มีประวัติเบิกและไม่ได้ตั้งแผนใช้ → คำนวณ coverage ไม่ได้
+      urgency = (total<=0 && (min>0||safety>0)) ? 'nostock' : 'nodata';
+    } else if(total<=0 || coverDays <= leadDays){
+      urgency = 'critical';                                 // ของจะหมดก่อนของใหม่มาถึง
+    } else if(coverDays <= triggerDays){
+      urgency = 'reorder';                                  // ถึงจุดที่ต้องสั่งแล้ว
+    } else if(coverDays <= triggerDays + WATCH_BUFFER_DAYS){
+      urgency = 'watch';
+    } else urgency = 'ok';
+    // ถ้าของที่สั่งค้างไว้เพียงพอแล้ว ไม่ต้องเตือนให้สั่งซ้ำ
+    if((urgency==='critical'||urgency==='reorder') && coverIncoming!==null && coverIncoming > triggerDays) urgency='covered';
+
+    // จำนวนที่ควรสั่ง = ใช้ต่อวัน × (รอของ + จำนวนวันที่อยากให้พอใช้) − คงเหลือ − ค้างรับ
+    const needQty = avgDaily>0 ? Math.max(0, avgDaily*(leadDays+TARGET_COVER_DAYS) - total - onOrder) : 0;
+    if(needQty>0 && (urgency==='critical'||urgency==='reorder')) suggest = needQty;
     const nearest = lots.filter(l=>l.exp).map(l=>l.exp).sort()[0] || '';
     return {
       name:s.name, category:s.category||m.category||'', unit:s.unit||m.unit||'',
       total, min, max, lots, nearestExp:nearest, status,
+      rop, reorderAt, onOrder, suggest, lead, safety, usage,
+      avgDaily, rateSource, leadDays, safetyDays, triggerDays,
+      coverDays, coverIncoming, stockoutDate, urgency, needQty,
+      used90: c.win, usedTotal: c.total, lastOut: c.last,
       storage:m.storage||'', location:m.location||'', tests:num(m.testsPerUnit),
       hasExpIssue: lots.some(l => l.exp && daysTo(l.exp) !== null && daysTo(l.exp) < NEAR_EXP_DAYS),
     };
@@ -1505,23 +2255,28 @@ function renderModNav(){
     bills: getData('BILLS').length,
     items: getData('ITEMS').length,
     dash:  alertCount,
+    report: mustOrderNow().length,
   };
   document.getElementById('modNav').innerHTML = MODULES.map(m => {
     const c = counts[m.key];
-    const warn = (m.key==='dash' && alertCount>0) ? ' warn' : '';
+    const warn = ((m.key==='dash' && alertCount>0) || (m.key==='report' && counts.report>0)) ? ' warn' : '';
     const badge = (c!==undefined && c>0) ? `<span class="mod-badge${warn}">${c}</span>` : '';
-    return `<span class="mod-item ${state.module===m.key?'active':''}" onclick="switchModule('${m.key}')">${m.icon} ${m.label}${badge}</span>`;
+    return `<span class="mod-item ${state.module===m.key?'active':''}" onclick="switchModule('${m.key}')">${m.label}${badge}</span>`;
   }).join('');
 }
 function renderAll(){
   renderModNav();
   fillCategorySelects();
   fillItemDatalist();
+  fillPOSelects();
   if(state.module==='dash')  renderDash();
   if(state.module==='stock') renderStock();
   if(state.module==='in')    renderTxn('IN');
   if(state.module==='out')   renderTxn('OUT');
   if(state.module==='bills') renderBills();
+  if(state.module==='po')    renderPO();
+  if(state.module==='sup')   renderSuppliers();
+  if(state.module==='report') renderReport();
   if(state.module==='plan')  { renderTabs(); renderStats(); renderTable(); }
   if(state.module==='items') renderItems();
 }
@@ -1531,13 +2286,26 @@ function fillCategorySelects(){
     getData('TXN').map(t=>t.category).filter(Boolean)
   )));
   [['stockCat','หมวดหมู่ทั้งหมด'],['inCat','หมวดหมู่ทั้งหมด'],['outCat','หมวดหมู่ทั้งหมด'],
-   ['itemCat','หมวดหมู่ทั้งหมด'],['filterCat','หมวดหมู่ทั้งหมด'],
+   ['itemCat','หมวดหมู่ทั้งหมด'],['filterCat','หมวดหมู่ทั้งหมด'],['repCat','หมวดหมู่ทั้งหมด'],
    ['m_category','-- เลือก --'],['i_category','-- เลือก --'],['f_category','-- เลือก --']].forEach(([id,ph])=>{
     const el=document.getElementById(id); if(!el) return;
     const cur = el.value;
     el.innerHTML = `<option value="">${ph}</option>` + cats.map(c=>`<option>${esc(c)}</option>`).join('');
     if(cur) el.value = cur;
   });
+}
+function fillPOSelects(){
+  const stF=document.getElementById('poStatusF');
+  if(stF){ const cur=stF.value; stF.innerHTML='<option value="">สถานะทั้งหมด</option>'+PO_STATUS.map(s=>`<option>${esc(s)}</option>`).join(''); stF.value=cur; }
+  const spF=document.getElementById('poSupF');
+  if(spF){ const cur=spF.value; spF.innerHTML='<option value="">บริษัททั้งหมด</option>'+
+    getData('SUPPLIERS').map(s=>`<option value="${esc(s.id)}">${esc(s.supplier_name)}</option>`).join(''); spF.value=cur; }
+  const vl=document.getElementById('vendorList');
+  if(vl){
+    const names=Array.from(new Set(getData('SUPPLIERS').map(s=>s.supplier_name).filter(Boolean)
+      .concat(['Roche Diagnostics','BD Biosciences','Bio-Rad','Thermo Fisher','Qiagen'])));
+    vl.innerHTML=names.map(n=>`<option value="${esc(n)}">`).join('');
+  }
 }
 function fillItemDatalist(){
   const names = Array.from(new Set(
@@ -1554,54 +2322,246 @@ function fillItemDatalist(){
   if(sdl) sdl.innerHTML = staff.map(n=>`<option value="${esc(n)}">`).join('');
 }
 
-/* ═══════════════ DASHBOARD ═══════════════ */
-function renderDash(){
-  const A = stockAlerts();
-  const st = A.all;
-  const txn = getData('TXN');
-  const ym  = today().slice(0,7);
-  const monthOut = txn.filter(t=>t.type==='OUT' && (t.date||'').slice(0,7)===ym).length;
-  const monthIn  = txn.filter(t=>t.type==='IN'  && (t.date||'').slice(0,7)===ym).length;
-  const spend    = txn.filter(t=>t.type==='IN').reduce((s,t)=>s+num(t.qty)*num(t.price),0);
-  const cards = [
-    { cls:'sc-gold',  icon:'📦', val:st.filter(s=>s.total>0).length, lbl:'รายการมีของในคลัง' },
-    { cls:'sc-rose',  icon:'🚨', val:A.out.length,  lbl:'หมดสต็อก (ต่ำกว่าจุดสั่ง)' },
-    { cls:'sc-peach', icon:'⚠️', val:A.low.length,  lbl:'ต่ำกว่าขั้นต่ำ' },
-    { cls:'sc-rose',  icon:'⛔', val:A.expd.length, lbl:'Lot หมดอายุแล้ว' },
-    { cls:'sc-peach', icon:'⏳', val:A.exp.length,  lbl:`ใกล้หมดอายุ (${NEAR_EXP_DAYS} วัน)` },
-    { cls:'sc-mint',  icon:'📥', val:monthIn,  lbl:'รับเข้าเดือนนี้ (ครั้ง)' },
-    { cls:'sc-sky',   icon:'📤', val:monthOut, lbl:'เบิกออกเดือนนี้ (ครั้ง)' },
-    { cls:'sc-purple',icon:'💰', val:fmt(spend,0), lbl:'มูลค่ารับเข้าสะสม (บาท)' },
-  ];
-  document.getElementById('dashStats').innerHTML = cards.map(c=>`
-    <div class="stat-card ${c.cls}"><div class="s-icon">${c.icon}</div>
-    <div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
+/* ═══════════════ DASHBOARD (executive view) ═══════════════ */
+/* ลำดับสีหมวดหมู่นี้ผ่าน validator ครบทุกข้อ (lightness / chroma / CVD / normal-vision / contrast)
+   บนพื้นขาว — ห้ามสลับลำดับหรือเพิ่มสีเอง ถ้าต้องเพิ่มหมวด ให้ยุบไปที่ "อื่นๆ" */
+const CAT_COLORS = [
+  ['วัสดุสิ้นเปลือง',   '#a05020'],
+  ['HIV VL',           '#1a5a8a'],
+  ['อื่นๆ',             '#8a6000'],
+  ['สารควบคุมคุณภาพ',  '#5b3fa0'],
+  ['CD4',              '#1e6b40'],
+  ['HPV',              '#c9687e'],
+];
+const CAT_COLOR_MAP = CAT_COLORS.reduce((m,[k,v])=>{ m[k]=v; return m; },{});
+function catColor(c){ return CAT_COLOR_MAP[c] || CAT_COLOR_MAP['อื่นๆ']; }
 
-  const listBox = (title,cls,rows,emptyMsg) => `
-    <div class="alert-card">
-      <div class="alert-head ${cls}"><span>${title}</span><span class="cnt-pill">${rows.length}</span></div>
-      <div class="alert-list">${rows.length ? rows.join('') : `<div class="alert-empty">${emptyMsg}</div>`}</div>
+/* ── tooltip ── */
+function vizTip(){
+  let el=document.getElementById('vizTip');
+  if(!el){ el=document.createElement('div'); el.id='vizTip'; el.className='viz-tip'; document.body.appendChild(el); }
+  return el;
+}
+function tipShow(e,html){
+  const t=vizTip(); t.innerHTML=html; t.classList.add('on');
+  const pad=14, r=t.getBoundingClientRect();
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if(x+r.width  > window.innerWidth-8)  x=e.clientX-r.width-pad;
+  if(y+r.height > window.innerHeight-8) y=e.clientY-r.height-pad;
+  t.style.left=x+'px'; t.style.top=y+'px';
+}
+function tipHide(){ const t=document.getElementById('vizTip'); if(t) t.classList.remove('on'); }
+function niceMax(v){
+  if(v<=0) return 1;
+  const mag=Math.pow(10,Math.floor(Math.log10(v)));
+  const n=v/mag;
+  return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*mag;
+}
+
+/* ── คอลัมน์: การเบิกใช้รายเดือน (ซีรีส์เดียว + เน้นเดือนปัจจุบัน) ── */
+function renderUsageChart(){
+  const host=document.getElementById('usageChart'); if(!host) return;
+  const txn=getData('TXN');
+  const nowM=new Date().getMonth()+1;
+  const data=MONTHS.slice(1).map(m=>{
+    const mm='2026-'+String(m.num).padStart(2,'0');
+    const rows=txn.filter(t=>t.type==='OUT' && toISODate(t.date).startsWith(mm));
+    return { label:m.label, full:m.full, num:m.num,
+             value:rows.reduce((s,t)=>s+Math.abs(num(t.qty)),0), count:rows.length };
+  });
+  const peak=Math.max.apply(null,data.map(d=>d.value));
+  if(peak<=0){
+    host.innerHTML='<div class="viz-empty">ยังไม่มีข้อมูลการเบิกใช้<br>กราฟจะแสดงอัตโนมัติเมื่อเริ่มบันทึกการเบิกออก</div>';
+    return;
+  }
+  const W=660,H=212,padL=44,padR=12,padT=16,padB=36;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const top=niceMax(peak);
+  const band=plotW/data.length, bw=Math.min(24,band-12);
+  const y=v=>padT+plotH-(v/top)*plotH;
+  const ticks=[0,top/2,top];
+  const maxIdx=data.reduce((b,d,i)=>d.value>data[b].value?i:b,0);
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="212" role="img"
+      aria-label="กราฟแท่งแสดงปริมาณการเบิกใช้รายเดือน ปี 2569">`;
+  ticks.forEach(t=>{
+    svg+=`<line x1="${padL}" y1="${y(t).toFixed(1)}" x2="${W-padR}" y2="${y(t).toFixed(1)}"
+      stroke="${t===0?'#d8cad1':'#ece3e7'}" stroke-width="1"/>`;
+    svg+=`<text x="${padL-8}" y="${(y(t)+4).toFixed(1)}" text-anchor="end" font-size="10.5"
+      fill="#8d7b83" style="font-variant-numeric:tabular-nums">${fmt(t,0)}</text>`;
+  });
+  data.forEach((d,i)=>{
+    const cx=padL+band*i+band/2, x=cx-bw/2;
+    const isNow=d.num===nowM, color='#1a5a8a';
+    const hh=Math.max(0,(d.value/top)*plotH), yy=padT+plotH-hh, r=Math.min(4,hh);
+    const path = hh<=0 ? '' :
+      `<path class="col-mark" d="M${x} ${padT+plotH} V${yy+r} a${r} ${r} 0 0 1 ${r} -${r} H${x+bw-r} a${r} ${r} 0 0 1 ${r} ${r} V${padT+plotH} Z" fill="${color}"/>`;
+    svg+=`<g class="col-g" data-i="${i}">${path}
+      <rect class="col-hit" x="${padL+band*i}" y="${padT}" width="${band}" height="${plotH}"/></g>`;
+    svg+=`<text x="${cx}" y="${H-14}" text-anchor="middle" font-size="10.5"
+      fill="${isNow?'#1c1419':'#8d7b83'}" font-weight="${isNow?'700':'400'}">${esc(d.label)}</text>`;
+    if((i===maxIdx||isNow) && hh>0)
+      svg+=`<text x="${cx}" y="${(yy-7).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700"
+        fill="#1c1419">${fmt(d.value)}</text>`;
+  });
+  svg+='</svg>';
+  host.innerHTML=svg;
+  host.querySelectorAll('.col-g').forEach(g=>{
+    const d=data[+g.dataset.i];
+    g.addEventListener('mousemove',e=>tipShow(e,
+      `<b>${esc(d.full)}</b><br>เบิกออก ${fmt(d.value)} หน่วย<br>${fmt(d.count)} ครั้ง`));
+    g.addEventListener('mouseleave',tipHide);
+  });
+  host.insertAdjacentHTML('beforeend',
+    `<div style="margin-top:.7rem;font-size:11.5px;color:var(--text3)">
+       เดือนปัจจุบันแสดงด้วยชื่อเดือนตัวหนา · ตัวเลขกำกับเฉพาะเดือนที่ใช้มากที่สุดและเดือนปัจจุบัน</div>`);
+}
+function toggleUsageTable(){
+  const w=document.getElementById('usageTableWrap'), b=document.getElementById('usageToggle');
+  const on=w.style.display==='none';
+  w.style.display=on?'':'none';
+  b.textContent=on?'ซ่อนตาราง':'ดูเป็นตาราง';
+}
+
+/* ── แท่งซ้อนแนวนอน: องค์ประกอบคลังตามหมวดหมู่ ── */
+function renderCatChart(){
+  const host=document.getElementById('catChart'); if(!host) return;
+  const st=buildStock().filter(s=>s.total>0);
+  const counts={};
+  st.forEach(s=>{ const c=CAT_COLOR_MAP[s.category]?s.category:'อื่นๆ'; counts[c]=(counts[c]||0)+1; });
+  const total=st.length;
+  if(!total){
+    host.innerHTML='<div class="viz-empty">ยังไม่มีรายการที่มีของคงเหลือ<br>เริ่มจากบันทึกยอดยกมาที่เมนูรับเข้า</div>';
+    return;
+  }
+  const segs=CAT_COLORS.filter(([c])=>counts[c]>0).map(([c,col])=>({cat:c,color:col,n:counts[c]}));
+  const bar=segs.map((s,i)=>{
+    const pctv=s.n/total*100;
+    const first=i===0, last=i===segs.length-1;
+    return `<div class="cat-seg" data-i="${i}" style="flex:0 0 ${pctv}%;background:${s.color};
+      border-radius:${first?'6px':'0'} ${last?'6px':'0'} ${last?'6px':'0'} ${first?'6px':'0'};
+      margin-right:${last?'0':'2px'};height:34px;cursor:pointer"></div>`;
+  }).join('');
+  host.innerHTML=`<div style="display:flex;width:100%;">${bar}</div>
+    <div class="viz-legend">${segs.map(s=>`<span class="lg"><span class="sw" style="background:${s.color}"></span>
+      ${esc(s.cat)} <span class="lgv">${s.n}</span></span>`).join('')}</div>
+    <div style="margin-top:.9rem;font-size:12px;color:var(--text2);border-top:1px solid var(--border);padding-top:.7rem">
+      มีของคงเหลือทั้งหมด <b style="color:var(--text)">${total}</b> รายการ จากทะเบียน ${getData('ITEMS').length} รายการ
     </div>`;
-  const outRows = A.out.concat(A.low).map(s=>`
-    <div class="alert-row"><div><div class="an">${esc(s.name)}</div>
-      <div class="am">${esc(s.category||'—')} · ขั้นต่ำ ${fmt(s.min)} ${esc(s.unit)}</div></div>
-      <div class="${s.status==='out'?'stk-out':'stk-low'}">${fmt(s.total)} ${esc(s.unit)}</div></div>`);
-  const expdRows = A.expd.map(x=>`
-    <div class="alert-row"><div><div class="an">${esc(x.s.name)}</div>
-      <div class="am">Lot ${esc(x.l.lot)} · หมดอายุ ${formatDate(x.l.exp)}</div></div>
-      <div class="stk-out">เกิน ${Math.abs(x.dd)} วัน · ${fmt(x.l.qty)}</div></div>`);
-  const expRows = A.exp.map(x=>`
-    <div class="alert-row"><div><div class="an">${esc(x.s.name)}</div>
-      <div class="am">Lot ${esc(x.l.lot)} · หมดอายุ ${formatDate(x.l.exp)}</div></div>
-      <div class="${x.dd<CRIT_EXP_DAYS?'stk-out':'stk-low'}">อีก ${x.dd} วัน · ${fmt(x.l.qty)}</div></div>`);
-  document.getElementById('dashAlerts').innerHTML =
-    listBox('🚨 ต้องสั่งซื้อ (หมด/ต่ำกว่าขั้นต่ำ)','ah-red',outRows,'สต็อกทุกรายการอยู่เหนือจุดสั่งซื้อ') +
-    listBox('⛔ Lot ที่หมดอายุแล้ว (ต้องตัดออก)','ah-peach',expdRows,'ไม่มี Lot หมดอายุค้างในคลัง') +
-    listBox(`⏳ ใกล้หมดอายุใน ${NEAR_EXP_DAYS} วัน (ใช้ก่อน — FEFO)`,'ah-sky',expRows,'ไม่มี Lot ที่ใกล้หมดอายุ');
+  host.querySelectorAll('.cat-seg').forEach(el=>{
+    const s=segs[+el.dataset.i];
+    el.addEventListener('mousemove',e=>tipShow(e,
+      `<b>${esc(s.cat)}</b><br>${s.n} รายการ · ${fmt(s.n/total*100,0)}% ของคลัง`));
+    el.addEventListener('mouseleave',tipHide);
+  });
+}
 
-  // การเคลื่อนไหวล่าสุด
-  document.getElementById('dashTxnHead').innerHTML = head(['วันที่','ประเภท','รายการ','Lot','จำนวน','ผู้เกี่ยวข้อง','เอกสาร']);
-  const recent = [...txn].sort((a,b)=>(b.ts||b.date||'').localeCompare(a.ts||a.date||'')).slice(0,15);
+/* ── หน้าภาพรวม ── */
+function renderDash(){
+  const A=stockAlerts(), st=A.all, txn=getData('TXN');
+  const ym=today().slice(0,7);
+  const need=mustOrderNow(st);
+  const crit=st.filter(s=>s.urgency==='critical').length;
+  const monthOut=txn.filter(t=>t.type==='OUT'&&toISODate(t.date).slice(0,7)===ym);
+  const monthIn =txn.filter(t=>t.type==='IN' &&toISODate(t.date).slice(0,7)===ym);
+  const spend=txn.filter(t=>t.type==='IN').reduce((s,t)=>s+num(t.qty)*num(t.price),0);
+  const openL=openPOLines(), rmD=receiptMap();
+  const expSoon=A.exp.length, expired=A.expd.length;
+
+  document.getElementById('execDate').textContent=formatDateLong(today());
+  const heroEl=document.getElementById('execHeroVal');
+  heroEl.textContent=need.length;
+  heroEl.className='exec-hero-val'+(need.length?'':' calm');
+  document.getElementById('execHeroLabel').textContent =
+    need.length ? 'รายการที่ต้องสั่งซื้อวันนี้' : 'ไม่มีรายการที่ต้องสั่งซื้อวันนี้';
+  document.getElementById('execSub').innerHTML = need.length
+    ? `ในจำนวนนี้ <b>${crit}</b> รายการจะขาดก่อนของใหม่มาถึง หากสั่งช้ากว่านี้`
+      + (openL.length?` · มีของค้างรับอยู่แล้ว ${openL.length} บรรทัด`:'')
+      + ` — ดูรายละเอียดและสร้างใบสั่งซื้อได้ที่เมนู <b>รายงาน/วิเคราะห์</b>`
+    : 'ทุกรายการมีของพอใช้เกินระยะเวลารอของจากบริษัท ตรวจสอบรายละเอียดได้ที่เมนูคลังน้ำยา';
+
+  document.getElementById('execSide').innerHTML=[
+    { v: st.filter(s=>s.total>0).length, l:'รายการมีของในคลัง' },
+    { v: fmt(spend,0),                   l:'มูลค่ารับเข้าสะสม (บาท)' },
+    { v: monthOut.length,                l:'ครั้งที่เบิกเดือนนี้' },
+  ].map(x=>`<div class="exec-stat"><div class="v">${x.v}</div><div class="l">${esc(x.l)}</div></div>`).join('');
+
+  /* KPI */
+  const expPct=st.length?Math.min(100,(expSoon+expired)/st.length*100):0;
+  const kpis=[
+    { label:'Lot ที่หมดอายุแล้ว', val:expired, unit:'Lot',
+      dot:expired?'dot-crit':'dot-good',
+      foot:expired?'ต้องตัดออกจากคลัง':'ไม่มี Lot หมดอายุค้างในคลัง' },
+    { label:`ใกล้หมดอายุใน ${NEAR_EXP_DAYS} วัน`, val:expSoon, unit:'Lot',
+      dot:expSoon?'dot-warn':'dot-good',
+      foot:expSoon?'ใช้ก่อนตามหลัก FEFO':'ยังไม่มี Lot ที่ต้องเร่งใช้',
+      meter:{pct:expPct, color:expSoon?'#fab219':'#0ca30c'} },
+    { label:'ของค้างรับจากใบสั่งซื้อ', val:openL.length, unit:'บรรทัด',
+      dot:openL.filter(l=>l.due_date&&daysTo(l.due_date)<0).length?'dot-serious':'dot-good',
+      foot:openL.length
+        ? `${new Set(openL.map(l=>l.po_id)).size} ใบสั่งซื้อ · เลยกำหนดส่ง ${openL.filter(l=>l.due_date&&daysTo(l.due_date)<0).length}`
+        : 'รับของครบทุกใบสั่งซื้อแล้ว' },
+    { label:'รับเข้า / เบิกออก เดือนนี้', val:`${monthIn.length} / ${monthOut.length}`, unit:'ครั้ง',
+      dot:'dot-good', foot:'นับเฉพาะเดือนปัจจุบัน' },
+  ];
+  document.getElementById('kpiRow').innerHTML=kpis.map(k=>`
+    <div class="kpi">
+      <div class="kpi-label">${esc(k.label)}</div>
+      <div class="kpi-val">${k.val}<span class="u">${esc(k.unit)}</span></div>
+      ${k.meter?`<div class="kpi-meter"><i style="width:${k.meter.pct}%;background:${k.meter.color}"></i></div>`:''}
+      <div class="kpi-foot"><span class="dot ${k.dot}"></span>${esc(k.foot)}</div>
+    </div>`).join('');
+
+  renderUsageChart();
+  renderCatChart();
+
+  /* แผงสิ่งที่ต้องทำ */
+  const panel=(title,desc,rows,empty,extra)=>`
+    <div class="panel" style="margin-bottom:0">
+      <div class="panel-head"><div><div class="panel-title">${title}</div>
+        <div class="panel-desc">${desc}</div></div></div>
+      ${rows.length?rows.join(''):`<div class="viz-empty">${empty}</div>`}
+      ${extra||''}
+    </div>`;
+  const cap=(arr,n)=>arr.length>n?`<div class="act-more">และอีก ${arr.length-n} รายการ — ดูทั้งหมดที่เมนูที่เกี่ยวข้อง</div>`:'';
+
+  const orderRows=need.slice(0,6).map(s=>`
+    <div class="act-row"><div>
+      <div class="an"><span class="dot ${s.urgency==='critical'?'dot-crit':'dot-warn'}"></span>${esc(s.name)}</div>
+      <div class="am">${esc(s.category||'—')}${s.coverDays!==null?` · พอใช้อีก ${Math.floor(s.coverDays)} วัน · รอของ ${s.leadDays} วัน`:''}${s.onOrder?` · สั่งแล้ว ${fmt(s.onOrder)}`:''}</div>
+    </div><div class="act-val ${s.urgency==='critical'?'stk-out':'stk-low'}">ควรสั่ง ${fmt(Math.ceil(s.needQty||s.suggest||0))}</div></div>`);
+
+  const expRows=A.expd.slice(0,3).map(x=>`
+    <div class="act-row"><div>
+      <div class="an"><span class="dot dot-crit"></span>${esc(x.s.name)}</div>
+      <div class="am">Lot ${esc(x.l.lot)} · หมดอายุ ${formatDate(x.l.exp)}</div>
+    </div><div class="act-val stk-out">เกิน ${Math.abs(x.dd)} วัน</div></div>`)
+    .concat(A.exp.slice(0,4).map(x=>`
+    <div class="act-row"><div>
+      <div class="an"><span class="dot ${x.dd<CRIT_EXP_DAYS?'dot-warn':'dot-serious'}"></span>${esc(x.s.name)}</div>
+      <div class="am">Lot ${esc(x.l.lot)} · หมดอายุ ${formatDate(x.l.exp)}</div>
+    </div><div class="act-val ${x.dd<CRIT_EXP_DAYS?'stk-caution':'stk-low'}">อีก ${x.dd} วัน</div></div>`));
+
+  const poRows=openL.sort((a,b)=>(a.due_date||'9999').localeCompare(b.due_date||'9999')).slice(0,6).map(l=>{
+    const p=getData('PO_HEADERS').find(x=>x.id===l.po_id)||{};
+    const dd=daysTo(l.due_date);
+    return `<div class="act-row"><div>
+      <div class="an"><span class="dot ${dd!==null&&dd<0?'dot-crit':'dot-good'}"></span>${esc(l.product_name)}</div>
+      <div class="am">${esc(p.po_number||'')} · ${esc(p.supplier_name||'—')}${l.due_date?` · กำหนด ${formatDate(l.due_date)}`:''}</div>
+    </div><div class="act-val ${dd!==null&&dd<0?'stk-out':'stk-low'}">ค้าง ${fmt(lineRemaining(l,rmD))}</div></div>`;
+  });
+
+  document.getElementById('dashAlerts').innerHTML =
+    panel('ต้องสั่งซื้อวันนี้','คิดจากอัตราการใช้จริงเทียบกับระยะเวลารอของ',orderRows,
+      'ยังไม่มีรายการที่ถึงเวลาสั่ง',cap(need,6)) +
+    panel('เฝ้าระวังวันหมดอายุ','Lot ที่หมดอายุแล้วและที่ใกล้หมดอายุ',expRows,
+      'ไม่มี Lot ที่ต้องเฝ้าระวัง',cap(A.expd.concat(A.exp),7)) +
+    panel('ของค้างรับจากใบสั่งซื้อ','สั่งไปแล้วแต่ยังได้รับไม่ครบ',poRows,
+      'รับของครบทุกใบสั่งซื้อแล้ว',cap(openL,6));
+
+  /* ความเคลื่อนไหวล่าสุด */
+  document.getElementById('dashTxnHead').innerHTML=head(['วันที่','ประเภท','รายการ','Lot','จำนวน','ผู้เกี่ยวข้อง','เอกสาร']);
+  const recent=[...txn].sort((a,b)=>(b.ts||b.date||'').localeCompare(a.ts||a.date||'')).slice(0,15);
   document.getElementById('dashTxnBody').innerHTML = recent.length ? recent.map(t=>`
     <tr>
       <td style="white-space:nowrap">${formatDate(t.date)}</td>
@@ -1611,28 +2571,83 @@ function renderDash(){
       <td class="${txnDelta(t)>=0?'qty-in':'qty-out'}">${txnDelta(t)>=0?'+':''}${fmt(txnDelta(t))} ${esc(t.unit||'')}</td>
       <td>${esc(t.person||'—')}</td>
       <td style="font-size:12px;color:var(--text2)">${esc(t.docNo||'—')}</td>
-    </tr>`).join('') : emptyRow(7,'ยังไม่มีการเคลื่อนไหว','เริ่มจากปุ่ม “รับเข้า” เพื่อบันทึกน้ำยาเข้าคลัง');
+    </tr>`).join('') : emptyRow(7,'ยังไม่มีความเคลื่อนไหว','เริ่มจากปุ่ม “บันทึกรับเข้า” เพื่อบันทึกน้ำยาเข้าคลัง');
 
-  // สรุปการใช้รายเดือน
-  const items = Array.from(new Set(txn.filter(t=>t.type==='OUT').map(t=>t.item))).sort((a,b)=>a.localeCompare(b,'th'));
-  const mk = MONTHS.slice(1);
-  document.getElementById('usageHead').innerHTML = head(['รายการ'].concat(mk.map(m=>m.label)).concat(['รวม']));
+  /* ตารางสำรองของกราฟ (accessibility) */
+  const mk=MONTHS.slice(1);
+  const items=Array.from(new Set(txn.filter(t=>t.type==='OUT').map(t=>t.item))).sort((a,b)=>a.localeCompare(b,'th'));
+  document.getElementById('usageHead').innerHTML=head(['รายการ'].concat(mk.map(m=>m.label)).concat(['รวม']));
   document.getElementById('usageBody').innerHTML = items.length ? items.map(name=>{
-    const per = mk.map(m=>{
-      const mm = String(m.num).padStart(2,'0');
-      return txn.filter(t=>t.type==='OUT' && t.item===name && (t.date||'').slice(0,7)==='2026-'+mm)
-                .reduce((s,t)=>s+Math.abs(num(t.qty)),0);
-    });
-    const tot = per.reduce((a,b)=>a+b,0);
+    const per=mk.map(m=>txn.filter(t=>t.type==='OUT'&&t.item===name&&toISODate(t.date).slice(0,7)==='2026-'+String(m.num).padStart(2,'0'))
+      .reduce((s,t)=>s+Math.abs(num(t.qty)),0));
+    const tot=per.reduce((a,b)=>a+b,0);
     return `<tr><td><span class="item-cell">${esc(name)}</span></td>${
       per.map(v=>`<td style="text-align:center;${v?'font-weight:600':'color:var(--text3)'}">${v?fmt(v):'—'}</td>`).join('')
     }<td style="text-align:center;font-weight:700;color:var(--rose-dark)">${fmt(tot)}</td></tr>`;
-  }).join('') : emptyRow(14,'ยังไม่มีข้อมูลการเบิกใช้','ข้อมูลจะสรุปอัตโนมัติเมื่อเริ่มบันทึกการเบิกออก');
+  }).join('') : emptyRow(14,'ยังไม่มีข้อมูลการเบิกใช้','');
 }
+
 function txnBadge(type){
   if(type==='IN')  return '<span class="sbadge sb-in">📥 รับเข้า</span>';
   if(type==='OUT') return '<span class="sbadge sb-out">📤 เบิกออก</span>';
   return '<span class="sbadge sb-adj">⚖️ ปรับยอด</span>';
+}
+
+function shiftISO(n){
+  const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+n);
+  const p=x=>String(x).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+/** อัตราการใช้จริงจากยอดเบิก (TXN type=OUT) ย้อนหลัง N วัน
+ *  คืน map: ชื่อรายการ -> { win, avgDaily, total, last, count } */
+let coverageWindow = COVERAGE_WINDOW;   // ปรับได้จากหน้ารายงาน
+function consumptionMap(windowDays){
+  const w = windowDays || coverageWindow;
+  const from = shiftISO(-w);
+  const map = {};
+  getData('TXN').forEach(t=>{
+    if(t.type !== 'OUT') return;
+    const name = normName(t.item); if(!name) return;
+    const d = toISODate(t.date);
+    const q = Math.abs(num(t.qty));
+    const m = map[name] || (map[name] = { win:0, total:0, last:'', count:0, avgDaily:0 });
+    m.total += q;
+    if(d && d > m.last) m.last = d;
+    if(!d || d >= from){ m.win += q; m.count++; }
+  });
+  Object.keys(map).forEach(k=>{ map[k].avgDaily = map[k].win / w; });
+  return map;
+}
+/** ยอดตามแผนสั่งซื้อรายเดือนรวมทั้งปี แยกตามรายการ */
+function planQtyByItem(){
+  const map = {};
+  MONTHS.slice(1).forEach(m=>{
+    getData(m.key).forEach(r=>{
+      const n = normName(r.item); if(!n) return;
+      map[n] = (map[n]||0) + num(r.qty);
+    });
+  });
+  return map;
+}
+const URGENCY = {
+  critical:{ label:'สั่งด่วน',        cls:'sb-overdue', dot:'🔴', rank:0 },
+  reorder :{ label:'ถึงเวลาสั่ง',     cls:'sb-wait',    dot:'🟠', rank:1 },
+  nostock :{ label:'ไม่มีของในคลัง',  cls:'sb-none',    dot:'⚫', rank:2 },
+  watch   :{ label:'เฝ้าดู',          cls:'sb-ship',    dot:'🟡', rank:3 },
+  covered :{ label:'สั่งไว้แล้ว',     cls:'sb-order',   dot:'🔵', rank:4 },
+  ok      :{ label:'เพียงพอ',         cls:'sb-done',    dot:'🟢', rank:5 },
+  nodata  :{ label:'ไม่มีข้อมูลใช้',   cls:'sb-none',    dot:'⚪', rank:6 },
+};
+/** รายการที่ "ต้องสั่งวันนี้" จริง ๆ — ตัดสินจาก coverage เทียบ lead time เท่านั้น */
+function mustOrderNow(list){
+  return (list || buildStock()).filter(s=>s.urgency==='critical' || s.urgency==='reorder');
+}
+
+/** บรรทัด PO ที่ยังรับไม่ครบ (ใช้ทั้งหน้า PO และภาพรวม) */
+function openPOLines(){
+  const rm = receiptMap();
+  const live = new Set(getData('PO_HEADERS').filter(p=>p.status!=='ยกเลิก' && p.status!=='ร่าง').map(p=>p.id));
+  return getData('PO_ITEMS').filter(l=>live.has(l.po_id) && lineRemaining(l,rm)>0);
 }
 
 /* ═══════════════ STOCK ═══════════════ */
@@ -1662,9 +2677,9 @@ function renderStock(){
   ].map(c=>`<div class="stat-card ${c.cls}"><div class="s-icon">${c.icon}</div><div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
 
   document.getElementById('stockHead').innerHTML =
-    head(['','รายการ','หมวดหมู่','คงเหลือ','หน่วย','ระดับสต็อก','Min/Max','Lot ที่ใกล้หมดอายุที่สุด','จัดเก็บ','']);
+    head(['','รายการ','หมวดหมู่','คงเหลือ','ค้างรับ','พอใช้อีก','สถานะสั่งซื้อ','จุดสั่งซื้อ','ควรสั่ง','Lot ที่ใกล้หมดอายุที่สุด','']);
   const body = document.getElementById('stockBody');
-  if(!rows.length){ body.innerHTML = emptyRow(10,'ไม่พบรายการ','ลองล้างตัวกรอง หรือบันทึกรับเข้าก่อน'); }
+  if(!rows.length){ body.innerHTML = emptyRow(11,'ไม่พบรายการ','ลองล้างตัวกรอง หรือบันทึกรับเข้าก่อน'); }
   else {
     body.innerHTML = rows.map(s=>{
       const pct = s.max>0 ? Math.min(100, s.total/s.max*100) : (s.total>0?100:0);
@@ -1675,13 +2690,14 @@ function renderStock(){
         <td class="col-num">${s.lots.length?`<button class="lot-toggle" onclick="toggleLots(${JSON.stringify(s.name).replace(/"/g,'&quot;')})">${open?'▼':'▶'}</button>`:''}</td>
         <td><span class="item-cell">${esc(s.name)}</span>${s.tests?`<div style="font-size:11px;color:var(--text3)">${fmt(s.tests)} เทสต์/${esc(s.unit||'หน่วย')} · คงเหลือ ≈ ${fmt(s.total*s.tests)} เทสต์</div>`:''}</td>
         <td>${catChip(s.category)}</td>
-        <td class="${stkCls}" style="text-align:right;white-space:nowrap">${fmt(s.total)}</td>
-        <td style="color:var(--text2)">${esc(s.unit||'—')}</td>
-        <td><div class="sbar ${barCls}"><i style="width:${pct}%"></i></div>
-            <div style="font-size:10.5px;color:var(--text3);margin-top:2px">${s.status==='out'?'หมด':s.status==='low'?'ต่ำกว่าขั้นต่ำ':'ปกติ'}</div></td>
-        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${s.min?fmt(s.min):'—'} / ${s.max?fmt(s.max):'—'}</td>
-        <td>${s.nearestExp?`<span class="${expClass(s.nearestExp)}">${formatDate(s.nearestExp)}</span>`:'—'}</td>
-        <td style="font-size:11.5px;color:var(--text2)">${esc(s.storage||s.location||'—')}</td>
+        <td class="${stkCls}" style="text-align:right;white-space:nowrap">${fmt(s.total)} <span style="font-weight:400;color:var(--text3)">${esc(s.unit||'')}</span></td>
+        <td style="text-align:right;white-space:nowrap">${s.onOrder?`<span class="qty-in" title="สั่งแล้วรอของ">+${fmt(s.onOrder)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+        <td style="text-align:right;white-space:nowrap">${covCell(s)}${s.stockoutDate?`<div style="font-size:10.5px;color:var(--text3)">หมด ${formatDate(s.stockoutDate)}</div>`:''}</td>
+        <td>${urgencyBadge(s.urgency)}
+            <div class="sbar ${barCls}" style="margin-top:4px"><i style="width:${pct}%"></i></div></td>
+        <td style="font-size:12px;color:var(--text2);white-space:nowrap">${s.reorderAt?fmt(s.reorderAt,1):'—'}${s.max?' / สูงสุด '+fmt(s.max):''}</td>
+        <td style="text-align:center">${s.suggest>0?`<span class="pbadge pb-p0">สั่ง ${fmt(Math.ceil(s.suggest))}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+        <td>${s.nearestExp?`<span class="${expClass(s.nearestExp)}">${formatDate(s.nearestExp)}</span>`:'—'}<div style="font-size:10.5px;color:var(--text3)">${esc(s.storage||s.location||'')}</div></td>
         <td><div class="act-btns">
           <button class="btn btn-mint btn-sm btn-icon" title="รับเข้า" onclick="openMove('IN',${JSON.stringify(s.name).replace(/"/g,'&quot;')})">📥</button>
           <button class="btn btn-rose btn-sm btn-icon" title="เบิกออก" onclick="openMove('OUT',${JSON.stringify(s.name).replace(/"/g,'&quot;')})">📤</button>
@@ -1966,6 +2982,16 @@ function onMoveItemChange(preselectLot){
       if(!document.getElementById('m_location').value) document.getElementById('m_location').value = m.location||m.storage||'';
     }
   }
+  // แจ้งเมื่อเป็นรายการที่ยังไม่มีในทะเบียน พร้อมทางลัดไปตั้งค่า
+  const bar = document.getElementById('m_newBar');
+  if(bar){
+    if(name && !m){
+      bar.style.display='';
+      bar.innerHTML = `🆕 <b>"${esc(name)}"</b> ยังไม่มีในทะเบียนสินค้า — บันทึกได้เลย ระบบจะเพิ่มให้อัตโนมัติ
+        <span class="toolbar-spacer"></span>
+        <button class="btn btn-gold btn-sm" onclick="addItemFromMove()">🏷️ ตั้งค่ารายการนี้เลย (หน่วย / Min-Max)</button>`;
+    } else { bar.style.display='none'; bar.innerHTML=''; }
+  }
   const s = buildStock().find(x=>x.name===name);
   if(name && s){
     const min = num(m&&m.minQty);
@@ -2075,13 +3101,26 @@ async function saveMove(){
   const data = getData('TXN');
   if(state.move.id){
     const i = data.findIndex(t=>t.id===state.move.id);
-    if(i>=0){ row.billId = data[i].billId||''; data[i]=row; } else data.push(row);
+    if(i>=0){ row.billId = data[i].billId||''; data[i]=Object.assign({},data[i],row); } else data.push(row);
   } else data.push(row);
   saveLocal('TXN', data);
   autoRegisterItem(item, row);
   closeMove(); renderAll();
   showToast('💾 บันทึกแล้ว — กำลัง Sync...','info');
   await syncTab('TXN');
+}
+/** เปิดฟอร์มทะเบียนสินค้าจากฟอร์มรับเข้า/เบิกออก โดยกรอกค่าที่พิมพ์ไว้แล้วให้ล่วงหน้า */
+function addItemFromMove(){
+  const name = normName(document.getElementById('m_item').value);
+  if(!name){ showToast('พิมพ์ชื่อรายการก่อน','error'); return; }
+  openItem(null, {
+    name: name,
+    category: document.getElementById('m_category').value || '',
+    unit: (document.getElementById('m_unit').value||'').trim(),
+    vendor: (document.getElementById('m_vendor')||{}).value || '',
+    price: (document.getElementById('m_price')||{}).value || '',
+    location: (document.getElementById('m_location')||{}).value || '',
+  });
 }
 /** เพิ่มรายการใหม่เข้าทะเบียนอัตโนมัติ ถ้ายังไม่มี */
 function autoRegisterItem(name, row){
@@ -2093,28 +3132,36 @@ function autoRegisterItem(name, row){
     vendor:row.vendor||'', catNo:'', price:row.price||'', active:'1', note:'สร้างอัตโนมัติจากการบันทึกเคลื่อนไหว'
   });
   saveLocal('ITEMS', items);
+  showToast(`🆕 เพิ่ม "${esc(name)}" เข้าทะเบียนสินค้าให้แล้ว — อย่าลืมตั้งหน่วยนับและจุดสั่งซื้อ`,'info');
   syncTab('ITEMS');
 }
 
 /* ═══════════════ ITEM MASTER MODAL ═══════════════ */
-function openItem(id){
-  state.editId = id || null;
-  const it = id ? getData('ITEMS').find(x=>x.id===id) : null;
-  document.getElementById('itemModalTitle').textContent = it ? '🏷️ แก้ไขทะเบียนสินค้า' : '🏷️ เพิ่มรายการในทะเบียน';
+/** เปิดฟอร์มทะเบียนสินค้า
+ *  openItem()                       → เพิ่มรายการใหม่เปล่า ๆ
+ *  openItem(id)                     → แก้ไขรายการเดิม
+ *  openItem(null, {name, ...})      → เพิ่มรายการใหม่โดยกรอกค่าที่รู้อยู่แล้วให้ล่วงหน้า */
+function openItem(id, prefill){
+  state.itemEditId = id || null;
+  const it = id ? getData('ITEMS').find(x=>x.id===id) : (prefill || null);
+  document.getElementById('itemModalTitle').textContent =
+    id ? '🏷️ แก้ไขทะเบียนสินค้า' : (prefill ? '🆕 เพิ่ม "'+ (prefill.name||'') +'" เข้าทะเบียน' : '🏷️ เพิ่มรายการในทะเบียน');
   const v=(k,val)=>{ const el=document.getElementById(k); if(el) el.value = val==null?'':val; };
   v('i_code',it&&it.code); v('i_category',it&&it.category); v('i_catNo',it&&it.catNo);
   v('i_name',it&&it.name); v('i_unit',it&&it.unit); v('i_tests',it&&it.testsPerUnit);
   v('i_min',it&&it.minQty); v('i_max',it&&it.maxQty); v('i_storage',it&&it.storage);
   v('i_location',it&&it.location); v('i_vendor',it&&it.vendor); v('i_price',it&&it.price);
   v('i_active',it?(it.active||'1'):'1'); v('i_note',it&&it.note);
+  v('i_lead',it&&it.lead_time); v('i_safety',it&&it.safety_stock); v('i_usage',it&&it.planned_monthly_usage);
   document.getElementById('itemOverlay').classList.add('open');
+  setTimeout(()=>{ const el=document.getElementById(id?'i_code':'i_name'); if(el) el.focus(); },120);
 }
 function closeItem(){ document.getElementById('itemOverlay').classList.remove('open'); }
 async function saveItemMaster(){
   const name=(document.getElementById('i_name').value||'').trim();
   if(!name){ showToast('กรุณากรอกชื่อรายการ','error'); return; }
   const row = {
-    id: state.editId || genId('it'),
+    id: state.itemEditId || genId('it'),
     code:(document.getElementById('i_code').value||'').trim(),
     name:name,
     category:document.getElementById('i_category').value,
@@ -2129,13 +3176,24 @@ async function saveItemMaster(){
     price:document.getElementById('i_price').value,
     active:document.getElementById('i_active').value,
     note:(document.getElementById('i_note').value||'').trim(),
+    lead_time:document.getElementById('i_lead').value,
+    safety_stock:document.getElementById('i_safety').value,
+    planned_monthly_usage:document.getElementById('i_usage').value,
   };
   const data = getData('ITEMS');
-  if(state.editId){ const i=data.findIndex(x=>x.id===state.editId); i>=0?data[i]=row:data.push(row); }
-  else data.push(row);
+  const wasNew = !state.itemEditId;
+  if(state.itemEditId){ const i=data.findIndex(x=>x.id===state.itemEditId); i>=0?data[i]=Object.assign({},data[i],row):data.push(row); }
+  else {
+    // กันชื่อซ้ำ — ถ้ามีชื่อนี้ในทะเบียนอยู่แล้วให้อัปเดตทับแทนการสร้างซ้ำ
+    const dup = data.findIndex(x=>(x.name||'').trim().toLowerCase()===name.toLowerCase());
+    if(dup>=0){ row.id = data[dup].id; data[dup]=Object.assign({},data[dup],row); }
+    else data.push(row);
+  }
   saveLocal('ITEMS', data);
-  state.editId=null; closeItem(); renderAll();
-  showToast('💾 บันทึกทะเบียนแล้ว','success');
+  state.itemEditId=null; closeItem(); renderAll();
+  showToast(wasNew ? `🆕 เพิ่ม "${esc(name)}" เข้าทะเบียนแล้ว` : '💾 บันทึกทะเบียนแล้ว','success');
+  // ถ้าเปิดมาจากฟอร์มรับเข้า/เบิกออก ให้เติมค่าที่เพิ่งตั้งกลับเข้าฟอร์มนั้นทันที
+  if(document.getElementById('moveOverlay').classList.contains('open')) onMoveItemChange();
   await syncTab('ITEMS');
 }
 
@@ -2216,7 +3274,8 @@ function renderLines(){
     return `<tr>
       <td style="text-align:center;color:var(--text3)">${i+1}</td>
       <td><input type="text" list="itemList" value="${esc(l.item)}" placeholder="ชื่อน้ำยา/วัสดุ" onchange="onLineChange(${i},'item',this.value)">
-          ${l.item?`<div style="font-size:10.5px;color:${short?'var(--red-txt)':'var(--text3)'}">คงเหลือ ${fmt(avail)} ${esc(s?s.unit:'')}${short?' ⚠️ ไม่พอ':''}</div>`:''}</td>
+          ${l.item?`<div style="font-size:10.5px;color:${short?'var(--red-txt)':'var(--text3)'}">คงเหลือ ${fmt(avail)} ${esc(s?s.unit:'')}${short?' ⚠️ ไม่พอ':''}</div>`:''}
+          ${(l.item && !itemMaster(l.item))?`<div style="font-size:10.5px;color:var(--gold-dark)">🆕 รายการใหม่</div>`:''}</td>
       <td>${lotCell}</td>
       <td><input type="date" value="${esc(l.exp)}" oninput="onLineChange(${i},'exp',this.value)"></td>
       <td><input type="number" min="0" step="0.01" value="${esc(l.qty)}" oninput="onLineChange(${i},'qty',this.value)"></td>
@@ -2369,7 +3428,7 @@ function printBill(id){
       <div class="doc-sign">
         ${sign.map(([lbl,nm])=>`<div><div class="line"></div>( ${esc(nm||'.'.repeat(22))} )<br>${esc(lbl)}<br>วันที่ ......../......../........</div>`).join('')}
       </div>
-      <div class="doc-foot">เอกสารนี้ออกจากระบบ Molecular Inventory System v3.0 — ${esc(b.docNo)} · พิมพ์ ${new Date().toLocaleString('th-TH')}</div>
+      <div class="doc-foot">เอกสารนี้ออกจากระบบ Molecular Inventory System v3.1 — ${esc(b.docNo)} · พิมพ์ ${new Date().toLocaleString('th-TH')}</div>
     </div>`;
   window.print();
 }
@@ -2380,6 +3439,8 @@ function askDelete(kind,id,label){
   const map = { txn:['🗑️','ลบรายการเคลื่อนไหวนี้?','ยอดคงเหลือจะถูกคำนวณใหม่ทันที'],
                 bill:['🧾','ลบเอกสารนี้?','หากเอกสารยืนยันแล้ว ระบบจะคืนสต็อกที่ตัดไปให้ด้วย'],
                 item:['🏷️','ลบรายการในทะเบียน?','ประวัติการเคลื่อนไหวยังคงอยู่'],
+                po:['🛒','ลบใบสั่งซื้อนี้?','รายการที่รับเข้าคลังไปแล้วจะยังอยู่ ต้องไปลบที่เมนูรับเข้าเอง'],
+                sup:['🏢','ลบบริษัทนี้?','ใบสั่งซื้อเดิมยังเก็บชื่อบริษัทไว้'],
                 plan:['🗑️','ลบรายการนี้?','ลบออกจากแผนสั่งซื้อรายเดือน'] };
   const [icon,msg,sub] = map[kind] || map.plan;
   document.getElementById('delIcon').textContent = icon;
@@ -2407,6 +3468,19 @@ async function confirmDelete(){
     closeConfirm(); renderAll(); showToast('🗑️ ลบเอกสารแล้ว'+(hadTxn?' และคืนสต็อกเรียบร้อย':''),'info');
     await syncTab('BILLS'); if(hadTxn) await syncTab('TXN'); return;
   }
+  if(d.kind==='po'){
+    saveLocal('PO_HEADERS', getData('PO_HEADERS').filter(x=>x.id!==d.id));
+    const ids = new Set(getData('PO_ITEMS').filter(l=>l.po_id===d.id).map(l=>l.id));
+    saveLocal('PO_ITEMS', getData('PO_ITEMS').filter(l=>l.po_id!==d.id));
+    saveLocal('PO_RECEIPTS', getData('PO_RECEIPTS').filter(r=>!ids.has(r.item_id)));
+    closeConfirm(); renderAll(); showToast('🗑️ ลบใบสั่งซื้อแล้ว','info');
+    await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS'); await syncTab('PO_RECEIPTS'); return;
+  }
+  if(d.kind==='sup'){
+    saveLocal('SUPPLIERS', getData('SUPPLIERS').filter(x=>x.id!==d.id));
+    closeConfirm(); renderAll(); showToast('🗑️ ลบบริษัทแล้ว','info');
+    await syncTab('SUPPLIERS'); return;
+  }
   if(d.kind==='item'){
     saveLocal('ITEMS', getData('ITEMS').filter(x=>x.id!==d.id));
     closeConfirm(); renderAll(); showToast('🗑️ ลบจากทะเบียนแล้ว','info'); await syncTab('ITEMS'); return;
@@ -2430,9 +3504,9 @@ function renderStats(){
   const budget = data.reduce((s,r)=>s+num(r.cost),0);
   const cards = [
     { cls:'sc-gold',  icon:'📦', val:data.length, lbl:'รายการทั้งหมด' },
-    { cls:'sc-sky',   icon:'🛒', val:data.filter(r=>r.status==='สั่งซื้อ'||r.status==='รอรับ').length, lbl:'สั่งซื้อ/รอรับ' },
-    { cls:'sc-mint',  icon:'✅', val:data.filter(r=>r.status==='รับแล้ว').length, lbl:'รับแล้ว' },
-    { cls:'sc-peach', icon:'🔄', val:data.filter(r=>r.status==='ค้างส่ง'||r.status==='ยืม').length, lbl:'ยืม/ค้างส่ง' },
+    { cls:'sc-sky',   icon:'🛒', val:data.filter(r=>ST_PENDING.includes(r.status)).length, lbl:'สั่งซื้อ/รออนุมัติ/จัดส่ง' },
+    { cls:'sc-mint',  icon:'✅', val:data.filter(r=>ST_DONE.includes(r.status)).length, lbl:'นำส่งแล้ว' },
+    { cls:'sc-peach', icon:'🔄', val:data.filter(r=>ST_ISSUE.includes(r.status)).length, lbl:'ยืม/ค้างส่ง' },
     { cls:'sc-rose',  icon:'⚠️', val:data.filter(r=>r.exp && expClass(r.exp)!=='exp-ok').length, lbl:'ใกล้หมดอายุ' },
     ...(state.tab==='overview'?[{ cls:'sc-purple', icon:'💰', val:fmt(budget,0), lbl:'ค่าใช้จ่าย (บาท)' }]:[]),
   ];
@@ -2587,7 +3661,7 @@ async function saveItem(){
     note:      (document.getElementById('f_note').value||'').trim(),
   };
   const data=getData(state.editTab);
-  if(state.editId){ const i=data.findIndex(r=>r.id===state.editId); i>=0?data[i]=row:data.push(row); }
+  if(state.editId){ const i=data.findIndex(r=>r.id===state.editId); i>=0?data[i]=Object.assign({},data[i],row):data.push(row); }
   else data.push(row);
   saveLocal(state.editTab, data);
   state.editId=null;
@@ -2641,48 +3715,99 @@ function copyCode(){
 
 /* ═══════════════ IMPORT / EXPORT ═══════════════ */
 function triggerImport(){ document.getElementById('fileInput').click(); }
+function normName(v){ return String(v==null?'':v).replace(/\s+/g,' ').trim(); }
+const IMPORT_HDR = {
+  priority:['รายการสำคัญ'], orderDate:['วันที่สั่งซื้อ'], category:['หมวดหมู่'],
+  status:['สถานะ'], item:['รายการ'], qty:['จำนวน'], po:['เลข po','po','เลขที่ po'],
+  cost:['ค่าใช้จ่าย','ราคา'], exp:['exp.','exp','วันหมดอายุ'], dueDate:['ถึงภายในวันที่'],
+  contact:['ผู้ติดต่อ'], note:['โน้ต','note','หมายเหตุ'], rd:['rd'],
+};
+/** จับคอลัมน์จาก "ชื่อหัวตาราง" ไม่ใช่ตำแหน่ง — ชีตที่สลับคอลัมน์ RD/Note ก็เข้าถูกช่อง */
+function mapHeaders(row){
+  const idx={};
+  (row||[]).forEach((h,i)=>{
+    const k=normName(h).toLowerCase();
+    Object.keys(IMPORT_HDR).forEach(f=>{ if(idx[f]===undefined && IMPORT_HDR[f].indexOf(k)>=0) idx[f]=i; });
+  });
+  return idx;
+}
 function handleImport(e){
   const file=e.target.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=ev=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'binary'});
-      const sheetMap={'ชีต1':'overview','JAN2026':'JAN','FEB2026':'FEB','MARCH2026':'MAR','APRIL2026':'APR','MAY2026':'MAY','JUN2026':'JUN','JUL2026':'JUL','AUG2026':'AUG','SEP2026':'SEP','OCT2026':'OCT','NOV2026':'NOV','DEC2026':'DEC'};
-      let cnt=0; const touched=[];
+      const sheetMap={'ชีต1':'overview','Sheet1':'overview','JAN2026':'JAN','FEB2026':'FEB','MARCH2026':'MAR','MAR2026':'MAR','APRIL2026':'APR','APR2026':'APR','MAY2026':'MAY','JUN2026':'JUN','JULY2026':'JUL','JUL2026':'JUL','AUG2026':'AUG','SEP2026':'SEP','OCT2026':'OCT','NOV2026':'NOV','DEC2026':'DEC'};
+      let cnt=0, skipped=0; const touched=[];
       wb.SheetNames.forEach(name=>{
-        const tab=sheetMap[name]; if(!tab) return;
+        const tab=sheetMap[name] || sheetMap[name.toUpperCase()]; if(!tab) return;
         const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
         if(rows.length<2) return;
-        const isOv=tab==='overview'; const data=[];
+        const idx=mapHeaders(rows[0]);
+        if(idx.item===undefined) return;
+        const data=[];
         for(let i=1;i<rows.length;i++){
-          const r=rows[i]; const item=(r[4]||'').toString().trim(); if(!item) continue;
+          const r=rows[i];
+          const g=f=>(idx[f]===undefined ? '' : normName(r[idx[f]]));
+          const item=g('item');
+          if(!item){ if((r||[]).some(c=>normName(c))) skipped++; continue; }
           data.push({
             id:genId(tab),
-            priority:(r[0]||'').toString().trim(),
-            orderDate:parseExcelDate(r[1]),
-            category:(r[2]||'').toString().trim(),
-            status:(r[3]||'').toString().trim(),
+            priority:g('priority'),
+            orderDate:parseExcelDate(idx.orderDate===undefined?'':r[idx.orderDate]),
+            category:g('category'),
+            status:g('status'),
             item:item,
-            qty:isOv?(r[7]||'').toString():(r[5]||'').toString(),
-            po:isOv?(r[5]||'').toString().trim():'',
-            cost:isOv?(r[6]||'').toString():'',
-            exp:isOv?'':parseExcelDate(r[6]),
-            dueDate:isOv?'':parseExcelDate(r[7]),
-            contact:((isOv?r[8]:r[8])||'').toString().trim(),
-            note:((isOv?r[9]:r[9])||'').toString().trim(),
-            rd:isOv?'':(r[10]||'').toString().trim(),
+            qty:g('qty'),
+            po:g('po'),
+            cost:g('cost'),
+            exp:parseExcelDate(idx.exp===undefined?'':r[idx.exp]),
+            dueDate:parseExcelDate(idx.dueDate===undefined?'':r[idx.dueDate]),
+            contact:g('contact'),
+            note:g('note'),
+            rd:g('rd'),
           });
           cnt++;
         }
-        if(data.length){ saveLocal(tab,data); touched.push(tab); }
+        saveLocal(tab,data); touched.push(tab);
       });
-      showToast(`📥 นำเข้า ${cnt} รายการแล้ว`,'success');
+      showToast(`📥 นำเข้า ${cnt} รายการแล้ว${skipped?` (ข้ามแถวว่าง ${skipped})`:''}`,'success');
       renderAll();
       touched.forEach(t=>syncTab(t));
     }catch(err){ showToast('❌ นำเข้าไม่สำเร็จ: '+err.message,'error'); }
     e.target.value='';
   };
   reader.readAsBinaryString(file);
+}
+/** แปลงคอลัมน์ RD (จำนวนที่รับจริง) ของเดือนที่เปิดอยู่ เป็นรายการรับเข้าคลัง */
+async function rdToStock(){
+  const tab=state.tab;
+  const m=MONTHS.find(x=>x.key===tab);
+  const rows=getData(tab).filter(r=>{ const n=parseFloat(String(r.rd||'').match(/[\d.]+/)); return r.item && !isNaN(n) && n>0; });
+  if(!rows.length){ showToast('เดือนนี้ไม่มีข้อมูลในคอลัมน์ RD ที่แปลงได้','info'); return; }
+  const docNo='RD-'+tab;
+  const already=new Set(getData('TXN').filter(t=>t.docNo===docNo).map(t=>t.item));
+  const todo=rows.filter(r=>!already.has(normName(r.item)));
+  if(!todo.length){ showToast('แปลงรายการของเดือนนี้ไปแล้ว','info'); return; }
+  const preview=todo.map(r=>'• '+r.item+' = '+String(r.rd).match(/[\d.]+/)[0]).join('\n');
+  if(!confirm('สร้างรายการ “รับเข้าคลัง” จากคอลัมน์ RD ของ '+((m&&(m.full||m.label))||tab)+'\n\n'+preview+'\n\nหมายเหตุ: ยังไม่มี Lot/วันหมดอายุ — ต้องเข้าไปเติมภายหลังที่เมนูรับเข้า\nยืนยันหรือไม่?')) return;
+  if(getData('ITEMS').length===0) await seedItems();
+  const txn=getData('TXN');
+  todo.forEach(r=>{
+    const name=normName(r.item);
+    txn.push({
+      id:genId('tx'), date:r.orderDate||today(), type:'IN', item:name,
+      category:(itemMaster(name)||{}).category || r.category || '',
+      lot:'', exp:r.exp||'', qty:parseFloat(String(r.rd).match(/[\d.]+/)[0]),
+      unit:(itemMaster(name)||{}).unit||'', docNo:docNo, po:r.po||'', vendor:'', price:'',
+      person:'', purpose:'', reason:'', location:'', billId:'',
+      note:'ยอดยกมาจากคอลัมน์ RD ('+((m&&(m.full||m.label))||tab)+')'+(String(r.rd).match(/[^\d.]/)?' — เดิมบันทึกว่า "'+r.rd+'"':''),
+      ts:new Date().toISOString(),
+    });
+  });
+  saveLocal('TXN',txn); renderAll();
+  showToast(`🔁 สร้างรายการรับเข้า ${todo.length} รายการจาก RD แล้ว — อย่าลืมเติม Lot/EXP`,'success');
+  await syncTab('TXN');
 }
 function parseExcelDate(v){
   if(!v) return '';
@@ -2715,8 +3840,38 @@ function exportExcel(){
     i+1,l.item,l.lot,l.exp,l.qty,l.unit,l.price,num(l.qty)*num(l.price),b.note])));
   add('BILLS',[['เลขที่เอกสาร','ประเภท','วันที่','สถานะ','หน่วยงาน','บริษัท','ผู้เบิก/ตรวจรับ','ผู้อนุมัติ','อ้างอิง','ลำดับ','รายการ','Lot','EXP','จำนวน','หน่วย','ราคา/หน่วย','จำนวนเงิน','หมายเหตุ'], ...billRows]);
   // ทะเบียน
-  add('ITEMS',[['รหัส','ชื่อรายการ','หมวดหมู่','Cat.No','หน่วย','เทสต์/หน่วย','Min','Max','จัดเก็บ','ที่เก็บ','บริษัท','ราคา','สถานะ','หมายเหตุ'],
-    ...getData('ITEMS').map(i=>[i.code,i.name,i.category,i.catNo,i.unit,i.testsPerUnit,i.minQty,i.maxQty,i.storage,i.location,i.vendor,i.price,i.active==='0'?'ยกเลิกใช้':'ใช้งาน',i.note])]);
+  add('ITEMS',[['รหัส','ชื่อรายการ','หมวดหมู่','Cat.No','หน่วย','เทสต์/หน่วย','Min','Max','Lead time (วัน)','Safety stock','ใช้เฉลี่ย/เดือน','จัดเก็บ','ที่เก็บ','บริษัท','ราคา','สถานะ','หมายเหตุ'],
+    ...getData('ITEMS').map(i=>[i.code,i.name,i.category,i.catNo,i.unit,i.testsPerUnit,i.minQty,i.maxQty,i.lead_time,i.safety_stock,i.planned_monthly_usage,i.storage,i.location,i.vendor,i.price,i.active==='0'?'ยกเลิกใช้':'ใช้งาน',i.note])]);
+  const stX=buildStock(), cmX=consumptionMap(), planX=planQtyByItem();
+  add('REORDER_ALERT',[['สถานะ','รายการ','หมวดหมู่','คงเหลือ','หน่วย','ค้างรับ','ใช้เฉลี่ย/วัน','พอใช้อีก (วัน)','คาดว่าหมดวันที่','Lead time (วัน)','ต้องสั่งเมื่อเหลือ ≤ (วัน)','ควรสั่ง','ที่มาของอัตรา'],
+    ...stX.map(s=>[(URGENCY[s.urgency]||URGENCY.nodata).label,s.name,s.category,s.total,s.unit,s.onOrder,
+      s.avgDaily?Number(s.avgDaily.toFixed(3)):'', s.coverDays===null?'':Math.floor(s.coverDays), s.stockoutDate,
+      s.leadDays, Number(s.triggerDays.toFixed(1)), Math.ceil(s.needQty||s.suggest||0),
+      s.rateSource==='actual'?('ยอดเบิกจริง '+coverageWindow+' วัน'):s.rateSource==='plan'?'แผนที่ตั้งไว้':'ไม่มีข้อมูล'])]);
+  const yrX=String(new Date().getFullYear());
+  add('USAGE_PERFORMANCE',[['รายการ','หมวดหมู่','แผนใช้/เดือน','เบิกจริง/เดือน','ผลต่าง','ผลต่าง %','แผนสั่งซื้อทั้งปี','รับเข้าจริงปีนี้','เบิกจริงปีนี้'],
+    ...stX.map(s=>{
+      const c=cmX[s.name]||{win:0};
+      const act=c.win/coverageWindow*30, pl=num(s.usage);
+      const inY=getData('TXN').filter(t=>t.type==='IN'&&normName(t.item)===s.name&&toISODate(t.date).startsWith(yrX)).reduce((x,t)=>x+Math.abs(num(t.qty)),0);
+      const outY=getData('TXN').filter(t=>t.type==='OUT'&&normName(t.item)===s.name&&toISODate(t.date).startsWith(yrX)).reduce((x,t)=>x+Math.abs(num(t.qty)),0);
+      return [s.name,s.category,pl||'',Number(act.toFixed(2)),pl>0?Number((act-pl).toFixed(2)):'',pl>0?Number(((act-pl)/pl*100).toFixed(0)):'',planX[s.name]||'',inY||'',outY||''];
+    })]);
+  add('SUPPLIERS',[['id','ชื่อบริษัท','เบอร์โทร','อีเมล'],
+    ...getData('SUPPLIERS').map(s=>[s.id,s.supplier_name,s.phone,s.email])]);
+  const rmX=receiptMap();
+  const poRows=[];
+  getData('PO_HEADERS').forEach(p=>poLines(p.id).forEach((l,i)=>poRows.push([
+    p.po_number,p.po_date,p.supplier_name,poComputedStatus(p,rmX),p.source_sheet,p.note,
+    i+1,l.product_name,l.category,l.quantity,l.unit,l.unit_price,num(l.quantity)*num(l.unit_price),
+    receivedQty(l.id,rmX),lineRemaining(l,rmX),l.due_date,l.item_note])));
+  add('PURCHASE_ORDERS',[['เลขที่ PO','วันที่สั่ง','บริษัท','สถานะ','อ้างอิงแผนเดือน','หมายเหตุ','ลำดับ','รายการ','หมวดหมู่','สั่ง','หน่วย','ราคา/หน่วย','มูลค่า','รับแล้ว','ค้างรับ','กำหนดส่ง','หมายเหตุบรรทัด'], ...poRows]);
+  const rcRows=getData('PO_RECEIPTS').map(r=>{
+    const l=getData('PO_ITEMS').find(x=>x.id===r.item_id)||{};
+    const p=getData('PO_HEADERS').find(x=>x.id===l.po_id)||{};
+    return [r.receipt_date,p.po_number,p.supplier_name,l.product_name,r.received_qty,r.remaining_qty,r.status,r.ref_doc,r.note];
+  });
+  add('PO_RECEIPTS',[['วันที่รับ','เลขที่ PO','บริษัท','รายการ','รับครั้งนี้','ค้างหลังรับ','สถานะ','เอกสารอ้างอิง','หมายเหตุ'], ...rcRows]);
   // แผนสั่งซื้อ
   add('ชีต1',[['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','เลข PO','ค่าใช้จ่าย','จำนวน','ผู้ติดต่อ','โน้ต'],
     ...getData('overview').map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.po,r.cost,r.qty,r.contact,r.note])]);
@@ -2743,6 +3898,665 @@ async function loadItemList(){
     const have=new Set(Array.from(dl.options).map(o=>o.value));
     items.forEach(x=>{ const v=(x||'').toString().trim(); if(v&&!have.has(v)){ const o=document.createElement('option'); o.value=v; dl.appendChild(o); have.add(v); } });
   }catch(e){ console.log('loadItemList:',e); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUPPLIERS  +  PURCHASE ORDERS (PO_HEADERS / PO_ITEMS / PO_RECEIPTS)
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─────────── SUPPLIERS ─────────── */
+function supplierName(id){
+  const s = getData('SUPPLIERS').find(x=>x.id===id);
+  return s ? (s.supplier_name||'') : '';
+}
+function supFilter(v){ state.sup = v; renderSuppliers(); }
+function renderSuppliers(){
+  let rows = getData('SUPPLIERS');
+  const q = (state.sup||'').toLowerCase();
+  if(q) rows = rows.filter(s=>((s.supplier_name||'')+(s.phone||'')+(s.email||'')).toLowerCase().includes(q));
+  rows = [...rows].sort((a,b)=>(a.supplier_name||'').localeCompare(b.supplier_name||'','th'));
+  const heads = getData('PO_HEADERS');
+  document.getElementById('supHead').innerHTML = head(['#','ชื่อบริษัท','เบอร์โทร','อีเมล','ใบสั่งซื้อ','มูลค่าสะสม (บาท)','']);
+  const body = document.getElementById('supBody');
+  if(!rows.length){
+    body.innerHTML = emptyRow(7,'ยังไม่มีบริษัทคู่ค้า','กด “＋ เพิ่มบริษัท” เพื่อบันทึกบริษัทที่สั่งน้ำยาประจำ');
+  } else {
+    const rm = receiptMap();
+    body.innerHTML = rows.map((s,i)=>{
+      const pos = heads.filter(p=>p.supplier_id===s.id);
+      const val = getData('PO_ITEMS').filter(l=>pos.some(p=>p.id===l.po_id))
+                    .reduce((x,l)=>x+num(l.quantity)*num(l.unit_price),0);
+      return `<tr>
+        <td class="col-num">${i+1}</td>
+        <td><span class="item-cell">${esc(s.supplier_name)}</span></td>
+        <td>${esc(s.phone||'—')}</td>
+        <td style="font-size:12px">${esc(s.email||'—')}</td>
+        <td style="text-align:center">${pos.length||'—'}</td>
+        <td class="cost-cell" style="text-align:right">${val?fmt(val,2):'—'}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-outline btn-sm btn-icon" title="แก้ไข" onclick="openSupplier('${s.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('sup','${s.id}','${esc(s.supplier_name)}')">🗑️</button>
+        </div></td></tr>`;
+    }).join('');
+  }
+  document.getElementById('supFooter').innerHTML =
+    `<span>🏢 ทั้งหมด <strong>${getData('SUPPLIERS').length}</strong> บริษัท</span>
+     <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 Sync</button>`;
+}
+function openSupplier(id){
+  state.supEdit.id = id || null;
+  const s = id ? getData('SUPPLIERS').find(x=>x.id===id) : null;
+  document.getElementById('supTitle').textContent = s ? '🏢 แก้ไขข้อมูลบริษัท' : '🏢 เพิ่มบริษัทคู่ค้า';
+  const v=(k,val)=>{ document.getElementById(k).value = val||''; };
+  v('sp_name', s&&s.supplier_name); v('sp_phone', s&&s.phone); v('sp_email', s&&s.email);
+  document.getElementById('supOverlay').classList.add('open');
+}
+function closeSupplier(){ document.getElementById('supOverlay').classList.remove('open'); }
+async function saveSupplier(){
+  const name=(document.getElementById('sp_name').value||'').trim();
+  if(!name){ showToast('กรุณากรอกชื่อบริษัท','error'); return; }
+  const data=getData('SUPPLIERS');
+  const row={ id: state.supEdit.id || genId('sup'), supplier_name:name,
+    phone:(document.getElementById('sp_phone').value||'').trim(),
+    email:(document.getElementById('sp_email').value||'').trim() };
+  if(state.supEdit.id){ const i=data.findIndex(x=>x.id===state.supEdit.id); if(i>=0) data[i]=Object.assign({},data[i],row); else data.push(row); }
+  else data.push(row);
+  saveLocal('SUPPLIERS',data);
+  state.supEdit.id=null; closeSupplier(); renderAll();
+  showToast('💾 บันทึกบริษัทแล้ว','success');
+  await syncTab('SUPPLIERS');
+}
+
+/* ─────────── PO HELPERS ─────────── */
+function receiptMap(){
+  const m={};
+  getData('PO_RECEIPTS').forEach(r=>{ m[r.item_id]=(m[r.item_id]||0)+num(r.received_qty); });
+  return m;
+}
+function receivedQty(itemId, rm){ return (rm||receiptMap())[itemId] || 0; }
+function lineRemaining(l, rm){ return Math.max(0, num(l.quantity) - receivedQty(l.id, rm)); }
+function poLines(poId){ return getData('PO_ITEMS').filter(l=>l.po_id===poId); }
+function poComputedStatus(po, rm){
+  if(po.status==='ยกเลิก' || po.status==='ร่าง') return po.status;
+  const ls = poLines(po.id);
+  if(!ls.length) return po.status||'ร่าง';
+  const ordered = ls.reduce((s,l)=>s+num(l.quantity),0);
+  const got = ls.reduce((s,l)=>s+receivedQty(l.id, rm),0);
+  if(got <= 0) return 'สั่งซื้อแล้ว';
+  if(got + 0.0001 >= ordered) return 'รับครบแล้ว';
+  return 'รับบางส่วน';
+}
+/** ปริมาณที่ "สั่งแล้วแต่ยังไม่มาถึง" แยกตามชื่อรายการ */
+function openOrderMap(){
+  const rm = receiptMap();
+  const live = new Set(getData('PO_HEADERS').filter(p=>p.status!=='ยกเลิก' && p.status!=='ร่าง').map(p=>p.id));
+  const map = {};
+  getData('PO_ITEMS').forEach(l=>{
+    if(!live.has(l.po_id)) return;
+    const rem = lineRemaining(l, rm);
+    if(rem <= 0) return;
+    const k = normName(l.product_name);
+    map[k] = (map[k]||0) + rem;
+  });
+  return map;
+}
+function nextPONumber(){
+  const be = (new Date().getFullYear()+543);
+  const pre = 'PO-'+be+'-';
+  const n = getData('PO_HEADERS').filter(p=>(p.po_number||'').startsWith(pre))
+              .map(p=>parseInt((p.po_number||'').slice(pre.length),10)||0);
+  return pre + String((n.length?Math.max.apply(null,n):0)+1).padStart(4,'0');
+}
+function poStatusBadge(st){
+  const cls = st==='รับครบแล้ว' ? 'sb-done' : st==='รับบางส่วน' ? 'sb-ship'
+            : st==='สั่งซื้อแล้ว' ? 'sb-order' : st==='ยกเลิก' ? 'sb-overdue' : 'sb-draft';
+  return `<span class="sbadge ${cls}">${esc(st||'ร่าง')}</span>`;
+}
+
+/* ─────────── PO LIST ─────────── */
+function poFilter(k,v){ state.po[k]=v; renderPO(); }
+function renderPO(){
+  const rm = receiptMap();
+  let rows = getData('PO_HEADERS').map(p=>Object.assign({},p,{_st:poComputedStatus(p,rm)}));
+  const f = state.po;
+  if(f.q){ const q=f.q.toLowerCase();
+    rows = rows.filter(p=>((p.po_number||'')+(p.supplier_name||'')+(p.note||'')+
+      poLines(p.id).map(l=>l.product_name).join(' ')).toLowerCase().includes(q)); }
+  if(f.status)   rows = rows.filter(p=>p._st===f.status);
+  if(f.supplier) rows = rows.filter(p=>p.supplier_id===f.supplier);
+  rows.sort((a,b)=>(b.po_date||'').localeCompare(a.po_date||'')||(b.po_number||'').localeCompare(a.po_number||''));
+
+  const all = getData('PO_HEADERS').map(p=>Object.assign({},p,{_st:poComputedStatus(p,rm)}));
+  const openLines = getData('PO_ITEMS').filter(l=>{
+    const p = getData('PO_HEADERS').find(x=>x.id===l.po_id);
+    return p && p.status!=='ยกเลิก' && p.status!=='ร่าง' && lineRemaining(l,rm)>0;
+  });
+  const openValue = openLines.reduce((s,l)=>s+lineRemaining(l,rm)*num(l.unit_price),0);
+  const late = openLines.filter(l=>l.due_date && daysTo(l.due_date)!==null && daysTo(l.due_date)<0);
+  document.getElementById('poStats').innerHTML = [
+    { cls:'sc-gold', icon:'🛒', val:all.length, lbl:'ใบสั่งซื้อทั้งหมด' },
+    { cls:'sc-sky',  icon:'🚚', val:all.filter(p=>p._st==='สั่งซื้อแล้ว'||p._st==='รับบางส่วน').length, lbl:'ยังรับไม่ครบ' },
+    { cls:'sc-mint', icon:'✅', val:all.filter(p=>p._st==='รับครบแล้ว').length, lbl:'รับครบแล้ว' },
+    { cls:'sc-peach',icon:'📦', val:openLines.length, lbl:'บรรทัดที่ค้างรับ' },
+    { cls:'sc-rose', icon:'⏰', val:late.length, lbl:'เลยกำหนดส่ง' },
+    { cls:'sc-purple',icon:'💰', val:fmt(openValue,0), lbl:'มูลค่าค้างรับ (บาท)' },
+  ].map(c=>`<div class="stat-card ${c.cls}"><div class="s-icon">${c.icon}</div><div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
+
+  document.getElementById('poHead').innerHTML =
+    head(['#','เลขที่ PO','วันที่สั่ง','บริษัท','รายการ','สั่ง / รับแล้ว','ความคืบหน้า','มูลค่า','สถานะ','']);
+  const body = document.getElementById('poBody');
+  if(!rows.length){
+    body.innerHTML = emptyRow(10,'ยังไม่มีใบสั่งซื้อ','กด “＋ ใบสั่งซื้อใหม่” หรือ “📅 สร้างจากแผนเดือน”');
+  } else {
+    body.innerHTML = rows.map((p,i)=>{
+      const ls = poLines(p.id);
+      const ord = ls.reduce((s,l)=>s+num(l.quantity),0);
+      const got = ls.reduce((s,l)=>s+receivedQty(l.id,rm),0);
+      const pct = ord>0 ? Math.min(100, got/ord*100) : 0;
+      const val = ls.reduce((s,l)=>s+num(l.quantity)*num(l.unit_price),0);
+      const done = p._st==='รับครบแล้ว' || p._st==='ยกเลิก';
+      const barCls = pct>=100 ? 'sbar-ok' : pct>0 ? 'sbar-low' : 'sbar-out';
+      return `<tr>
+        <td class="col-num">${i+1}</td>
+        <td><span class="item-cell" style="font-family:Consolas,monospace">${esc(p.po_number)}</span></td>
+        <td style="white-space:nowrap">${formatDate(p.po_date)}</td>
+        <td style="font-size:12.5px">${esc(p.supplier_name||supplierName(p.supplier_id)||'—')}</td>
+        <td style="text-align:center">${ls.length}</td>
+        <td style="text-align:center;white-space:nowrap">${fmt(got)} / ${fmt(ord)}</td>
+        <td><div class="sbar ${barCls}"><i style="width:${pct}%"></i></div>
+            <div style="font-size:10.5px;color:var(--text3);margin-top:2px">${Math.round(pct)}%</div></td>
+        <td class="cost-cell" style="text-align:right">${val?fmt(val,2):'—'}</td>
+        <td>${poStatusBadge(p._st)}</td>
+        <td><div class="act-btns">
+          ${done?'':`<button class="btn btn-mint btn-sm btn-icon" title="รับของ" onclick="openRecv('${p.id}')">📥</button>`}
+          <button class="btn btn-outline btn-sm btn-icon" title="แก้ไข" onclick="openPO('${p.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('po','${p.id}','${esc(p.po_number)}')">🗑️</button>
+        </div></td></tr>`;
+    }).join('');
+  }
+  document.getElementById('poFooter').innerHTML =
+    `<span>🛒 แสดง <strong>${rows.length}</strong> จาก ${all.length} ใบ</span>
+     <div style="display:flex;gap:8px">
+       <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 Sync</button>
+       <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>
+     </div>`;
+
+  // ตารางของค้างรับ
+  document.getElementById('openHead').innerHTML =
+    head(['รายการ','หมวดหมู่','เลขที่ PO','บริษัท','สั่ง','รับแล้ว','ค้างรับ','กำหนดส่งภายใน','']);
+  const ob = document.getElementById('openBody');
+  if(!openLines.length){
+    ob.innerHTML = emptyRow(9,'ไม่มีของค้างรับ','ของที่สั่งไปรับครบหมดแล้ว');
+  } else {
+    ob.innerHTML = openLines
+      .sort((a,b)=>(a.due_date||'9999').localeCompare(b.due_date||'9999'))
+      .map(l=>{
+        const p = getData('PO_HEADERS').find(x=>x.id===l.po_id) || {};
+        const dd = daysTo(l.due_date);
+        const dueTxt = l.due_date
+          ? `<span class="${dd<0?'exp-alert':dd<7?'exp-caution':dd<30?'exp-warn':'exp-ok'}">${formatDate(l.due_date)}${dd!==null?` (${dd<0?'เลยกำหนด '+Math.abs(dd):'อีก '+dd} วัน)`:''}</span>`
+          : '—';
+        return `<tr>
+          <td><span class="item-cell">${esc(l.product_name)}</span></td>
+          <td>${catChip(l.category)}</td>
+          <td style="font-family:Consolas,monospace;font-size:12px">${esc(p.po_number||'—')}</td>
+          <td style="font-size:12px">${esc(p.supplier_name||'—')}</td>
+          <td style="text-align:center">${fmt(l.quantity)}</td>
+          <td style="text-align:center" class="qty-in">${fmt(receivedQty(l.id,rm))}</td>
+          <td style="text-align:center" class="qty-out">${fmt(lineRemaining(l,rm))} ${esc(l.unit||'')}</td>
+          <td>${dueTxt}</td>
+          <td><button class="btn btn-mint btn-sm btn-icon" title="รับของ" onclick="openRecv('${l.po_id}')">📥</button></td>
+        </tr>`;
+      }).join('');
+  }
+}
+
+/* ─────────── PO EDITOR ─────────── */
+function poSelectOptions(){
+  const sup = getData('SUPPLIERS');
+  return '<option value="">-- เลือกบริษัท --</option>' +
+    sup.map(s=>`<option value="${esc(s.id)}">${esc(s.supplier_name)}</option>`).join('');
+}
+function openPO(id){
+  const p = id ? getData('PO_HEADERS').find(x=>x.id===id) : null;
+  state.poEdit = { id: p?p.id:null, lines: p ? JSON.parse(JSON.stringify(poLines(p.id))) : [] };
+  document.getElementById('poTitle').textContent = p ? '🛒 แก้ไขใบสั่งซื้อ' : '🛒 ใบสั่งซื้อใหม่';
+  document.getElementById('poDocNo').textContent = 'เลขที่ ' + (p ? p.po_number : nextPONumber());
+  document.getElementById('p_supplier').innerHTML = poSelectOptions();
+  document.getElementById('p_status').innerHTML = PO_STATUS.map(s=>`<option>${esc(s)}</option>`).join('');
+  document.getElementById('p_source').innerHTML = '<option value="">— ไม่อ้างอิง —</option>' +
+    MONTHS.slice(1).map(m=>`<option value="${m.key}">${esc(m.full)}</option>`).join('');
+  const v=(k,val)=>{ document.getElementById(k).value = val==null?'':val; };
+  v('p_date', p?p.po_date:today());
+  v('p_number', p?p.po_number:nextPONumber());
+  v('p_supplier', p?p.supplier_id:'');
+  v('p_status', p?(p.status||'สั่งซื้อแล้ว'):'สั่งซื้อแล้ว');
+  v('p_source', p?p.source_sheet:'');
+  v('p_note', p?p.note:'');
+  if(!state.poEdit.lines.length) addPOLine(); else renderPOLines();
+  document.getElementById('poOverlay').classList.add('open');
+}
+function closePO(){ document.getElementById('poOverlay').classList.remove('open'); }
+function onPOSupplier(){}
+function addPOLine(){
+  state.poEdit.lines.push({ id:genId('pi'), po_id:'', product_id:'', product_name:'', category:'',
+    quantity:'', unit:'', unit_price:'', total_price:'', exp_date:'', due_date:'', rd:'', item_note:'' });
+  renderPOLines();
+}
+function delPOLine(i){ state.poEdit.lines.splice(i,1); if(!state.poEdit.lines.length) addPOLine(); else renderPOLines(); }
+function onPOLine(i, field, val){
+  const L = state.poEdit.lines[i];
+  L[field] = val;
+  if(field==='product_name'){
+    const m = itemMaster(val);
+    if(m){
+      if(!L.unit) L.unit = m.unit||'';
+      if(!L.unit_price) L.unit_price = m.price||'';
+      if(!L.category) L.category = m.category||'';
+      L.product_id = m.id||'';
+    }
+    renderPOLines(); return;
+  }
+  L.total_price = num(L.quantity)*num(L.unit_price);
+  updatePOTotal();
+}
+function renderPOLines(){
+  const cats = Array.from(new Set(CATEGORIES.concat(getData('ITEMS').map(i=>i.category).filter(Boolean))));
+  document.getElementById('poLineBody').innerHTML = state.poEdit.lines.map((l,i)=>{
+    const rm = receiptMap();
+    const got = receivedQty(l.id, rm);
+    return `<tr>
+      <td style="text-align:center;color:var(--text3)">${i+1}</td>
+      <td><input type="text" list="itemList" value="${esc(l.product_name)}" placeholder="ชื่อน้ำยา/วัสดุ" onchange="onPOLine(${i},'product_name',this.value)">
+        ${got>0?`<div style="font-size:10.5px;color:var(--mint-dark)">รับมาแล้ว ${fmt(got)} — แก้จำนวนได้ แต่ห้ามน้อยกว่านี้</div>`:''}
+        ${(l.product_name && !itemMaster(l.product_name))?`<div style="font-size:10.5px;color:var(--gold-dark)">🆕 รายการใหม่ — จะเพิ่มเข้าทะเบียนให้ตอนบันทึก</div>`:''}</td>
+      <td><select onchange="onPOLine(${i},'category',this.value)"><option value="">—</option>${
+        cats.map(c=>`<option ${c===l.category?'selected':''}>${esc(c)}</option>`).join('')}</select></td>
+      <td><input type="number" min="0" step="0.01" value="${esc(l.quantity)}" oninput="onPOLine(${i},'quantity',this.value)"></td>
+      <td><input type="text" list="unitList" value="${esc(l.unit)}" oninput="onPOLine(${i},'unit',this.value)"></td>
+      <td><input type="number" min="0" step="0.01" value="${esc(l.unit_price)}" oninput="onPOLine(${i},'unit_price',this.value)"></td>
+      <td style="text-align:right;font-weight:600;color:var(--gold-dark)">${fmt(num(l.quantity)*num(l.unit_price),2)}</td>
+      <td><input type="date" value="${esc(l.due_date)}" oninput="onPOLine(${i},'due_date',this.value)"></td>
+      <td><button class="line-del" onclick="delPOLine(${i})">✕</button></td>
+    </tr>`;
+  }).join('');
+  updatePOTotal();
+}
+function updatePOTotal(){
+  const t = state.poEdit.lines.reduce((s,l)=>s+num(l.quantity)*num(l.unit_price),0);
+  document.getElementById('poLineTotal').textContent = `รวมทั้งสิ้น ${fmt(t,2)} บาท`;
+}
+async function savePO(){
+  const lines = state.poEdit.lines.filter(l=>normName(l.product_name) && num(l.quantity)>0);
+  if(!lines.length){ showToast('กรุณากรอกรายการอย่างน้อย 1 บรรทัด','error'); return; }
+  const supId = document.getElementById('p_supplier').value;
+  if(!supId){ showToast('กรุณาเลือกบริษัท (เพิ่มได้ที่เมนู 🏢 บริษัทคู่ค้า)','error'); return; }
+  const rm = receiptMap();
+  for(const l of lines){
+    const got = receivedQty(l.id, rm);
+    if(got > num(l.quantity)+0.0001){
+      showToast(`บรรทัด "${l.product_name}" รับมาแล้ว ${fmt(got)} แก้จำนวนสั่งให้น้อยกว่านี้ไม่ได้`,'error'); return;
+    }
+  }
+  const heads = getData('PO_HEADERS');
+  const id = state.poEdit.id || genId('po');
+  const row = {
+    id: id,
+    po_number: (document.getElementById('p_number').value||'').trim() || nextPONumber(),
+    po_date: document.getElementById('p_date').value || today(),
+    supplier_id: supId,
+    supplier_name: supplierName(supId),
+    status: document.getElementById('p_status').value || 'สั่งซื้อแล้ว',
+    note: (document.getElementById('p_note').value||'').trim(),
+    source_sheet: document.getElementById('p_source').value || '',
+  };
+  const hi = heads.findIndex(x=>x.id===id);
+  if(hi>=0) heads[hi] = Object.assign({}, heads[hi], row); else heads.push(row);
+  saveLocal('PO_HEADERS', heads);
+
+  const keep = getData('PO_ITEMS').filter(l=>l.po_id!==id);
+  lines.forEach(l=>{
+    l.po_id = id;
+    l.product_name = normName(l.product_name);
+    l.total_price = num(l.quantity)*num(l.unit_price);
+    if(!l.id) l.id = genId('pi');
+    keep.push(l);
+    autoRegisterItem(l.product_name, { category:l.category, unit:l.unit, vendor:row.supplier_name, price:l.unit_price, location:'' });
+  });
+  saveLocal('PO_ITEMS', keep);
+  state.poEdit={id:null,lines:[]};
+  closePO(); renderAll();
+  showToast(`💾 บันทึก ${row.po_number} แล้ว`,'success');
+  await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS');
+}
+/** สร้างใบสั่งซื้อจากรายการที่ระบบบอกว่าถึงเวลาสั่ง (Reorder Alert) */
+function poFromReorder(){
+  const stAll = buildStock();
+  let need = mustOrderNow(stAll);
+  if(state.report.cat) need = need.filter(s=>s.category===state.report.cat);
+  const noStockCnt = stAll.filter(s=>s.urgency==='nostock').length;
+  if(!need.length){
+    showToast(noStockCnt
+      ? `ยังไม่มีรายการที่ถึงเวลาสั่งตาม coverage — แต่มี ${noStockCnt} รายการที่ยังไม่มีของในคลัง ลองบันทึกยอดยกมาก่อน`
+      : 'ตอนนี้ยังไม่มีรายการที่ถึงเวลาสั่ง','info');
+    return;
+  }
+  const preview = need.slice(0,12).map(s=>`• ${s.name} — เหลือ ${fmt(s.total)} (พอใช้อีก ${s.coverDays===null?'—':Math.floor(s.coverDays)} วัน) → สั่ง ${fmt(Math.ceil(s.needQty||s.suggest||0))}`).join('\n');
+  if(!confirm(`สร้างใบสั่งซื้อจาก ${need.length} รายการที่ถึงเวลาสั่ง\n\n${preview}${need.length>12?'\n… และอีก '+(need.length-12)+' รายการ':''}\n\nยืนยันหรือไม่?`)) return;
+  openPO();
+  state.poEdit.lines = need.map(s=>{
+    const m = itemMaster(s.name) || {};
+    return { id:genId('pi'), po_id:'', product_id:m.id||'', product_name:s.name,
+      category:s.category||'', quantity:String(Math.ceil(s.needQty||s.suggest||1)),
+      unit:s.unit||m.unit||'', unit_price:m.price||'', total_price:'',
+      exp_date:'', due_date:shiftISO(s.leadDays), rd:'',
+      item_note:`คงเหลือ ${fmt(s.total)} · พอใช้อีก ${s.coverDays===null?'—':Math.floor(s.coverDays)} วัน` };
+  });
+  // ถ้าทุกรายการเป็นบริษัทเดียวกัน เลือกให้เลย
+  const vendors = Array.from(new Set(need.map(s=>(itemMaster(s.name)||{}).vendor).filter(Boolean)));
+  if(vendors.length===1){
+    const sup = getData('SUPPLIERS').find(x=>(x.supplier_name||'').trim()===vendors[0].trim());
+    if(sup) document.getElementById('p_supplier').value = sup.id;
+  }
+  renderPOLines();
+  showToast(`🛒 ดึง ${need.length} รายการที่ต้องสั่งมาแล้ว — เลือกบริษัทแล้วบันทึกได้เลย`,'success');
+}
+/** ดึงรายการจากแผนสั่งซื้อรายเดือนมาเป็นใบสั่งซื้อ */
+function poFromPlan(){
+  const keys = MONTHS.slice(1).map(m=>m.key);
+  const label = MONTHS.slice(1).map((m,i)=>`${i+1}=${m.label}`).join(' ');
+  const pick = prompt('สร้างใบสั่งซื้อจากแผนเดือนไหน?\n'+label+'\n\nพิมพ์ตัวเลข 1-12:', '1');
+  if(!pick) return;
+  const idx = parseInt(pick,10)-1;
+  if(isNaN(idx) || idx<0 || idx>11){ showToast('เลือกเดือนไม่ถูกต้อง','error'); return; }
+  const key = keys[idx];
+  const rows = getData(key).filter(r=>normName(r.item) && num(r.qty)>0);
+  if(!rows.length){ showToast('เดือนนี้ไม่มีรายการในแผน','info'); return; }
+  openPO();
+  state.poEdit.lines = rows.map(r=>{
+    const m = itemMaster(normName(r.item)) || {};
+    return { id:genId('pi'), po_id:'', product_id:m.id||'', product_name:normName(r.item),
+      category:m.category||r.category||'', quantity:r.qty, unit:m.unit||'',
+      unit_price:m.price||'', total_price:'', exp_date:r.exp||'', due_date:r.dueDate||'',
+      rd:r.rd||'', item_note:r.note||'' };
+  });
+  document.getElementById('p_source').value = key;
+  document.getElementById('p_date').value = rows[0].orderDate || today();
+  renderPOLines();
+  showToast(`📅 ดึง ${rows.length} รายการจากแผน ${MONTHS[idx+1].full} มาแล้ว`,'success');
+}
+
+/* ─────────── RECEIVING ─────────── */
+function openRecv(poId){
+  const p = getData('PO_HEADERS').find(x=>x.id===poId); if(!p) return;
+  state.poRecv.id = poId;
+  const rm = receiptMap();
+  const ls = poLines(poId);
+  document.getElementById('recvTitle').textContent = `📥 รับของตามใบสั่งซื้อ ${p.po_number}`;
+  document.getElementById('recvInfo').textContent = `${p.po_number} · ${p.supplier_name||'—'} · สั่งเมื่อ ${formatDate(p.po_date)}`;
+  document.getElementById('rc_date').value = today();
+  document.getElementById('rc_doc').value = '';
+  document.getElementById('rc_note').value = '';
+  document.getElementById('recvBody').innerHTML = ls.map((l,i)=>{
+    const got = receivedQty(l.id, rm);
+    const rem = lineRemaining(l, rm);
+    return `<tr data-line="${esc(l.id)}">
+      <td><span class="item-cell">${esc(l.product_name)}</span></td>
+      <td style="text-align:center">${fmt(l.quantity)} ${esc(l.unit||'')}</td>
+      <td style="text-align:center" class="qty-in">${fmt(got)}</td>
+      <td style="text-align:center" class="${rem>0?'qty-out':''}">${fmt(rem)}</td>
+      <td><input type="number" min="0" step="0.01" id="rq_${esc(l.id)}" value="" placeholder="${rem>0?fmt(rem):'0'}" ${rem<=0?'disabled':''}></td>
+      <td><input type="text" id="rl_${esc(l.id)}" placeholder="Lot" ${rem<=0?'disabled':''}></td>
+      <td><input type="date" id="re_${esc(l.id)}" value="${esc(l.exp_date||'')}" ${rem<=0?'disabled':''}></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('recvOverlay').classList.add('open');
+}
+function closeRecv(){ document.getElementById('recvOverlay').classList.remove('open'); }
+async function saveRecv(){
+  const poId = state.poRecv.id;
+  const p = getData('PO_HEADERS').find(x=>x.id===poId); if(!p) return;
+  const date = document.getElementById('rc_date').value || today();
+  const doc  = (document.getElementById('rc_doc').value||'').trim();
+  const person = (document.getElementById('rc_person').value||'').trim();
+  const note = (document.getElementById('rc_note').value||'').trim();
+  const rm = receiptMap();
+  const ls = poLines(poId);
+  const picked = [];
+  ls.forEach(l=>{
+    const el = document.getElementById('rq_'+l.id);
+    if(!el || el.disabled) return;
+    const q = num(el.value);
+    if(q<=0) return;
+    const rem = lineRemaining(l, rm);
+    picked.push({ line:l, qty:q, rem:rem,
+      lot:(document.getElementById('rl_'+l.id).value||'').trim(),
+      exp:document.getElementById('re_'+l.id).value||'' });
+  });
+  if(!picked.length){ showToast('ยังไม่ได้กรอกจำนวนที่รับในครั้งนี้','error'); return; }
+  const over = picked.filter(x=>x.qty > x.rem + 0.0001);
+  if(over.length && !confirm('รับเกินจำนวนที่สั่ง:\n'+over.map(x=>`• ${x.line.product_name} ค้าง ${fmt(x.rem)} แต่กรอก ${fmt(x.qty)}`).join('\n')+'\n\nยืนยันบันทึกต่อหรือไม่?')) return;
+  const noLot = picked.filter(x=>!x.lot);
+  if(noLot.length && !confirm('บรรทัดต่อไปนี้ยังไม่ระบุ Lot No.:\n'+noLot.map(x=>'• '+x.line.product_name).join('\n')+'\n\nบันทึกต่อหรือไม่? (แนะนำให้ใส่ Lot เพื่อให้ FEFO และการเตือนหมดอายุทำงาน)')) return;
+
+  const receipts = getData('PO_RECEIPTS');
+  const txn = getData('TXN');
+  picked.forEach(x=>{
+    const newRemaining = Math.max(0, num(x.line.quantity) - (receivedQty(x.line.id, rm) + x.qty));
+    receipts.push({
+      id: genId('rc'), item_id: x.line.id, receipt_date: date,
+      received_qty: x.qty, remaining_qty: newRemaining,
+      status: newRemaining<=0 ? 'รับครบแล้ว' : 'รับบางส่วน',
+      ref_doc: doc || p.po_number, note: note,
+    });
+    txn.push({
+      id: genId('tx'), date: date, type:'IN',
+      item: x.line.product_name,
+      category: (itemMaster(x.line.product_name)||{}).category || x.line.category || '',
+      lot: x.lot, exp: x.exp, qty: x.qty,
+      unit: x.line.unit || (itemMaster(x.line.product_name)||{}).unit || '',
+      docNo: doc || p.po_number, po: p.po_number, vendor: p.supplier_name||'',
+      price: x.line.unit_price||'', person: person, purpose:'', reason:'',
+      location: (itemMaster(x.line.product_name)||{}).location || '', billId:'',
+      note: 'รับตามใบสั่งซื้อ '+p.po_number+(note?' — '+note:''),
+      ts: new Date().toISOString(),
+    });
+  });
+  saveLocal('PO_RECEIPTS', receipts);
+  saveLocal('TXN', txn);
+  // อัปเดตสถานะหัว PO
+  const heads = getData('PO_HEADERS');
+  const hi = heads.findIndex(x=>x.id===poId);
+  if(hi>=0){ heads[hi].status = poComputedStatus(Object.assign({},heads[hi],{status:'สั่งซื้อแล้ว'}), receiptMap()); saveLocal('PO_HEADERS', heads); }
+  closeRecv(); renderAll();
+  showToast(`✅ รับของ ${picked.length} รายการ เข้าสต็อกแล้ว`,'success');
+  await syncTab('PO_RECEIPTS'); await syncTab('TXN'); await syncTab('PO_HEADERS');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   📈 REPORTS — Stock Coverage / Reorder Alert / Usage Performance
+   ═══════════════════════════════════════════════════════════ */
+function reportFilter(k,v){
+  if(k==='window'){ coverageWindow = parseInt(v,10) || COVERAGE_WINDOW; }
+  else state.report[k]=v;
+  renderReport(); renderModNav();
+}
+function covCell(s){
+  if(s.coverDays===null) return '<span style="color:var(--text3)">—</span>';
+  const d = Math.floor(s.coverDays);
+  const cls = s.urgency==='critical' ? 'stk-out' : s.urgency==='reorder' ? 'stk-low'
+            : s.urgency==='watch' ? 'stk-caution' : 'stk-ok';
+  const cap = d>999 ? '999+' : d;
+  return `<span class="${cls}">${cap} วัน</span>`;
+}
+function urgencyBadge(u){
+  const U = URGENCY[u] || URGENCY.nodata;
+  return `<span class="sbadge ${U.cls}">${U.dot} ${esc(U.label)}</span>`;
+}
+function reorderRows(){
+  let rows = buildStock();
+  if(state.report.cat) rows = rows.filter(s=>s.category===state.report.cat);
+  return rows.sort((a,b)=>{
+    const ra=(URGENCY[a.urgency]||URGENCY.nodata).rank, rb=(URGENCY[b.urgency]||URGENCY.nodata).rank;
+    if(ra!==rb) return ra-rb;
+    const ca=a.coverDays===null?1e9:a.coverDays, cb=b.coverDays===null?1e9:b.coverDays;
+    return ca-cb;
+  });
+}
+function renderReport(){
+  const rows = reorderRows();
+  const all  = buildStock();
+  const mustOrder = all.filter(s=>s.urgency==='critical'||s.urgency==='reorder');
+  const cm = consumptionMap();
+
+  // ── การ์ดสรุป ──
+  document.getElementById('repStats').innerHTML = [
+    { cls:'sc-rose',  icon:'🔴', val:all.filter(s=>s.urgency==='critical').length, lbl:'สั่งด่วน (จะขาดก่อนของมา)' },
+    { cls:'sc-peach', icon:'🟠', val:all.filter(s=>s.urgency==='reorder').length,  lbl:'ถึงเวลาสั่ง' },
+    { cls:'sc-gold',  icon:'🟡', val:all.filter(s=>s.urgency==='watch').length,    lbl:'เฝ้าดู' },
+    { cls:'sc-peach', icon:'⚫', val:all.filter(s=>s.urgency==='nostock').length,  lbl:'ไม่มีของ (ยังไม่มีประวัติเบิก)' },
+    { cls:'sc-sky',   icon:'🔵', val:all.filter(s=>s.urgency==='covered').length,  lbl:'สั่งไว้แล้ว รอของ' },
+    { cls:'sc-mint',  icon:'🟢', val:all.filter(s=>s.urgency==='ok').length,       lbl:'เพียงพอ' },
+    { cls:'sc-purple',icon:'📊', val:Object.keys(cm).length,                       lbl:`รายการที่มีการเบิกใน ${coverageWindow} วัน` },
+  ].map(c=>`<div class="stat-card ${c.cls}"><div class="s-icon">${c.icon}</div><div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
+
+  // ── ตารางที่ 1: Reorder Alert ──
+  document.getElementById('repReorderHead').innerHTML = head(
+    ['สถานะ','รายการ','หมวดหมู่','คงเหลือ','ค้างรับ','ใช้เฉลี่ย/วัน','พอใช้อีก','คาดว่าหมดวันที่',
+     'รอของ (วัน)','ต้องสั่งเมื่อเหลือ ≤','ควรสั่ง','ที่มาของอัตรา']);
+  const rb = document.getElementById('repReorderBody');
+  if(!rows.length){
+    rb.innerHTML = emptyRow(12,'ไม่มีรายการ','ลองล้างตัวกรองหมวดหมู่');
+  } else {
+    rb.innerHTML = rows.map(s=>{
+      const src = s.rateSource==='actual'
+        ? `<span class="fefo-tag">ยอดเบิกจริง ${coverageWindow} วัน</span>`
+        : s.rateSource==='plan' ? '<span class="new-tag">แผนที่ตั้งไว้</span>'
+        : '<span style="color:var(--text3);font-size:11px">ยังไม่มีข้อมูล</span>';
+      const need = Math.ceil(s.needQty||s.suggest||0);
+      return `<tr>
+        <td>${urgencyBadge(s.urgency)}</td>
+        <td><span class="item-cell">${esc(s.name)}</span></td>
+        <td>${catChip(s.category)}</td>
+        <td style="text-align:right;white-space:nowrap" class="${s.total<=0?'stk-out':''}">${fmt(s.total)} ${esc(s.unit||'')}</td>
+        <td style="text-align:right">${s.onOrder?`<span class="qty-in">+${fmt(s.onOrder)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+        <td style="text-align:right">${s.avgDaily>0?fmt(s.avgDaily,2):'<span style="color:var(--text3)">—</span>'}</td>
+        <td style="text-align:right">${covCell(s)}${(s.onOrder>0&&s.coverIncoming!==null)?`<div style="font-size:10.5px;color:var(--mint-dark)">รวมของที่สั่ง ${Math.floor(s.coverIncoming)} วัน</div>`:''}</td>
+        <td style="white-space:nowrap">${s.stockoutDate?`<span class="${s.urgency==='critical'?'exp-alert':s.urgency==='reorder'?'exp-warn':'exp-ok'}">${formatDate(s.stockoutDate)}</span>`:'—'}</td>
+        <td style="text-align:center">${s.leadDays}${s.lead?'':'<span style="color:var(--text3)" title="ยังไม่ได้กรอก lead time ใช้ค่าเริ่มต้น">*</span>'}</td>
+        <td style="text-align:center">${fmt(s.triggerDays,0)} วัน</td>
+        <td style="text-align:center">${need>0?`<span class="pbadge pb-p0">${fmt(need)} ${esc(s.unit||'')}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+        <td>${src}</td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('repReorderFoot').innerHTML =
+    `<span>🚨 ต้องสั่งวันนี้ <strong>${mustOrder.length}</strong> รายการ · สูตร: พอใช้อีก = คงเหลือ ÷ ใช้เฉลี่ยต่อวัน · เตือนเมื่อ พอใช้อีก ≤ รอของ + safety stock
+       <span style="color:var(--text3)">(* = ยังไม่ได้กรอก lead time ใช้ค่าเริ่มต้น ${DEFAULT_LEAD_DAYS} วัน)</span></span>
+     <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>`;
+
+  // ── ตารางที่ 2: Usage Performance Analysis ──
+  const planMap = planQtyByItem();
+  const yr = String(new Date().getFullYear());
+  const txn = getData('TXN');
+  let perf = buildStock().filter(s=>{
+    if(state.report.cat && s.category!==state.report.cat) return false;
+    return s.usage>0 || (cm[s.name]&&cm[s.name].total>0) || planMap[s.name]>0;
+  });
+  document.getElementById('repPerfHead').innerHTML = head(
+    ['รายการ','หมวดหมู่','แผนใช้/เดือน<br><span style="font-weight:400">(ทะเบียน)</span>',
+     'เบิกจริง/เดือน<br><span style="font-weight:400">(TXN)</span>','ผลต่าง','%',
+     'แผนสั่งซื้อทั้งปี<br><span style="font-weight:400">(Plan)</span>','รับเข้าจริง','เบิกจริงรวม','สถานะ','คำแนะนำ']);
+  const pb = document.getElementById('repPerfBody');
+  if(!perf.length){
+    pb.innerHTML = emptyRow(11,'ยังไม่มีข้อมูลพอวิเคราะห์','ต้องมีแผนใช้ต่อเดือนในทะเบียน หรือมีประวัติการเบิกอย่างน้อย 1 ครั้ง');
+  } else {
+    perf = perf.map(s=>{
+      const c = cm[s.name] || {win:0,total:0};
+      const actualPerMonth = c.win / coverageWindow * 30;
+      const planned = num(s.usage);
+      const diff = actualPerMonth - planned;
+      const pct  = planned>0 ? (diff/planned*100) : null;
+      const inY  = txn.filter(t=>t.type==='IN'  && normName(t.item)===s.name && toISODate(t.date).startsWith(yr))
+                      .reduce((x,t)=>x+Math.abs(num(t.qty)),0);
+      const outY = txn.filter(t=>t.type==='OUT' && normName(t.item)===s.name && toISODate(t.date).startsWith(yr))
+                      .reduce((x,t)=>x+Math.abs(num(t.qty)),0);
+      let st, advice;
+      if(planned<=0){
+        st = actualPerMonth>0 ? 'ยังไม่ได้ตั้งแผน' : 'ไม่มีข้อมูล';
+        advice = actualPerMonth>0 ? `ตั้งแผนใช้/เดือน ≈ ${fmt(actualPerMonth,1)}` : '—';
+      } else if(c.win<=0){
+        st = 'ยังไม่มีการเบิก'; advice = 'ตรวจว่าบันทึกการเบิกครบหรือยัง';
+      } else if(Math.abs(pct)<=15){
+        st = 'ตรงแผน'; advice = '—';
+      } else if(pct>15){
+        st = 'ใช้เกินแผน'; advice = `ปรับแผนขึ้นเป็น ≈ ${fmt(actualPerMonth,1)}/เดือน`;
+      } else {
+        st = 'ใช้ต่ำกว่าแผน'; advice = `ลดแผนลงเหลือ ≈ ${fmt(actualPerMonth,1)}/เดือน — ระวังของค้างหมดอายุ`;
+      }
+      return Object.assign({}, s, {actualPerMonth, planned, diff, pct, inY, outY, st, advice});
+    }).sort((a,b)=>Math.abs(b.pct===null?0:b.pct)-Math.abs(a.pct===null?0:a.pct));
+
+    pb.innerHTML = perf.map(s=>{
+      const stCls = s.st==='ใช้เกินแผน' ? 'sb-overdue' : s.st==='ใช้ต่ำกว่าแผน' ? 'sb-wait'
+                  : s.st==='ตรงแผน' ? 'sb-done' : 'sb-none';
+      const pctTxt = s.pct===null ? '—'
+        : `<span class="${s.pct>15?'stk-out':s.pct<-15?'stk-caution':'stk-ok'}">${s.pct>0?'+':''}${fmt(s.pct,0)}%</span>`;
+      return `<tr>
+        <td><span class="item-cell">${esc(s.name)}</span></td>
+        <td>${catChip(s.category)}</td>
+        <td style="text-align:right">${s.planned>0?fmt(s.planned,1):'<span style="color:var(--text3)">—</span>'}</td>
+        <td style="text-align:right;font-weight:600">${fmt(s.actualPerMonth,1)}</td>
+        <td style="text-align:right">${s.planned>0?`<span class="${s.diff>0?'qty-out':'qty-in'}">${s.diff>0?'+':''}${fmt(s.diff,1)}</span>`:'—'}</td>
+        <td style="text-align:center">${pctTxt}</td>
+        <td style="text-align:right">${planMap[s.name]?fmt(planMap[s.name]):'—'}</td>
+        <td style="text-align:right" class="qty-in">${s.inY?fmt(s.inY):'—'}</td>
+        <td style="text-align:right" class="qty-out">${s.outY?fmt(s.outY):'—'}</td>
+        <td><span class="sbadge ${stCls}">${esc(s.st)}</span></td>
+        <td style="font-size:12px;color:var(--text2)">${esc(s.advice)}</td>
+      </tr>`;
+    }).join('');
+  }
+  document.getElementById('repPerfFoot').innerHTML =
+    `<span>📊 เบิกจริง/เดือน คำนวณจากยอดเบิกย้อนหลัง ${coverageWindow} วัน × 30 ÷ ${coverageWindow} · ถือว่า "ตรงแผน" เมื่อต่างจากแผนไม่เกิน ±15%</span>`;
+
+  // ── ตารางที่ 3: แผน vs รับจริง vs เบิกจริง รายเดือน ──
+  const sel = document.getElementById('repItem');
+  if(sel){
+    const names = Array.from(new Set(buildStock().map(s=>s.name))).sort((a,b)=>a.localeCompare(b,'th'));
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">ทุกรายการรวมกัน</option>' + names.map(n=>`<option>${esc(n)}</option>`).join('');
+    sel.value = cur;
+  }
+  const pick = state.report.item;
+  document.getElementById('repMonthHead').innerHTML =
+    head(['เดือน','แผนสั่งซื้อ (Plan)','รับเข้าจริง (IN)','เบิกจริง (OUT)','รับ − แผน','คงเหลือปลายเดือน (สะสม)']);
+  let running = 0;
+  document.getElementById('repMonthBody').innerHTML = MONTHS.slice(1).map(m=>{
+    const mm = '2026-'+String(m.num).padStart(2,'0');
+    const planQ = getData(m.key)
+      .filter(r=>!pick || normName(r.item)===pick)
+      .reduce((x,r)=>x+num(r.qty),0);
+    const inQ = txn.filter(t=>t.type==='IN'  && toISODate(t.date).startsWith(mm) && (!pick||normName(t.item)===pick))
+                   .reduce((x,t)=>x+Math.abs(num(t.qty)),0);
+    const outQ= txn.filter(t=>t.type==='OUT' && toISODate(t.date).startsWith(mm) && (!pick||normName(t.item)===pick))
+                   .reduce((x,t)=>x+Math.abs(num(t.qty)),0);
+    const adjQ= txn.filter(t=>t.type==='ADJ' && toISODate(t.date).startsWith(mm) && (!pick||normName(t.item)===pick))
+                   .reduce((x,t)=>x+num(t.qty),0);
+    running += inQ - outQ + adjQ;
+    const gap = inQ - planQ;
+    const any = planQ||inQ||outQ;
+    return `<tr${any?'':' style="opacity:.45"'}>
+      <td><span class="item-cell">${esc(m.full)}</span></td>
+      <td style="text-align:right">${planQ?fmt(planQ):'—'}</td>
+      <td style="text-align:right" class="${inQ?'qty-in':''}">${inQ?fmt(inQ):'—'}</td>
+      <td style="text-align:right" class="${outQ?'qty-out':''}">${outQ?fmt(outQ):'—'}</td>
+      <td style="text-align:right">${planQ?`<span class="${gap<0?'stk-low':'stk-ok'}">${gap>0?'+':''}${fmt(gap)}</span>`:'—'}</td>
+      <td style="text-align:right;font-weight:600">${fmt(running)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('repMonthFoot').innerHTML =
+    `<span>📅 ${pick?('เฉพาะ '+esc(pick)):'รวมทุกรายการ'} · "รับ − แผน" ติดลบ = ได้ของน้อยกว่าที่วางแผนสั่งไว้ · คงเหลือสะสม = รับ − เบิก ± ปรับยอด</span>`;
 }
 
 /* ═══════════════ CLOCK + INIT ═══════════════ */
