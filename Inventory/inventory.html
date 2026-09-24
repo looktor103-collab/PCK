@@ -3699,7 +3699,7 @@ function openSetup(){
 function closeSetup(){ document.getElementById('setupOverlay').classList.remove('open'); }
 function saveScriptUrl(){
   const url=(document.getElementById('scriptUrlInput').value||'').trim();
-  if(!url.startsWith('https://script.google.com')){ showToast('URL ไม่ถูกต้อง — ต้องเป็น script.google.com','error'); return; }
+  if(!/^https:\/\//.test(url)){ showToast('URL ไม่ถูกต้อง — ต้องขึ้นต้นด้วย https://','error'); return; }
   setScriptUrl(url); showToast('✅ บันทึก URL แล้ว','success'); closeSetup(); loadFromGoogle();
 }
 async function testConnection(){

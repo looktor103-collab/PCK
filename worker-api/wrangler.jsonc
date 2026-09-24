@@ -1,0 +1,12 @@
+{
+  "name": "splab-inventory-api",
+  "main": "index.js",
+  "compatibility_date": "2026-08-31",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "splab-inventory",
+      "database_id": "f2c22052-eede-4e30-bd85-3b1fbcab5937"
+    }
+  ]
+}

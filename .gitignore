@@ -10,3 +10,6 @@ reagenet & MSDS/reagent and MSDS.zip
 
 # Local JSON backups exported by FCP68030 form on failed/manual sync
 maintanance/6800/FCP68030_*.json
+
+# Cloudflare Wrangler local cache/build output — never publish, never commit
+.wrangler/
