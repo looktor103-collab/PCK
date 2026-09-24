@@ -4067,7 +4067,7 @@ function renderPO(){
       const barCls = pct>=100 ? 'sbar-ok' : pct>0 ? 'sbar-low' : 'sbar-out';
       return `<tr>
         <td class="col-num">${i+1}</td>
-        <td><span class="item-cell" style="font-family:Consolas,monospace">${esc(p.po_number)}</span></td>
+        <td><span class="item-cell" style="font-family:Consolas,monospace;cursor:pointer;color:var(--sky-dark);text-decoration:underline" onclick="openPO('${p.id}')" title="คลิกเพื่อดูรายละเอียดใบสั่งซื้อนี้">${esc(p.po_number)}</span></td>
         <td style="white-space:nowrap">${formatDate(p.po_date)}</td>
         <td style="font-size:12.5px">${esc(p.supplier_name||supplierName(p.supplier_id)||'—')}</td>
         <td style="text-align:center">${ls.length}</td>
