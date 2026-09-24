@@ -2210,13 +2210,20 @@ function buildStock(){
     };
   }).sort((a,b)=>a.name.localeCompare(b.name,'th'));
 }
-/** ยอดคงเหลือของ item+lot (ใช้ตรวจก่อนตัดออก) */
-function lotBalance(itemName, lot){
-  const s = buildStock().find(x => x.name === (itemName||'').trim());
+/** ยอดคงเหลือของ item+lot จาก stock ที่คำนวณไว้แล้ว (ใช้เมื่อต้องเช็คหลายบรรทัดรวด
+    เพื่อไม่ต้องเรียก buildStock() ใหม่ทุกบรรทัด — buildStock() สแกน TXN ทั้งหมด
+    ทุกครั้งที่เรียก ถ้าเรียกซ้ำในลูปจะช้าลงเรื่อยๆ ตามจำนวนประวัติที่สะสม */
+function lotBalanceFrom(stock, itemName, lot){
+  const s = stock.find(x => x.name === (itemName||'').trim());
   if(!s) return 0;
   const key = (lot||'').trim() || '(ไม่ระบุ Lot)';
   const L = s.lots.find(l => l.lot === key);
   return L ? L.qty : 0;
+}
+/** ยอดคงเหลือของ item+lot (ใช้ตรวจก่อนตัดออก) — เรียกครั้งเดียวโดดๆ เท่านั้น
+    ถ้าต้องเช็คหลายบรรทัด ให้เรียก buildStock() เองครั้งเดียวแล้วใช้ lotBalanceFrom() แทน */
+function lotBalance(itemName, lot){
+  return lotBalanceFrom(buildStock(), itemName, lot);
 }
 function stockAlerts(){
   const st = buildStock();
@@ -3261,8 +3268,9 @@ function onLineChange(i, field, val){
 }
 function renderLines(){
   const isReq = state.billEdit.type==='REQ';
+  const stock = buildStock();   // คำนวณครั้งเดียวก่อนวนลูป แทนการเรียกซ้ำทุกบรรทัด
   document.getElementById('lineBody').innerHTML = state.billEdit.lines.map((l,i)=>{
-    const s = buildStock().find(x=>x.name===(l.item||'').trim());
+    const s = stock.find(x=>x.name===(l.item||'').trim());
     const avail = s ? s.total : 0;
     const lotOpts = s && s.lots.length
       ? s.lots.map(x=>`<option value="${esc(x.lot)}" ${x.lot===l.lot?'selected':''}>${esc(x.lot)} (${fmt(x.qty)})</option>`).join('')
@@ -3311,9 +3319,10 @@ async function saveBill(post, alsoPrint){
   if(post && T!=='PR'){
     // ตรวจสต็อกก่อนตัด
     if(T==='REQ'){
-      const bad = lines.filter(l => num(l.qty) > lotBalance(l.item, l.lot) + 0.0001);
+      const stock = buildStock();   // คำนวณครั้งเดียวแทนการเรียกซ้ำต่อบรรทัด (และซ้ำอีกตอนสร้างข้อความ)
+      const bad = lines.filter(l => num(l.qty) > lotBalanceFrom(stock, l.item, l.lot) + 0.0001);
       if(bad.length){
-        const msg = bad.map(l=>`• ${l.item} (Lot ${l.lot||'-'}) ขอ ${fmt(l.qty)} มี ${fmt(lotBalance(l.item,l.lot))}`).join('\n');
+        const msg = bad.map(l=>`• ${l.item} (Lot ${l.lot||'-'}) ขอ ${fmt(l.qty)} มี ${fmt(lotBalanceFrom(stock, l.item, l.lot))}`).join('\n');
         if(!confirm('รายการต่อไปนี้สต็อกไม่พอ:\n'+msg+'\n\nยืนยันตัดสต็อกต่อหรือไม่?')) return;
       }
     }
