@@ -277,7 +277,7 @@ function drawChart(host, rows, t){
     c.addEventListener('mouseenter', function(){
       var rule = c.dataset.rule ? '<br><span style="color:var(--fail)">⚠ '+c.dataset.rule+'</span>' : '';
       tip.innerHTML = '<b>'+c.dataset.v+'</b> Ct · z=<b>'+c.dataset.z+'</b><br>'+
-                      '<span style="color:var(--text3)">'+c.dataset.d+' · '+c.dataset.run+' · Lot '+c.dataset.lot+'</span>'+rule;
+                      '<span style="color:var(--text3)">'+c.dataset.d+' · RUN '+c.dataset.run+' · Lot '+c.dataset.lot+'</span>'+rule;
       var r = c.getBoundingClientRect(), h = el.getBoundingClientRect();
       tip.style.left = Math.min(Math.max(r.left-h.left-52,4), h.width-150)+'px';
       tip.style.top  = (r.top-h.top-54)+'px';
