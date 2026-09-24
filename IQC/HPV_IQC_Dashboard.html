@@ -300,6 +300,7 @@ function drawChart(host, rows, t){
 /* ── วาดทั้งหน้า ──────────────────────────────────────────────────────── */
 function render(){
   var rows = filtered();
+  renderAlerts(rows);
   var host = document.getElementById('charts');
   host.innerHTML = '';
 
@@ -370,15 +371,41 @@ function setStatus(kind, updated){
   document.getElementById('status-txt').textContent =
     txt + (updated ? ' · อัปเดต ' + PCK.fmt.ago(updated) : '');
   PCK.ui.live(kind === 'live' ? 'ok' : 'stale');
+}
 
+/* ── ป้ายเตือนบนสุดของหน้า — รวมสถานะการเชื่อมต่อ + ตัวกรองไม่ตรงกับข้อมูล ──
+   เดิมมีแค่ข้อความในการ์ดกราฟแต่ละอันว่า "ข้อมูลไม่พอคำนวณ" ซึ่งขึ้นเหมือนกัน
+   ทั้งกรณี "ไม่มีข้อมูลตรงกับตัวกรองเลย" กับ "มีข้อมูลแค่ 1 ค่า" ทำให้เข้าใจผิดว่า
+   ข้อมูลน้อยไป ทั้งที่จริงอาจเป็นเพราะตั้งช่วงวันที่/Lot ไม่ตรงกับข้อมูลที่มี */
+function renderAlerts(rows){
   var a = document.getElementById('alerts');
-  a.innerHTML = kind === 'live' ? '' :
-    '<div class="pck-note '+(kind==='seed'?'fail':'warn')+'" style="margin-bottom:14px">'+
-    '<span aria-hidden="true">⚠️</span><div>'+
-    (kind === 'cache'
-      ? '<strong>เชื่อมต่อ Google Sheet ไม่ได้ตอนนี้</strong> — กำลังแสดงข้อมูลสำรองที่บันทึกไว้ในเครื่องครั้งล่าสุด อาจไม่ใช่ข้อมูลล่าสุด'
-      : '<strong>ยังไม่เคยดึงข้อมูลได้</strong> — กำลังแสดงข้อมูลตัวอย่างเพียง '+SEED.length+' รายการ ตัวเลขทั้งหมดบนหน้านี้ใช้อ้างอิงไม่ได้')+
-    '</div></div>';
+  var parts = [];
+
+  if (SOURCE !== 'live'){
+    parts.push('<div class="pck-note '+(SOURCE==='seed'?'fail':'warn')+'" style="margin-bottom:14px">'+
+      '<span aria-hidden="true">⚠️</span><div>'+
+      (SOURCE === 'cache'
+        ? '<strong>เชื่อมต่อ Google Sheet ไม่ได้ตอนนี้</strong> — กำลังแสดงข้อมูลสำรองที่บันทึกไว้ในเครื่องครั้งล่าสุด อาจไม่ใช่ข้อมูลล่าสุด'
+        : '<strong>ยังไม่เคยดึงข้อมูลได้</strong> — กำลังแสดงข้อมูลตัวอย่างเพียง '+SEED.length+' รายการ ตัวเลขทั้งหมดบนหน้านี้ใช้อ้างอิงไม่ได้')+
+      '</div></div>');
+  }
+
+  if (ALL.length > 0 && rows.length === 0){
+    var from = document.getElementById('f-from').value;
+    var to   = document.getElementById('f-to').value;
+    var lot  = document.getElementById('f-lot').value;
+    var why = [];
+    if (from || to) why.push('ช่วงวันที่ '+(from?PCK.fmt.short(from):'…')+' – '+(to?PCK.fmt.short(to):'…'));
+    if (lot) why.push('Lot '+lot);
+    parts.push('<div class="pck-note warn" style="margin-bottom:14px">'+
+      '<span aria-hidden="true">🔍</span><div>'+
+      '<strong>ไม่มี Run ตรงกับตัวกรองที่เลือก</strong>'+
+      (why.length ? ' (' + why.join(' · ') + ')' : '') +
+      ' — จากทั้งหมด '+ALL.length+' แถวในระบบ ไม่มีแถวไหนอยู่ในเงื่อนไขนี้เลย ลองขยายช่วงวันที่ หรือกด “ล้างตัวกรอง”'+
+      '</div></div>');
+  }
+
+  a.innerHTML = parts.join('');
 }
 
 /* ── เติมตัวเลือก lot และช่วงวันที่ ────────────────────────────────────── */
