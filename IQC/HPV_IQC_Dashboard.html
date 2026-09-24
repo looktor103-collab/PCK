@@ -114,6 +114,14 @@ var TARGETS = [
 
 var ALL = [];        // ข้อมูลดิบทั้งหมด
 var SOURCE = '';     // live | cache | seed
+var lotAuto = true;  // true = ยังไม่ได้เลือก Lot เอง → auto เลือก Lot ล่าสุดให้ทุกครั้งที่มีข้อมูลใหม่
+
+/* Lot ของแถวล่าสุด (ALL เรียงตามวันที่-เวลาอยู่แล้ว) — ใช้เป็นค่าเริ่มต้นของตัวกรอง Lot
+   เพราะ mean/SD ควรคำนวณแยกตาม Lot ของ Control ไม่ควรปนหลาย Lot เข้าด้วยกัน */
+function latestLot(){
+  for (var i = ALL.length-1; i >= 0; i--) if (ALL[i].lot_pos) return ALL[i].lot_pos;
+  return '';
+}
 
 /* ── เกณฑ์ตัดค่าผิดปกติ ─────────────────────────────────────────────────
    Ct ของ Positive Control ปกติอยู่ราว 34–36 ค่าที่หลุดช่วง 10–45
@@ -376,10 +384,10 @@ function setStatus(kind, updated){
 /* ── เติมตัวเลือก lot และช่วงวันที่ ────────────────────────────────────── */
 function fillControls(){
   var sel = document.getElementById('f-lot');
-  var cur = sel.value;
+  var cur = lotAuto ? latestLot() : sel.value;
   var lots = [];
   ALL.forEach(function(r){ if (r.lot_pos && lots.indexOf(r.lot_pos) < 0) lots.push(r.lot_pos); });
-  sel.innerHTML = '<option value="">ทั้งหมด</option>' +
+  sel.innerHTML = '<option value="">ทั้งหมด (ไม่แนะนำ — ปน Lot)</option>' +
     lots.map(function(l){ return '<option'+(l===cur?' selected':'')+'>'+l+'</option>'; }).join('');
 }
 
@@ -404,13 +412,18 @@ function load(){
 }
 
 /* ── ปุ่มและตัวกรอง ───────────────────────────────────────────────────── */
-['f-from','f-to','f-lot'].forEach(function(id){
+['f-from','f-to'].forEach(function(id){
   document.getElementById(id).addEventListener('change', render);
+});
+document.getElementById('f-lot').addEventListener('change', function(){
+  lotAuto = false;   // ผู้ใช้เลือก Lot เอง — เลิก auto ตาม Lot ล่าสุด จนกว่าจะกด "ล้างตัวกรอง"
+  render();
 });
 document.getElementById('b-reset').addEventListener('click', function(){
   document.getElementById('f-from').value = '';
   document.getElementById('f-to').value = '';
-  document.getElementById('f-lot').value = '';
+  lotAuto = true;
+  fillControls();   // เซ็ตกลับไป Lot ล่าสุดให้อัตโนมัติ
   render();
 });
 document.getElementById('b-refresh').addEventListener('click', function(){
