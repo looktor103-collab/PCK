@@ -36,46 +36,64 @@ function doPost(e) {
         while (row.length < numCols) row.push('');
         return row;
       });
-      sheet.getRange(1, 1, normalized.length, numCols).setValues(normalized);
+      const numRows = normalized.length;
+      const range = sheet.getRange(1, 1, numRows, numCols);
+      range.setValues(normalized);
 
-      // จัดรูปแบบแถวหัว
-      sheet.getRange(1, 1, 1, numCols)
-           .setBackground('#1d4ed8')
-           .setFontColor('#ffffff')
-           .setFontWeight('bold')
-           .setFontSize(10);
+      const headerRowIndex = normalized.findIndex(r => r[0] === 'รายการ') + 1;
+      const inspRowIndex   = normalized.findIndex(r => r[0] === 'ผู้ตรวจสอบ') + 1;
+
+      // สร้าง array รูปแบบทั้งชีตไว้ล่วงหน้า แล้วเซตทีเดียวทั้งช่วง
+      // (เดิมวนเซต setBackground/setFontWeight ทีละเซลล์ ซึ่งแต่ละครั้งคือ
+      //  1 round-trip ไปยัง Sheets service — ตารางที่มี ~30 คอลัมน์ x หลายสิบแถว
+      //  กลายเป็นหลายร้อย/พันคำขอ และนี่คือสาเหตุหลักที่บันทึกช้ามาก)
+      const backgrounds = normalized.map(() => new Array(numCols).fill(null));
+      const fontColors   = normalized.map(() => new Array(numCols).fill(null));
+      const fontWeights  = normalized.map(() => new Array(numCols).fill('normal'));
+
+      // แถวหัว (แถวแรก)
+      for (let j = 0; j < numCols; j++) {
+        backgrounds[0][j] = '#1d4ed8';
+        fontColors[0][j]  = '#ffffff';
+        fontWeights[0][j] = 'bold';
+      }
 
       // แถว column headers (วันที่)
-      const headerRowIndex = normalized.findIndex(r => r[0] === 'รายการ') + 1;
       if (headerRowIndex > 0) {
-        sheet.getRange(headerRowIndex, 1, 1, numCols)
-             .setBackground('#1e40af')
-             .setFontColor('#ffffff')
-             .setFontWeight('bold');
+        const r = headerRowIndex - 1;
+        for (let j = 0; j < numCols; j++) {
+          backgrounds[r][j] = '#1e40af';
+          fontColors[r][j]  = '#ffffff';
+          fontWeights[r][j] = 'bold';
+        }
       }
 
       // ไฮไลต์ช่องที่มีเครื่องหมาย /
-      for (let i = 0; i < normalized.length; i++) {
+      for (let i = 0; i < numRows; i++) {
         for (let j = 1; j < numCols; j++) {
           if (normalized[i][j] === '/') {
-            sheet.getRange(i + 1, j + 1).setBackground('#d1fae5').setFontWeight('bold');
+            backgrounds[i][j] = '#d1fae5';
+            fontWeights[i][j] = 'bold';
           }
         }
       }
 
       // ไฮไลต์ช่องผู้ตรวจสอบที่เซ็นแล้ว
-      const inspRowIndex = normalized.findIndex(r => r[0] === 'ผู้ตรวจสอบ') + 1;
       if (inspRowIndex > 0) {
+        const r = inspRowIndex - 1;
         for (let j = 1; j < numCols; j++) {
-          if (normalized[inspRowIndex - 1][j] === '✓') {
-            sheet.getRange(inspRowIndex, j + 1).setBackground('#bfdbfe');
-          }
+          if (normalized[r][j] === '✓') backgrounds[r][j] = '#bfdbfe';
         }
       }
 
-      // ล็อกความกว้างคอลัมน์แรก (รายการ)
+      range.setBackgrounds(backgrounds);
+      range.setFontColors(fontColors);
+      range.setFontWeights(fontWeights);
+      sheet.getRange(1, 1, 1, numCols).setFontSize(10);
+
+      // ล็อกความกว้างคอลัมน์ (แบตช์เดียวแทนการวนทีละคอลัมน์)
       sheet.setColumnWidth(1, 280);
-      for (let c = 2; c <= numCols; c++) sheet.setColumnWidth(c, 36);
+      if (numCols > 1) sheet.setColumnWidths(2, numCols - 1, 36);
 
       // freeze row headers
       if (headerRowIndex > 0) sheet.setFrozenRows(headerRowIndex);
