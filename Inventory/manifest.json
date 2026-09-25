@@ -1,0 +1,16 @@
+{
+  "name": "Molecular Lab Inventory 2026",
+  "short_name": "Inventory",
+  "description": "ระบบควบคุมสต็อกน้ำยา สารเคมี วัสดุสิ้นเปลือง ห้องปฏิบัติการอณูชีววิทยา รพ.พระจอมเกล้า เพชรบุรี",
+  "start_url": "./inventory.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fdf8f9",
+  "theme_color": "#8b3a52",
+  "lang": "th",
+  "icons": [
+    { "src": "../assets/logo.png", "sizes": "128x128", "type": "image/png", "purpose": "any" },
+    { "src": "../assets/logo.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable" }
+  ]
+}

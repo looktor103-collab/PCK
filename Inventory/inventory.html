@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Inventory 2026 v3.1 — ร.พ.พระจอมเกล้า เพชรบุรี</title>
+<!-- PWA: ติดตั้งเป็นแอปบนหน้าจอมือถือได้ เปิดแบบเต็มจอไม่ผ่าน Chrome -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#8b3a52">
+<link rel="apple-touch-icon" href="../assets/logo.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Inventory">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
@@ -4602,6 +4610,11 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape') ['editOverlay','delOverlay','setupOverlay','moveOverlay','billOverlay','itemOverlay']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('open'); });
 });
+
+// ลงทะเบียน service worker — จำเป็นเพื่อให้เบราว์เซอร์อนุญาต "ติดตั้ง" หน้านี้เป็นแอป (PWA)
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>
