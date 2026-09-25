@@ -1,0 +1,19 @@
+{
+  "name": "Molecular Lab PCK",
+  "short_name": "Lab PCK",
+  "description": "Dashboard ห้องปฏิบัติการอณูชีววิทยา รพ.พระจอมเกล้า เพชรบุรี — IQC, EQA, Calibration, Inventory, Maintenance",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fdf8f9",
+  "theme_color": "#8b3a52",
+  "lang": "th",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
