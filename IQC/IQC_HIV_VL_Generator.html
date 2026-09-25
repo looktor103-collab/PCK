@@ -71,6 +71,22 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
 .pg-compare-col.peer{background:var(--gray100);color:var(--gray600)}
 .btn-dl-chart{background:var(--gray100);border:1px solid var(--gray200);border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer;font-family:inherit}
 .btn-dl-chart:hover{background:var(--blue-l);border-color:var(--blue)}
+/* ── Peer Benchmark: ranking Bias/SDI เทียบทั้งกลุ่ม peer ── */
+.pb-tabs{display:flex;gap:8px;margin:14px 0 10px}
+.pb-tab{padding:6px 16px;border:1px solid var(--gray200);border-radius:20px;background:#fff;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--gray600)}
+.pb-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pb-summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.pb-summary-card{background:var(--gray50);border:1px solid var(--gray200);border-radius:8px;padding:8px 14px;font-size:.8rem}
+.pb-summary-card b{font-size:1rem;display:block}
+.pb-chart-wrap{overflow-x:auto;background:#fff;border:1px solid var(--gray200);border-radius:8px;padding:10px}
+.pb-table-wrap{max-height:340px;overflow:auto;margin-top:14px;border:1px solid var(--gray200);border-radius:8px}
+.pb-table{width:100%;border-collapse:collapse;font-size:.78rem}
+.pb-table th,.pb-table td{padding:6px 10px;border-bottom:1px solid var(--gray200);text-align:right;white-space:nowrap}
+.pb-table th{background:var(--gray50);position:sticky;top:0;text-align:right}
+.pb-table th:first-child,.pb-table td:first-child{text-align:left}
+.pb-table tr.pb-mine{background:var(--blue-l)}
+.pb-table tr.pb-mine td{font-weight:700;color:#1d4ed8}
+.pb-sdi-ok{color:var(--green)} .pb-sdi-warn{color:var(--yellow)} .pb-sdi-bad{color:var(--red);font-weight:700}
 .status-pending{background:var(--gray100);color:var(--gray600)}
 .status-parsing{background:var(--yellow-l);color:var(--yellow)}
 .status-done{background:var(--green-l);color:var(--green)}
@@ -222,6 +238,26 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
           </table>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Peer Benchmark: เทียบ Bias/SDI ของแล็บเรากับ Lab อื่นทั้งกลุ่ม peer -->
+  <div class="card">
+    <div class="card-header">
+      <span>🏆</span><h2>Peer Benchmark — เทียบ Bias/SDI กับ Lab อื่น</h2>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="pbDropZone" style="padding:20px">
+        <div class="icon" style="font-size:1.6rem">📊</div>
+        <h3 style="font-size:.95rem">ลากไฟล์ Excel/CSV รายชื่อ Lab ทั้งกลุ่ม (Bias/SDI) มาวาง หรือคลิกเพื่อเลือกไฟล์</h3>
+        <div class="fld-row" style="margin:10px 0;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap">
+          <label style="font-size:.8rem;color:var(--gray600)">รหัส Lab ของเรา:</label>
+          <input type="text" id="pbMyLab" value="016" style="width:80px;padding:4px 8px;border:1px solid var(--gray200);border-radius:6px;text-align:center;font-weight:700">
+        </div>
+        <button class="btn-upload" onclick="document.getElementById('pbFileInput').click()">เลือกไฟล์ Excel/CSV</button>
+      </div>
+      <input type="file" id="pbFileInput" accept=".xlsx,.xls,.csv">
+      <div id="pbResult"></div>
     </div>
   </div>
 
@@ -1471,6 +1507,210 @@ async function buildCriteriaSheet(wb){
   });
 }
 
+/* ══════════════════════════════════════════════════════
+   Peer Benchmark — เทียบ Bias/SDI ของแล็บเรากับ Lab อื่นทั้งกลุ่ม peer
+   รับไฟล์ Excel/CSV ที่มีคอลัมน์: Assay, Level, Lab, Instrument,
+   Reagent Lot, Control Lot, Lab Mean, Lab SD, Bias, SDI, N,
+   Peer Mean, Peer SD, Peer N (หนึ่งแถวต่อหนึ่ง Lab/Reagent Lot)
+   ══════════════════════════════════════════════════════ */
+let pbRows = [];      // ข้อมูลทุกแถวที่อ่านได้ (ทุก Lab)
+let pbLevel = '';     // Level (HPC/LPC) ที่กำลังดูอยู่
+
+const pbDropZone = document.getElementById('pbDropZone');
+pbDropZone.addEventListener('dragover', e=>{ e.preventDefault(); pbDropZone.classList.add('drag-over'); });
+pbDropZone.addEventListener('dragleave', ()=> pbDropZone.classList.remove('drag-over'));
+pbDropZone.addEventListener('drop', e=>{
+  e.preventDefault(); pbDropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if(f) handlePeerBenchmarkFile(f);
+});
+document.getElementById('pbFileInput').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(f) handlePeerBenchmarkFile(f);
+  e.target.value = '';
+});
+
+async function handlePeerBenchmarkFile(file){
+  const el = document.getElementById('pbResult');
+  el.innerHTML = `<p style="margin-top:12px;color:var(--gray600);font-size:.85rem">⏳ กำลังอ่านไฟล์...</p>`;
+  try{
+    const rows = await parsePeerBenchmarkFile(file);
+    if(!rows.length) throw new Error('อ่านไฟล์ได้ แต่ไม่พบข้อมูลที่ตรงกับคอลัมน์ที่รองรับ (Lab, SDI ฯลฯ)');
+    pbRows = rows;
+    const levels = [...new Set(pbRows.map(r=>r.level).filter(Boolean))];
+    pbLevel = levels[0] || '';
+    renderPeerBenchmark();
+  }catch(e){
+    console.error('[Peer Benchmark]', e);
+    el.innerHTML = `<p style="margin-top:12px;color:var(--red);font-size:.85rem">❌ ${e.message||e}</p>`;
+  }
+}
+
+async function parsePeerBenchmarkFile(file){
+  const name = file.name.toLowerCase();
+  let raw = [];
+  if(name.endsWith('.csv')){
+    raw = parsePeerBenchmarkCSV(await file.text());
+  } else {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+    const ws = wb.worksheets[0];
+    const header = (ws.getRow(1).values||[]).slice(1).map(v=>String(v==null?'':v).trim());
+    for(let r=2; r<=ws.rowCount; r++){
+      const vals = (ws.getRow(r).values||[]).slice(1);
+      if(vals.every(v=>v===null||v===undefined||v==='')) continue;
+      const obj = {};
+      header.forEach((h,i)=>{ obj[h] = vals[i]; });
+      raw.push(obj);
+    }
+  }
+  return normalizePeerBenchmarkRows(raw);
+}
+
+function parsePeerBenchmarkCSV(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return [];
+  const header = lines[0].split(',').map(h=>h.trim());
+  return lines.slice(1).map(line=>{
+    const cells = line.split(',');
+    const obj = {};
+    header.forEach((h,i)=>{ obj[h] = (cells[i]||'').trim(); });
+    return obj;
+  });
+}
+
+function normalizePeerBenchmarkRows(raw){
+  const KEY_MAP = {
+    assay:'assay', level:'level', lab:'lab', instrument:'instrument',
+    reagentlot:'reagentLot', controllot:'controlLot',
+    labmean:'labMean', labsd:'labSD', bias:'bias', sdi:'sdi', n:'n',
+    peermean:'peerMean', peersd:'peerSD', peern:'peerN',
+  };
+  return raw.map(r=>{
+    const o={};
+    Object.keys(r).forEach(k=>{
+      const nk = KEY_MAP[k.replace(/[\s._]+/g,'').toLowerCase()];
+      if(nk) o[nk] = r[k];
+    });
+    ['labMean','labSD','bias','sdi','n','peerMean','peerSD','peerN'].forEach(f=>{
+      o[f] = o[f]===undefined||o[f]==='' ? null : parseFloat(o[f]);
+    });
+    // เลข Lab อาจถูกอ่านเป็นตัวเลขล้วน (เช่น 16) จาก Excel ถ้าคอลัมน์ไม่ได้ฟอร์แมตเป็นข้อความ
+    // เติม 0 นำหน้าให้เป็น 3 หลักเสมอ ให้ตรงกับที่แสดงในรายงาน (เช่น "016")
+    const labRaw = String(o.lab==null?'':o.lab).trim();
+    o.lab = /^\d+$/.test(labRaw) ? labRaw.padStart(3,'0') : labRaw;
+    return o;
+  }).filter(o => o.lab && o.sdi!==null && !isNaN(o.sdi));
+}
+
+function sdiClass(sdi){
+  const a = Math.abs(sdi);
+  if(a>3) return 'pb-sdi-bad';
+  if(a>2) return 'pb-sdi-warn';
+  return 'pb-sdi-ok';
+}
+
+function renderPeerBenchmark(){
+  const myLab = (document.getElementById('pbMyLab').value||'').trim().padStart(3,'0');
+  const el = document.getElementById('pbResult');
+  const levels = [...new Set(pbRows.map(r=>r.level).filter(Boolean))];
+  const rows = (pbLevel ? pbRows.filter(r=>r.level===pbLevel) : pbRows)
+    .slice().sort((a,b)=>a.sdi-b.sdi);
+
+  const mine = rows.filter(r=>r.lab===myLab);
+  const others = rows.filter(r=>r.lab!==myLab);
+  const worstMine = mine.length ? mine.reduce((a,b)=>Math.abs(b.sdi)>Math.abs(a.sdi)?b:a) : null;
+  const rank = mine.length ? rows.findIndex(r=>r===mine[0]) + 1 : null;
+
+  el.innerHTML = `
+    ${levels.length>1 ? `<div class="pb-tabs">${levels.map(lv=>
+        `<button class="pb-tab ${lv===pbLevel?'active':''}" onclick="pbLevel='${lv}';renderPeerBenchmark()">${lv}</button>`
+      ).join('')}</div>` : ''}
+    <div class="pb-summary">
+      <div class="pb-summary-card">Lab ทั้งหมดในกลุ่ม<b>${rows.length}</b></div>
+      <div class="pb-summary-card">แล็บเรา (${myLab}) — จำนวนแถว<b>${mine.length}</b></div>
+      <div class="pb-summary-card">SDI ที่เบี่ยงเบนสุดของเรา<b class="${worstMine?sdiClass(worstMine.sdi):''}">${worstMine?worstMine.sdi.toFixed(2):'—'}</b></div>
+      <div class="pb-summary-card">อันดับ (เรียงตาม SDI)<b>${rank?`${rank} / ${rows.length}`:'—'}</b></div>
+    </div>
+    <div class="pb-chart-wrap"><canvas id="pbCanvas"></canvas></div>
+    <div style="text-align:right;margin-top:6px">
+      <button class="btn-dl-chart" onclick="downloadChartPNG('pbCanvas')">⬇ ดาวน์โหลดภาพกราฟ</button>
+    </div>
+    <div class="pb-table-wrap">
+      <table class="pb-table">
+        <thead><tr>
+          <th>Lab</th><th>Reagent Lot</th><th>Control Lot</th><th>Lab Mean</th><th>Lab SD</th>
+          <th>Bias</th><th>SDI</th><th>N</th><th>Peer Mean</th><th>Peer SD</th><th>Peer N</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r=>`
+            <tr class="${r.lab===myLab?'pb-mine':''}">
+              <td>${r.lab===myLab?'★ ':''}${r.lab}</td>
+              <td>${r.reagentLot||'–'}</td><td>${r.controlLot||'–'}</td>
+              <td>${r.labMean?.toFixed(4)??'–'}</td><td>${r.labSD?.toFixed(4)??'–'}</td>
+              <td>${r.bias?.toFixed(4)??'–'}</td>
+              <td class="${sdiClass(r.sdi)}">${r.sdi.toFixed(2)}</td>
+              <td>${r.n??'–'}</td>
+              <td>${r.peerMean?.toFixed(4)??'–'}</td><td>${r.peerSD?.toFixed(4)??'–'}</td><td>${r.peerN??'–'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  drawPeerBenchmarkChart(document.getElementById('pbCanvas'), rows, myLab);
+}
+
+/** กราฟ dot-plot จัดอันดับ SDI ของทุก Lab — จุดของเราเน้นสีน้ำเงิน+ขอบดำ
+    ให้เห็นเราอยู่ตรงไหนเทียบกับกลุ่ม peer ทั้งหมดในสายตาเดียว */
+function drawPeerBenchmarkChart(canvas, rows, myLab){
+  if(!canvas || !rows.length) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rowH = 20;
+  const L=70, R=30, T=24, B=34;
+  const W = 720, H = T + B + rows.length*rowH;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.font = '10px Sarabun, sans-serif';
+
+  const maxAbs = Math.max(3.5, ...rows.map(r=>Math.abs(r.sdi)));
+  const pw = W-L-R;
+  const X = sdi => L + pw/2 + (sdi/maxAbs)*(pw/2);
+
+  // โซนพื้นหลัง ±2SDI / ±3SDI
+  [[3,'#fee2e2'],[2,'#fef3c7'],[1,'#dcfce7']].reverse().forEach(([n,color])=>{
+    const x1=X(-n), x2=X(n);
+    ctx.fillStyle = color; ctx.fillRect(x1, T, x2-x1, rows.length*rowH);
+  });
+  // เส้นกริดที่ -3,-2,-1,0,1,2,3
+  [-3,-2,-1,0,1,2,3].forEach(n=>{
+    const x = X(n);
+    ctx.strokeStyle = n===0 ? '#6b7280' : '#ffffffaa';
+    ctx.lineWidth = n===0 ? 1.4 : 1;
+    ctx.beginPath(); ctx.moveTo(x,T); ctx.lineTo(x,T+rows.length*rowH); ctx.stroke();
+    ctx.fillStyle='#6b7280'; ctx.textAlign='center';
+    ctx.fillText(String(n), x, T+rows.length*rowH+14);
+  });
+
+  rows.forEach((r,idx)=>{
+    const y = T + idx*rowH + rowH/2;
+    const isMine = r.lab===myLab;
+    ctx.fillStyle = '#374151'; ctx.textAlign='right'; ctx.font = isMine?'bold 10px Sarabun, sans-serif':'10px Sarabun, sans-serif';
+    ctx.fillText((isMine?'★ ':'')+r.lab, L-8, y+3);
+
+    const x = X(r.sdi);
+    ctx.beginPath();
+    ctx.arc(x, y, isMine?6:3.5, 0, Math.PI*2);
+    ctx.fillStyle = isMine ? '#2563eb' : (Math.abs(r.sdi)>3 ? '#ef4444' : Math.abs(r.sdi)>2 ? '#f59e0b' : '#9ca3af');
+    ctx.fill();
+    if(isMine){ ctx.lineWidth=1.6; ctx.strokeStyle='#1e3a8a'; ctx.stroke(); }
+  });
+
+  ctx.fillStyle='#374151'; ctx.textAlign='center'; ctx.font='10px Sarabun, sans-serif';
+  ctx.fillText('SDI', L+pw/2, T+rows.length*rowH+28);
+}
 </script>
 </body>
 </html>
