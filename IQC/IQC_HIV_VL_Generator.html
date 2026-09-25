@@ -61,6 +61,16 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
 .file-data-table th,.file-data-table td{padding:4px 8px;border-bottom:1px solid var(--gray200);text-align:left}
 .file-data-table th{color:var(--gray600);font-weight:600;white-space:nowrap}
 .file-data-table td{font-weight:600}
+/* ── QCloud Peer Group Comparison — กราฟ Levey-Jennings เทียบกับ Peer Group ── */
+.pg-section{display:flex;flex-direction:column;gap:14px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--gray200);width:100%}
+.pg-block{background:#fff;border:1px solid var(--gray200);border-radius:8px;padding:10px 12px}
+.pg-block-title{font-weight:700;font-size:.85rem;margin-bottom:6px}
+.pg-compare-row{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem}
+.pg-compare-col{padding:4px 10px;border-radius:6px}
+.pg-compare-col.yourlab{background:var(--blue-l);color:#1d4ed8}
+.pg-compare-col.peer{background:var(--gray100);color:var(--gray600)}
+.btn-dl-chart{background:var(--gray100);border:1px solid var(--gray200);border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer;font-family:inherit}
+.btn-dl-chart:hover{background:var(--blue-l);border-color:var(--blue)}
 .status-pending{background:var(--gray100);color:var(--gray600)}
 .status-parsing{background:var(--yellow-l);color:var(--yellow)}
 .status-done{background:var(--green-l);color:var(--green)}
@@ -335,14 +345,25 @@ function renderFileList(){
         <span class="file-status status-${u.status}">${statusLabel(u.status)}</span>
         <button class="file-remove" onclick="removeFile(${i})" title="ลบ">✕</button>
       </div>
-      ${u.data ? renderFileDataPreview(u.data) : ''}
+      ${u.data ? renderFileDataPreview(u.data, i) : ''}
     </div>`).join('');
+
+  // วาดกราฟ Peer Group ทีหลัง (ต้องรอให้ innerHTML ใส่ <canvas> เข้า DOM ก่อนถึงจะวาดได้)
+  uploadedFiles.forEach((u,i) => {
+    if(!u.data || !u.data.peerGroup) return;
+    ['hpc','lpc'].forEach(k => {
+      const ctrl = u.data.peerGroup[k];
+      if(!ctrl || !ctrl.peerGroup || !ctrl.runs || !ctrl.runs.length) return;
+      const canvas = document.getElementById(`pgc_${i}_${k}`);
+      if(canvas) drawLJChart(canvas, ctrl.peerGroup, ctrl.runs);
+    });
+  });
 }
 
 /* ภาพตัวอย่าง PDF (หน้าแรก) + ข้อมูลที่อ่านได้ — แสดงในการ์ดไฟล์เดียวกัน
    (ไม่แยกไปอยู่การ์ด "ตัวอย่างข้อมูลที่อ่านได้" ด้านล่าง เพื่อให้เห็นภาพคู่กับ
    ข้อมูลที่ดึงมาจากไฟล์นั้นทันทีโดยไม่ต้องเลื่อนจอ) */
-function renderFileDataPreview(data){
+function renderFileDataPreview(data, fileIdx){
   const statRow = (label, s) => s ? `
     <tr><th>${label}</th><td>Mean ${s.mean.toFixed(2)}</td><td>SD ${s.sd.toFixed(3)}</td><td>%CV ${s.cv.toFixed(2)}</td><td>n=${s.n}</td></tr>` : '';
   return `
@@ -358,7 +379,107 @@ function renderFileDataPreview(data){
           ${statRow('LPC', data.stats.lpc)}
         </table>
       </div>
-    </div>`;
+    </div>
+    ${renderPeerGroupSection(fileIdx, data.peerGroup)}`;
+}
+
+/* ══════════════════════════════════════════════════════
+   QCloud "Peer Group Comparison" — กราฟ Levey-Jennings แบบละเอียด
+   ฝังอยู่ในหน้าเว็บโดยตรง (ไม่ใช่แค่ภาพ PDF ที่ต้องคลิกเปิด) เทียบผลของ
+   แล็บกับค่าเฉลี่ย/SD ของ Peer Group พร้อมดาวน์โหลดเก็บเป็นรูปได้
+   ══════════════════════════════════════════════════════ */
+function renderPeerGroupSection(fileIdx, pg){
+  if(!pg || (!pg.hpc && !pg.lpc)) return '';
+  const block = (label, ctrl, canvasId) => {
+    if(!ctrl || !ctrl.yourLab || !ctrl.peerGroup) return '';
+    return `
+      <div class="pg-block">
+        <div class="pg-block-title">📈 ${label} เทียบกับ Peer Group (Levey-Jennings)</div>
+        <div class="pg-compare-row">
+          <div class="pg-compare-col yourlab"><b>YOUR LAB</b> &nbsp;Mean ${ctrl.yourLab.mean.toFixed(2)} · SD ${ctrl.yourLab.sd.toFixed(2)} · CV ${ctrl.yourLab.cv.toFixed(2)}% · N ${ctrl.yourLab.n}</div>
+          <div class="pg-compare-col peer"><b>PEER GROUP</b> &nbsp;Mean ${ctrl.peerGroup.mean.toFixed(2)} · SD ${ctrl.peerGroup.sd.toFixed(2)} · CV ${ctrl.peerGroup.cv.toFixed(2)}% · N ${ctrl.peerGroup.n}</div>
+        </div>
+        <canvas id="${canvasId}" style="width:100%;max-width:560px;display:block;margin-top:8px"></canvas>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;flex-wrap:wrap;gap:6px">
+          <span style="font-size:.72rem;color:${ctrl.noViolation?'var(--green)':'var(--red)'}">
+            ${ctrl.noViolation ? '✅ ไม่พบการละเมิดกฎเทียบกับ Peer Group' : '⚠️ ตรวจพบจุดที่เบี่ยงเบนจาก Peer Group'}
+          </span>
+          <button class="btn-dl-chart" onclick="downloadChartPNG('${canvasId}')">⬇ ดาวน์โหลดภาพกราฟ</button>
+        </div>
+      </div>`;
+  };
+  const hpcHtml = block('HPC', pg.hpc, `pgc_${fileIdx}_hpc`);
+  const lpcHtml = block('LPC', pg.lpc, `pgc_${fileIdx}_lpc`);
+  if(!hpcHtml && !lpcHtml) return '';
+  return `<div class="pg-section">${hpcHtml}${lpcHtml}</div>`;
+}
+
+/** วาดกราฟ Levey-Jennings บน canvas — แถบ ±1/2/3SD อิงจากค่า Peer Group
+    (ไม่ใช่ค่าเฉลี่ยของแล็บเอง) ตามรูปแบบรายงาน QCloud Peer Group Comparison */
+function drawLJChart(canvas, peer, runs){
+  const dpr = window.devicePixelRatio || 1;
+  const W = 560, H = 200, L = 44, R = 12, T = 14, B = 24, pw = W-L-R, ph = H-T-B;
+  canvas.width = W*dpr; canvas.height = H*dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.font = '9px Sarabun, sans-serif';
+
+  const mean = peer.mean, sd = peer.sd || 0.0001;
+  const span = Math.max(3.5*sd, 0.02);
+  const lo = mean-span, hi = mean+span;
+  const X = idx => L + (runs.length<2 ? pw/2 : idx/(runs.length-1)*pw);
+  const Y = v => T + (hi-v)/(hi-lo)*ph;
+
+  // แถบ ±1/2/3 SD
+  [[3,'#ef4444'],[2,'#f59e0b'],[1,'#d1d5db']].forEach(([n,color]) => {
+    [1,-1].forEach(sgn => {
+      const y = Y(mean+sgn*n*sd);
+      if(y < T-2 || y > T+ph+2) return;
+      ctx.strokeStyle = color; ctx.setLineDash([4,3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
+      ctx.fillStyle = color; ctx.textAlign = 'right';
+      ctx.fillText((sgn>0?'+':'−')+n+'SD ('+(mean+sgn*n*sd).toFixed(2)+')', L-4, y+3);
+    });
+  });
+  ctx.setLineDash([]);
+
+  // เส้นค่าเฉลี่ย (ของ Peer Group)
+  const ym = Y(mean);
+  ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(L,ym); ctx.lineTo(L+pw,ym); ctx.stroke();
+  ctx.fillStyle = '#374151'; ctx.textAlign = 'right';
+  ctx.fillText('Mean ('+mean.toFixed(2)+')', L-4, ym+3);
+
+  // เส้นข้อมูลผลของแล็บ
+  ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  runs.forEach((r,idx) => { const x=X(idx), y=Y(r.value); idx ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+  ctx.stroke();
+
+  // จุดข้อมูล — สีแดง/ส้มถ้าหลุดกรอบ ±2SD / ±3SD ของ Peer Group
+  runs.forEach((r,idx) => {
+    const z = (r.value-mean)/sd;
+    const x = X(idx), y = Y(r.value);
+    const reject = Math.abs(z)>3, warn = Math.abs(z)>2 && !reject;
+    ctx.beginPath(); ctx.arc(x, y, reject?4.5:3, 0, Math.PI*2);
+    ctx.fillStyle = reject ? '#ef4444' : warn ? '#f59e0b' : '#2563eb';
+    ctx.fill();
+  });
+
+  // แกน x — วันที่แรก/สุดท้าย
+  ctx.fillStyle = '#6b7280'; ctx.font = '9px Sarabun, sans-serif';
+  if(runs[0]){ ctx.textAlign = 'left'; ctx.fillText(runs[0].date, L, H-6); }
+  if(runs.length>1){ ctx.textAlign = 'right'; ctx.fillText(runs[runs.length-1].date, L+pw, H-6); }
+}
+
+function downloadChartPNG(canvasId){
+  const c = document.getElementById(canvasId);
+  if(!c) return;
+  const a = document.createElement('a');
+  a.href = c.toDataURL('image/png');
+  a.download = canvasId + '.png';
+  a.click();
 }
 function statusLabel(s){return{pending:'รอ',parsing:'⏳ กำลังอ่าน',done:'✅ สำเร็จ',error:'❌ ผิดพลาด'}[s]||s}
 
@@ -439,6 +560,25 @@ async function parseQCloudPDF(arrayBuffer){
 
   const fullText = allItems.map(i=>i.str).join(' ');
 
+  // ── QCloud "Peer Group Comparison" — คนละรูปแบบกับ Lab Mean Report ด้านล่าง
+  //    ตรวจจับแล้วแยกไปใช้ตัวอ่านของตัวเอง ──
+  if(isPeerGroupReport(fullText)){
+    const pg = parsePeerGroupReport(fullText, allItems);
+    return {
+      meta: {
+        reagentLot: pg.meta.reagentLot, controlLot: pg.meta.controlLot,
+        isAllReagents: false, dateFrom: pg.meta.reportDate||'', dateTo: pg.meta.reportDate||'',
+      },
+      stats: {
+        hpc: pg.hpc?.yourLab ? { ...pg.hpc.yourLab, reagentLot:pg.meta.reagentLot, controlLot:pg.meta.controlLot } : null,
+        lpc: pg.lpc?.yourLab ? { ...pg.lpc.yourLab, reagentLot:pg.meta.reagentLot, controlLot:pg.meta.controlLot } : null,
+      },
+      runs: { hpc: pg.hpc?.runs||[], lpc: pg.lpc?.runs||[] },
+      thumbnail,
+      peerGroup: pg,
+    };
+  }
+
   const meta = extractMeta(fullText);
   const stats = extractStats(fullText);
   const runs = extractRuns(allItems);
@@ -464,6 +604,83 @@ async function parseQCloudPDF(arrayBuffer){
   meta.dateTo = allDates[allDates.length-1] || '';
 
   return { meta, stats, runs, thumbnail };
+}
+
+// ══════════════════════════════════════════════════════
+// QCloud "Peer Group Comparison" report — ตัวอ่านแยกต่างหาก
+// (คนละ layout กับ Lab Mean Report: มีค่า YOUR LAB กับ PEER GROUP
+//  แยกกันต่อ HPC/LPC พร้อมตาราง RUN DATE/LOG10 ในบล็อกเดียวกัน)
+// ══════════════════════════════════════════════════════
+function isPeerGroupReport(text){
+  return /Peer\s*Group\s*Comparison/i.test(text);
+}
+
+function extractPeerGroupMeta(text){
+  const t = text.replace(/\s+/g,' ').trim();
+  const meta = { analyte:'HIV-1', reagentLot:'Unknown', controlLot:'Unknown', reportDate:'' };
+  const rd = t.match(/Report\s*Date:\s*([\d\/]+)/i);
+  if(rd) meta.reportDate = rd[1];
+  // "Section: HIV-1 (N16037 / M21098)"
+  const sec = t.match(/Section:\s*([A-Za-z0-9\-]+)\s*\(\s*([A-Z]\d{4,6})\s*\/\s*([A-Z]\d{4,6})\s*\)/i);
+  if(sec){ meta.analyte = sec[1]; meta.reagentLot = sec[2]; meta.controlLot = sec[3]; }
+  return meta;
+}
+
+/** ดึงค่า "YOUR LAB Mean.. SD.. CV..% N.." และ "PEER GROUP Mean.. SD.. CV..% N.."
+    เฉพาะในช่วงข้อความของบล็อก HPC หรือ LPC Comparison (กันไปจับของอีกฝั่งผิด) */
+function extractPeerGroupBlockStats(text, ctrl){
+  const otherCtrl = ctrl==='HPC' ? 'LPC' : 'HPC';
+  const startRe = new RegExp(ctrl+'\\s*Comparison', 'i');
+  const endRe   = new RegExp(otherCtrl+'\\s*Comparison', 'i');
+  const sIdx = text.search(startRe);
+  if(sIdx < 0) return null;
+  const rest = text.slice(sIdx + 1);
+  const eIdxRel = rest.search(endRe);
+  const block = eIdxRel >= 0 ? text.slice(sIdx, sIdx + 1 + eIdxRel) : text.slice(sIdx);
+
+  function parseRow(label){
+    const re = new RegExp(label+'\\s*Mean\\s*([\\d.]+)\\s*SD\\s*([\\d.]+)\\s*CV\\s*([\\d.]+)\\s*%\\s*N\\s*(\\d+)', 'i');
+    const m = block.match(re);
+    return m ? { mean:+m[1], sd:+m[2], cv:+m[3], n:+m[4] } : null;
+  }
+  return {
+    yourLab: parseRow('YOUR\\s*LAB'),
+    peerGroup: parseRow('PEER\\s*GROUP'),
+    noViolation: /No\s+violations?\s+detected/i.test(block),
+  };
+}
+
+/** ตาราง "RUN DATE / LOG10" ฝั่ง HPC หรือ LPC — วันที่รูปแบบ dd/mm/yy (2 หลัก)
+    หาโดยอิงตำแหน่ง (x,y) ใต้หัวข้อ "HPC Data"/"LPC Data" คล้าย extractRuns() เดิม */
+function extractPeerGroupRuns(items, ctrl){
+  const otherCtrl = ctrl==='HPC' ? 'LPC' : 'HPC';
+  const hdrItem = items.find(i => new RegExp(ctrl+'\\s*Data','i').test(i.str));
+  if(!hdrItem) return [];
+  // ถ้ามีตารางของอีกฝั่ง (HPC/LPC) อยู่ถัดไปข้างล่าง ให้หยุดแถวก่อนถึงตารางนั้น
+  // กันไม่ให้ดูดข้อมูลของอีกตารางมาปนกัน (สองตารางเรียงในคอลัมน์ x เดียวกัน)
+  const otherHdr = items.find(i => new RegExp(otherCtrl+'\\s*Data','i').test(i.str) && i.y > hdrItem.y);
+  const maxY = otherHdr ? otherHdr.y : Infinity;
+  const DATE_RE = /^(\d{1,2}\/\d{1,2}\/\d{2})$/;
+  const VAL_RE  = /^(\d+\.\d{1,2})$/;
+  const nearby = items.filter(i => i.y > hdrItem.y && i.y < maxY && Math.abs(i.x - hdrItem.x) < 160);
+  const rows = groupByRow(nearby, 4);
+  const runs = [];
+  for(const row of rows){
+    const dateItem = row.find(i => DATE_RE.test(i.str));
+    const valItem  = row.find(i => VAL_RE.test(i.str));
+    if(dateItem && valItem) runs.push({ date: dateItem.str, value: parseFloat(valItem.str) });
+  }
+  return runs;
+}
+
+function parsePeerGroupReport(fullText, items){
+  const meta = extractPeerGroupMeta(fullText);
+  const hpc = extractPeerGroupBlockStats(fullText, 'HPC');
+  const lpc = extractPeerGroupBlockStats(fullText, 'LPC');
+  if(hpc) hpc.runs = extractPeerGroupRuns(items, 'HPC');
+  if(lpc) lpc.runs = extractPeerGroupRuns(items, 'LPC');
+  console.log('[Peer Group Parser]', { meta, hpc, lpc });
+  return { meta, hpc, lpc };
 }
 
 function extractMeta(text){
