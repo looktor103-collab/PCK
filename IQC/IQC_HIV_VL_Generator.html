@@ -61,14 +61,51 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
 .file-data-table th,.file-data-table td{padding:4px 8px;border-bottom:1px solid var(--gray200);text-align:left}
 .file-data-table th{color:var(--gray600);font-weight:600;white-space:nowrap}
 .file-data-table td{font-weight:600}
-/* ── QCloud Peer Group Comparison — กราฟ Levey-Jennings เทียบกับ Peer Group ── */
-.pg-section{display:flex;flex-direction:column;gap:14px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--gray200);width:100%}
-.pg-block{background:#fff;border:1px solid var(--gray200);border-radius:8px;padding:10px 12px}
-.pg-block-title{font-weight:700;font-size:.85rem;margin-bottom:6px}
-.pg-compare-row{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem}
-.pg-compare-col{padding:4px 10px;border-radius:6px}
-.pg-compare-col.yourlab{background:var(--blue-l);color:#1d4ed8}
-.pg-compare-col.peer{background:var(--gray100);color:var(--gray600)}
+/* ── Peer Group Analysis — กราฟ Levey-Jennings (Mean ±1/2/3 SD) ── */
+.lj-controls{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.lj-lot{padding:7px 10px;border:1px solid var(--gray200);border-radius:8px;font-size:.82rem;color:var(--gray800);background:#fff;font-family:inherit}
+.lj-tabs{display:inline-flex;gap:3px;background:var(--gray100);border:1px solid var(--gray200);border-radius:10px;padding:3px}
+.lj-tabs button{border:none;background:none;padding:6px 14px;border-radius:7px;font-size:.82rem;font-weight:700;color:var(--gray600);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px}
+.lj-tabs button.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+.lj-tabs .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.lj-head{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center;margin-bottom:12px;font-size:.78rem}
+.lj-head .lj-title{width:100%;text-align:center;font-weight:700;font-size:.95rem;color:var(--navy)}
+.lj-chip{padding:2px 10px;border-radius:12px;font-weight:600;background:var(--gray100);color:var(--gray600)}
+.lj-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--gray200);border:1px solid var(--gray200);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.lj-cell{background:#fff;padding:12px 15px}
+.lj-cell .who{font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;font-weight:700;margin-bottom:6px;color:var(--gray600)}
+.lj-cell.you .who{color:var(--blue)}
+.lj-cell.peer .who{color:var(--lpc)}
+.lj-cell .big{font-size:1.35rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.lj-cell .big small{font-size:.68rem;font-weight:500;color:var(--gray400);margin-left:3px}
+.lj-cell .sub{display:flex;gap:12px;flex-wrap:wrap;margin-top:7px;font-size:.74rem;color:var(--gray600);font-variant-numeric:tabular-nums}
+.lj-cell .sub b{color:var(--gray800)}
+.lj-cell .none{font-size:.78rem;color:var(--gray400);line-height:1.5}
+.lj-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px}
+@media(max-width:820px){.lj-layout{grid-template-columns:1fr}}
+.lj-chart{position:relative}
+.lj-chart svg{width:100%;height:auto;display:block}
+.lj-tip{position:absolute;pointer-events:none;background:var(--navy);color:#fff;border-radius:8px;padding:6px 9px;font-size:.72rem;line-height:1.5;box-shadow:0 6px 18px rgba(0,0,0,.25);transform:translate(-50%,-120%);opacity:0;transition:opacity .1s;white-space:nowrap;z-index:5}
+.lj-tip.show{opacity:1}
+.lj-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:.72rem;color:var(--gray600)}
+.lj-legend span{display:inline-flex;align-items:center;gap:5px}
+.lj-legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.lj-legend .btn-dl-chart{margin-left:auto}
+.lj-side{display:flex;flex-direction:column;border:1px solid var(--gray200);border-radius:10px;padding:10px 12px}
+.lj-side-head{display:flex;justify-content:space-between;padding-bottom:8px;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;color:var(--gray400);font-weight:700;border-bottom:1px solid var(--gray200)}
+.lj-runs{width:100%;border-collapse:collapse;font-size:.8rem;font-variant-numeric:tabular-nums}
+.lj-runs td{padding:6px 2px;border-bottom:1px solid var(--gray100)}
+.lj-runs td:last-child{text-align:right;font-weight:600}
+.lj-runs tr.warn td:last-child{color:var(--yellow)}
+.lj-runs tr.bad td:last-child{color:var(--red)}
+.lj-pager{display:flex;align-items:center;justify-content:space-between;padding-top:9px;margin-top:auto;font-size:.74rem;color:var(--gray600)}
+.lj-pager button{border:1px solid var(--gray200);background:#fff;border-radius:7px;width:26px;height:26px;cursor:pointer;color:var(--gray600);font-family:inherit}
+.lj-pager button:disabled{opacity:.35;cursor:default}
+.lj-wg{margin-top:14px;border-radius:10px;padding:11px 15px;font-size:.82rem;line-height:1.5}
+.lj-wg.ok{background:var(--green-l);color:var(--green)}
+.lj-wg.warn{background:var(--yellow-l);color:var(--yellow)}
+.lj-wg.bad{background:var(--red-l);color:var(--red)}
+.lj-wg b{display:block;margin-bottom:2px}
 .btn-dl-chart{background:var(--gray100);border:1px solid var(--gray200);border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer;font-family:inherit}
 .btn-dl-chart:hover{background:var(--blue-l);border-color:var(--blue)}
 /* ── Peer Benchmark: ranking Bias/SDI เทียบทั้งกลุ่ม peer ── */
@@ -198,6 +235,21 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
       <input type="file" id="fileInput" multiple accept=".pdf,.xlsx">
       <div class="file-list" id="fileList"></div>
     </div>
+  </div>
+
+  <!-- Peer Group Analysis: กราฟ Levey-Jennings จากข้อมูลที่อัพโหลด -->
+  <div class="card" id="ljCard" style="display:none">
+    <div class="card-header">
+      <span>📈</span><h2>HIV-1 — Peer Group Analysis</h2>
+      <div class="lj-controls">
+        <select class="lj-lot" id="ljLot" aria-label="Reagent Lot"></select>
+        <div class="lj-tabs" id="ljTabs">
+          <button data-level="hpc" class="active"><span class="dot" style="background:var(--hpc)"></span>HPC</button>
+          <button data-level="lpc"><span class="dot" style="background:var(--lpc)"></span>LPC</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body" id="ljBody"></div>
   </div>
 
   <!-- Preview -->
@@ -383,17 +435,6 @@ function renderFileList(){
       </div>
       ${u.data ? renderFileDataPreview(u.data, i) : ''}
     </div>`).join('');
-
-  // วาดกราฟ Peer Group ทีหลัง (ต้องรอให้ innerHTML ใส่ <canvas> เข้า DOM ก่อนถึงจะวาดได้)
-  uploadedFiles.forEach((u,i) => {
-    if(!u.data || !u.data.peerGroup) return;
-    ['hpc','lpc'].forEach(k => {
-      const ctrl = u.data.peerGroup[k];
-      if(!ctrl || !ctrl.peerGroup || !ctrl.runs || !ctrl.runs.length) return;
-      const canvas = document.getElementById(`pgc_${i}_${k}`);
-      if(canvas) drawLJChart(canvas, ctrl.peerGroup, ctrl.runs);
-    });
-  });
 }
 
 /* ภาพตัวอย่าง PDF (หน้าแรก) + ข้อมูลที่อ่านได้ — แสดงในการ์ดไฟล์เดียวกัน
@@ -415,99 +456,292 @@ function renderFileDataPreview(data, fileIdx){
           ${statRow('LPC', data.stats.lpc)}
         </table>
       </div>
-    </div>
-    ${renderPeerGroupSection(fileIdx, data.peerGroup)}`;
+    </div>`;
 }
 
 /* ══════════════════════════════════════════════════════
-   QCloud "Peer Group Comparison" — กราฟ Levey-Jennings แบบละเอียด
-   ฝังอยู่ในหน้าเว็บโดยตรง (ไม่ใช่แค่ภาพ PDF ที่ต้องคลิกเปิด) เทียบผลของ
-   แล็บกับค่าเฉลี่ย/SD ของ Peer Group พร้อมดาวน์โหลดเก็บเป็นรูปได้
+   Peer Group Analysis — กราฟ Levey-Jennings ต่อ Reagent Lot / Level
+   แถบ Mean ±1/2/3 SD อิงค่า Peer Group ถ้ามี (จากไฟล์ Peer Group Comparison)
+   ถ้า Lot นั้นไม่มีค่า Peer ใช้ Mean/SD ของแล็บเอง เพื่อให้ทุก Lot มีกราฟ
    ══════════════════════════════════════════════════════ */
-function renderPeerGroupSection(fileIdx, pg){
-  if(!pg || (!pg.hpc && !pg.lpc)) return '';
-  const block = (label, ctrl, canvasId) => {
-    if(!ctrl || !ctrl.yourLab || !ctrl.peerGroup) return '';
-    return `
-      <div class="pg-block">
-        <div class="pg-block-title">📈 ${label} เทียบกับ Peer Group (Levey-Jennings)</div>
-        <div class="pg-compare-row">
-          <div class="pg-compare-col yourlab"><b>YOUR LAB</b> &nbsp;Mean ${ctrl.yourLab.mean.toFixed(2)} · SD ${ctrl.yourLab.sd.toFixed(2)} · CV ${ctrl.yourLab.cv.toFixed(2)}% · N ${ctrl.yourLab.n}</div>
-          <div class="pg-compare-col peer"><b>PEER GROUP</b> &nbsp;Mean ${ctrl.peerGroup.mean.toFixed(2)} · SD ${ctrl.peerGroup.sd.toFixed(2)} · CV ${ctrl.peerGroup.cv.toFixed(2)}% · N ${ctrl.peerGroup.n}</div>
-        </div>
-        <canvas id="${canvasId}" style="width:100%;max-width:560px;display:block;margin-top:8px"></canvas>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;flex-wrap:wrap;gap:6px">
-          <span style="font-size:.72rem;color:${ctrl.noViolation?'var(--green)':'var(--red)'}">
-            ${ctrl.noViolation ? '✅ ไม่พบการละเมิดกฎเทียบกับ Peer Group' : '⚠️ ตรวจพบจุดที่เบี่ยงเบนจาก Peer Group'}
-          </span>
-          <button class="btn-dl-chart" onclick="downloadChartPNG('${canvasId}')">⬇ ดาวน์โหลดภาพกราฟ</button>
-        </div>
-      </div>`;
-  };
-  const hpcHtml = block('HPC', pg.hpc, `pgc_${fileIdx}_hpc`);
-  const lpcHtml = block('LPC', pg.lpc, `pgc_${fileIdx}_lpc`);
-  if(!hpcHtml && !lpcHtml) return '';
-  return `<div class="pg-section">${hpcHtml}${lpcHtml}</div>`;
+const lj = { key:null, level:'hpc', page:0, cur:null };
+const LJ_PER_PAGE = 10;
+
+function ljEsc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function ljShortDate(s){
+  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  return m ? `${m[1].padStart(2,'0')}/${m[2].padStart(2,'0')}/${m[3].slice(-2)}` : String(s);
+}
+function ljReportKey(r){ return r.meta.reagentLot+'|'+(r.meta.controlLot||''); }
+function ljReports(){ return parsedReports.filter(r => r.runs?.hpc?.length || r.runs?.lpc?.length); }
+
+function ljLevelData(rep, k){
+  const runs = [...(rep.runs[k]||[])].sort((a,b)=>dmyToTime(a.date)-dmyToTime(b.date));
+  if(!runs.length) return null;
+  const vals = runs.map(r=>r.value);
+  const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+  const sd = vals.length>1 ? Math.sqrt(vals.reduce((a,b)=>a+(b-mean)**2,0)/(vals.length-1)) : 0;
+  const lab = rep.stats[k] || { mean, sd, cv: mean ? sd/mean*100 : 0, n: vals.length };
+  const p = rep.peerGroup?.[k]?.peerGroup;
+  const peer = p && p.sd>0 && isFinite(p.mean) ? p : null;
+  const target = peer ? { mean:peer.mean, sd:peer.sd } : { mean:lab.mean, sd:lab.sd };
+  return { runs, lab, peer, target };
 }
 
-/** วาดกราฟ Levey-Jennings บน canvas — แถบ ±1/2/3SD อิงจากค่า Peer Group
-    (ไม่ใช่ค่าเฉลี่ยของแล็บเอง) ตามรูปแบบรายงาน QCloud Peer Group Comparison */
-function drawLJChart(canvas, peer, runs){
-  const dpr = window.devicePixelRatio || 1;
-  const W = 560, H = 200, L = 44, R = 12, T = 14, B = 24, pw = W-L-R, ph = H-T-B;
-  canvas.width = W*dpr; canvas.height = H*dpr;
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.clearRect(0,0,W,H);
-  ctx.font = '9px Sarabun, sans-serif';
+function renderLJPanel(){
+  const card = document.getElementById('ljCard');
+  const reports = ljReports();
+  if(!reports.length){ card.style.display='none'; return; }
+  card.style.display='';
 
-  const mean = peer.mean, sd = peer.sd || 0.0001;
-  const span = Math.max(3.5*sd, 0.02);
-  const lo = mean-span, hi = mean+span;
-  const X = idx => L + (runs.length<2 ? pw/2 : idx/(runs.length-1)*pw);
+  if(!reports.some(r=>ljReportKey(r)===lj.key)){
+    const best = [...reports].sort((a,b)=>(!!b.peerGroup - !!a.peerGroup) || (dmyToTime(b.meta.dateTo)-dmyToTime(a.meta.dateTo)))[0];
+    lj.key = ljReportKey(best); lj.page = 0;
+  }
+  const sel = document.getElementById('ljLot');
+  sel.innerHTML = reports.map(r=>
+    `<option value="${ljEsc(ljReportKey(r))}">${ljEsc(r.meta.reagentLot)} / ${ljEsc(r.meta.controlLot||'–')}${r.peerGroup?' · มี Peer':''}</option>`
+  ).join('');
+  sel.value = lj.key;
+
+  const rep = reports.find(r=>ljReportKey(r)===lj.key);
+  const has = k => (rep.runs[k]||[]).length>0;
+  if(!has(lj.level)) lj.level = has('hpc') ? 'hpc' : 'lpc';
+  document.querySelectorAll('#ljTabs button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.level===lj.level);
+    b.disabled = !has(b.dataset.level);
+  });
+  renderLJBody(rep, lj.level);
+}
+
+function renderLJBody(rep, k){
+  const body = document.getElementById('ljBody');
+  const d = ljLevelData(rep, k);
+  const LV = k.toUpperCase();
+  if(!d || !(d.target.sd>0)){
+    lj.cur = null;
+    body.innerHTML = `<p style="text-align:center;padding:30px;color:var(--gray400)">ข้อมูล ${LV} ของ Lot นี้ยังไม่พอคำนวณ SD (ต้องมีอย่างน้อย 2 ค่า)</p>`;
+    return;
+  }
+  const { runs, lab, peer, target } = d;
+  const wg = ljWestgard(runs, target);
+  const fx = (v,n=2) => Number(v).toFixed(n);
+  const sgn = s => (Number(s)>=0 ? '+' : '') + s;
+  const bias = peer ? lab.mean-peer.mean : 0;
+  const sdi = peer ? bias/peer.sd : 0;
+  const sdiColor = Math.abs(sdi)>2 ? 'var(--red)' : Math.abs(sdi)>1 ? 'var(--yellow)' : 'var(--green)';
+
+  body.innerHTML = `
+    <div class="lj-head">
+      <div class="lj-title">HIV-1 — ${LV} Comparison</div>
+      <span class="lj-chip">Reagent ${ljEsc(rep.meta.reagentLot)}</span>
+      <span class="lj-chip">Control ${ljEsc(rep.meta.controlLot||'–')}</span>
+      <span class="lj-chip">${ljEsc(ljShortDate(runs[0].date))} – ${ljEsc(ljShortDate(runs[runs.length-1].date))}</span>
+    </div>
+    <div class="lj-strip">
+      <div class="lj-cell you">
+        <div class="who">● Your Lab</div>
+        <div class="big">${fx(lab.mean)} <small>log₁₀</small></div>
+        <div class="sub"><span>SD <b>${fx(lab.sd,3)}</b></span><span>CV <b>${fx(lab.cv)}%</b></span><span>N <b>${lab.n}</b></span></div>
+      </div>
+      <div class="lj-cell peer">
+        <div class="who">● Peer Group</div>
+        ${peer ? `
+        <div class="big">${fx(peer.mean)} <small>log₁₀</small></div>
+        <div class="sub"><span>SD <b>${fx(peer.sd,3)}</b></span><span>CV <b>${fx(peer.cv)}%</b></span><span>N <b>${peer.n}</b></span></div>`
+        : `<div class="none">ยังไม่มีค่า Peer Group ของ Lot นี้ — อัพโหลดไฟล์ Peer Group Comparison (.xlsx) ของ Lot เดียวกันเพื่อเทียบ</div>`}
+      </div>
+      <div class="lj-cell">
+        ${peer ? `
+        <div class="who">Bias / SDI</div>
+        <div class="big" style="color:${sdiColor}">${sgn(fx(sdi))} <small>SDI</small></div>
+        <div class="sub"><span>Bias <b>${sgn(fx(bias,3))}</b> log₁₀</span><span><b>${sgn(fx(bias/peer.mean*100))}%</b></span></div>`
+        : `
+        <div class="who">เกณฑ์ของกราฟ</div>
+        <div class="big">${fx(target.mean)} <small>± ${fx(target.sd,3)}</small></div>
+        <div class="sub"><span>Mean ± SD ของแล็บเอง</span></div>`}
+      </div>
+    </div>
+    <div class="lj-layout">
+      <div>
+        <div class="lj-chart" id="ljChart">${ljSvg(runs, target, peer ? lab.mean : null, wg.z)}<div class="lj-tip" id="ljTip"></div></div>
+        <div class="lj-legend">
+          <span><i style="background:#2563EB"></i>ผลของแล็บ</span>
+          <span><i style="background:#16A34A"></i>Mean ${peer ? 'Peer Group' : 'ของแล็บ'}</span>
+          ${peer ? '<span><i style="background:repeating-linear-gradient(90deg,#2563EB 0 4px,transparent 4px 7px)"></i>Mean ของแล็บ</span>' : ''}
+          <span><i style="background:#F59E0B"></i>±2SD</span>
+          <span><i style="background:#EF4444"></i>±3SD</span>
+          <button class="btn-dl-chart" onclick="ljDownloadPNG()">⬇ ดาวน์โหลดภาพกราฟ</button>
+        </div>
+        ${ljWestgardBanner(wg, runs, !!peer)}
+      </div>
+      <div class="lj-side">
+        <div class="lj-side-head"><span>${LV} Data</span><span>Total ${runs.length}</span></div>
+        <table class="lj-runs"><tbody id="ljRunsBody"></tbody></table>
+        <div class="lj-pager">
+          <button data-pg="-1" aria-label="หน้าก่อน">‹</button>
+          <span id="ljPageLbl"></span>
+          <button data-pg="1" aria-label="หน้าถัดไป">›</button>
+        </div>
+      </div>
+    </div>`;
+  lj.cur = { runs, z: wg.z };
+  ljRenderRuns();
+}
+
+function ljSvg(runs, t, labMean, z){
+  const W=720, H=320, L=92, R=14, T=12, B=40, pw=W-L-R, ph=H-T-B;
+  const span = Math.max(3.4, ...z.map(v=>Math.abs(v)+0.3));
+  const lo = t.mean-span*t.sd, hi = t.mean+span*t.sd;
   const Y = v => T + (hi-v)/(hi-lo)*ph;
+  const X = i => L + (runs.length<2 ? pw/2 : i/(runs.length-1)*pw);
+  const band = (a,b,fill) => {
+    const y1 = Y(t.mean+b*t.sd), y2 = Y(t.mean+a*t.sd);
+    return `<rect x="${L}" y="${y1.toFixed(1)}" width="${pw}" height="${(y2-y1).toFixed(1)}" fill="${fill}"/>`;
+  };
+  let s = `<svg id="ljSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" font-family="Segoe UI, Tahoma, sans-serif" role="img" aria-label="Levey-Jennings chart">`;
+  s += `<rect x="0" y="0" width="${W}" height="${H}" fill="#FFFFFF"/>`;
+  s += band(2,3,'#FDECEC') + band(-3,-2,'#FDECEC');
+  s += band(1,2,'#FEF7DC') + band(-2,-1,'#FEF7DC');
+  s += band(-1,1,'#EEF9F1');
 
-  // แถบ ±1/2/3 SD
-  [[3,'#ef4444'],[2,'#f59e0b'],[1,'#d1d5db']].forEach(([n,color]) => {
-    [1,-1].forEach(sgn => {
-      const y = Y(mean+sgn*n*sd);
-      if(y < T-2 || y > T+ph+2) return;
-      ctx.strokeStyle = color; ctx.setLineDash([4,3]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(L,y); ctx.lineTo(L+pw,y); ctx.stroke();
-      ctx.fillStyle = color; ctx.textAlign = 'right';
-      ctx.fillText((sgn>0?'+':'−')+n+'SD ('+(mean+sgn*n*sd).toFixed(2)+')', L-4, y+3);
+  [[3,'#EF4444','#DC2626'],[2,'#F59E0B','#B45309'],[1,'#CBD5E1','#64748B']].forEach(([n,line,txt])=>{
+    [1,-1].forEach(sg=>{
+      const v = t.mean+sg*n*t.sd, y = Y(v).toFixed(1);
+      s += `<line x1="${L}" y1="${y}" x2="${L+pw}" y2="${y}" stroke="${line}" stroke-width="1" stroke-dasharray="4 3"/>`;
+      s += `<text x="${L-6}" y="${(+y+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="${txt}">${sg>0?'+':'−'}${n}SD (${v.toFixed(2)})</text>`;
     });
   });
-  ctx.setLineDash([]);
+  const ym = Y(t.mean).toFixed(1);
+  s += `<line x1="${L}" y1="${ym}" x2="${L+pw}" y2="${ym}" stroke="#16A34A" stroke-width="1.6"/>`;
+  s += `<text x="${L-6}" y="${(+ym+3.5).toFixed(1)}" text-anchor="end" font-size="10" font-weight="700" fill="#15803D">Mean (${t.mean.toFixed(2)})</text>`;
+  if(labMean!=null && labMean>lo && labMean<hi){
+    const yl = Y(labMean).toFixed(1);
+    s += `<line x1="${L}" y1="${yl}" x2="${L+pw}" y2="${yl}" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="6 4" opacity=".6"/>`;
+  }
 
-  // เส้นค่าเฉลี่ย (ของ Peer Group)
-  const ym = Y(mean);
-  ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 1.4;
-  ctx.beginPath(); ctx.moveTo(L,ym); ctx.lineTo(L+pw,ym); ctx.stroke();
-  ctx.fillStyle = '#374151'; ctx.textAlign = 'right';
-  ctx.fillText('Mean ('+mean.toFixed(2)+')', L-4, ym+3);
-
-  // เส้นข้อมูลผลของแล็บ
-  ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  runs.forEach((r,idx) => { const x=X(idx), y=Y(r.value); idx ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
-  ctx.stroke();
-
-  // จุดข้อมูล — สีแดง/ส้มถ้าหลุดกรอบ ±2SD / ±3SD ของ Peer Group
-  runs.forEach((r,idx) => {
-    const z = (r.value-mean)/sd;
-    const x = X(idx), y = Y(r.value);
-    const reject = Math.abs(z)>3, warn = Math.abs(z)>2 && !reject;
-    ctx.beginPath(); ctx.arc(x, y, reject?4.5:3, 0, Math.PI*2);
-    ctx.fillStyle = reject ? '#ef4444' : warn ? '#f59e0b' : '#2563eb';
-    ctx.fill();
+  s += `<line x1="${L}" y1="${T+ph}" x2="${L+pw}" y2="${T+ph}" stroke="#CBD5E1" stroke-width="1"/>`;
+  const step = Math.max(1, Math.ceil(runs.length/8));
+  runs.forEach((r,i)=>{
+    if(i%step!==0 && i!==runs.length-1) return;
+    if(i!==runs.length-1 && runs.length-1-i < step/2) return;
+    const x = X(i).toFixed(1);
+    const anchor = runs.length>1 && i===runs.length-1 ? 'end' : 'middle';
+    s += `<line x1="${x}" y1="${T+ph}" x2="${x}" y2="${T+ph+4}" stroke="#CBD5E1"/>`;
+    s += `<text x="${x}" y="${T+ph+17}" text-anchor="${anchor}" font-size="9.5" fill="#64748B">${ljEsc(ljShortDate(r.date))}</text>`;
   });
 
-  // แกน x — วันที่แรก/สุดท้าย
-  ctx.fillStyle = '#6b7280'; ctx.font = '9px Sarabun, sans-serif';
-  if(runs[0]){ ctx.textAlign = 'left'; ctx.fillText(runs[0].date, L, H-6); }
-  if(runs.length>1){ ctx.textAlign = 'right'; ctx.fillText(runs[runs.length-1].date, L+pw, H-6); }
+  s += `<path d="${runs.map((r,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(r.value).toFixed(1)}`).join(' ')}" fill="none" stroke="#2563EB" stroke-width="1.8" stroke-linejoin="round"/>`;
+  runs.forEach((r,i)=>{
+    const a = Math.abs(z[i]);
+    const fill = a>3 ? '#EF4444' : a>2 ? '#F59E0B' : '#2563EB';
+    const x = X(i).toFixed(1), y = Y(r.value).toFixed(1);
+    s += `<circle cx="${x}" cy="${y}" r="${a>2?4.8:3.6}" fill="${fill}" stroke="#FFFFFF" stroke-width="1.3"/>`;
+    s += `<circle class="lj-pt" data-i="${i}" cx="${x}" cy="${y}" r="10" fill="#000000" fill-opacity="0" style="cursor:pointer"/>`;
+  });
+  return s + '</svg>';
 }
+
+// Westgard rules อิงค่า z เทียบ Mean/SD ของกราฟ (ระดับความรุนแรงตามชีต "เกณฑ์การแปลผล")
+function ljWestgard(runs, t){
+  const z = runs.map(r=>(r.value-t.mean)/t.sd);
+  const ev = [];
+  z.forEach((v,i)=>{
+    if(Math.abs(v)>3) ev.push({ rule:'1-3s', sev:'bad', i });
+    else if(Math.abs(v)>2) ev.push({ rule:'1-2s', sev:'warn', i });
+  });
+  for(let i=1;i<z.length;i++)
+    if(Math.abs(z[i])>2 && Math.abs(z[i-1])>2 && Math.sign(z[i])===Math.sign(z[i-1])) ev.push({ rule:'2-2s', sev:'bad', i });
+  for(let i=3;i<z.length;i++){
+    const w = z.slice(i-3,i+1);
+    if(w.every(v=>v>1) || w.every(v=>v<-1)) ev.push({ rule:'4-1s', sev:'warn', i });
+  }
+  for(let i=9;i<z.length;i++){
+    const w = z.slice(i-9,i+1);
+    if(w.every(v=>v>0) || w.every(v=>v<0)) ev.push({ rule:'10x', sev:'warn', i });
+  }
+  return { z, ev };
+}
+
+function ljWestgardBanner(wg, runs, isPeer){
+  const basis = isPeer ? 'เทียบกับ Mean/SD ของ Peer Group' : 'เทียบกับ Mean/SD ของแล็บเอง';
+  if(!wg.ev.length)
+    return `<div class="lj-wg ok"><b>✅ ไม่พบการละเมิดกฎ Westgard</b>${basis} · ตรวจกฎ 1-2s, 1-3s, 2-2s, 4-1s, 10x</div>`;
+  const byRule = {};
+  wg.ev.forEach(e=>{ (byRule[e.rule] ||= { sev:e.sev, idx:new Set() }).idx.add(e.i); });
+  const bad = wg.ev.some(e=>e.sev==='bad');
+  const lines = Object.entries(byRule).map(([rule,{sev,idx}])=>{
+    const ds = [...idx].map(i=>ljShortDate(runs[i].date));
+    return `${sev==='bad'?'🔴':'🟡'} ${rule}: ${ljEsc(ds.slice(0,5).join(', '))}${ds.length>5?` และอีก ${ds.length-5} ครั้ง`:''}`;
+  });
+  return `<div class="lj-wg ${bad?'bad':'warn'}"><b>${bad?'⚠️ พบการละเมิดกฎระดับ Reject':'⚠️ พบสัญญาณเตือน (Warning)'}</b>${lines.join('<br>')}<br><span style="opacity:.8">${basis}</span></div>`;
+}
+
+function ljRenderRuns(){
+  if(!lj.cur) return;
+  const { runs, z } = lj.cur;
+  const order = runs.map((_,i)=>i).reverse();
+  const pages = Math.max(1, Math.ceil(order.length/LJ_PER_PAGE));
+  lj.page = Math.min(Math.max(lj.page,0), pages-1);
+  document.getElementById('ljRunsBody').innerHTML = order
+    .slice(lj.page*LJ_PER_PAGE, (lj.page+1)*LJ_PER_PAGE)
+    .map(i=>{
+      const a = Math.abs(z[i]);
+      return `<tr class="${a>3?'bad':a>2?'warn':''}"><td>${ljEsc(ljShortDate(runs[i].date))}</td>`+
+             `<td style="color:var(--gray400);text-align:right;font-size:.72rem">${z[i]>=0?'+':''}${z[i].toFixed(1)} SD</td>`+
+             `<td>${runs[i].value.toFixed(2)}</td></tr>`;
+    }).join('');
+  document.getElementById('ljPageLbl').textContent = `${lj.page+1} / ${pages}`;
+  const [prev, next] = document.querySelectorAll('#ljBody .lj-pager button');
+  prev.disabled = lj.page===0;
+  next.disabled = lj.page>=pages-1;
+}
+
+function ljDownloadPNG(){
+  const svg = document.getElementById('ljSvg');
+  if(!svg) return;
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = 1440; c.height = 640;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const a = document.createElement('a');
+    a.href = c.toDataURL('image/png');
+    a.download = `LJ_${lj.key.split('|')[0]}_${lj.level.toUpperCase()}.png`;
+    a.click();
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(svg));
+}
+
+document.getElementById('ljLot').addEventListener('change', e=>{ lj.key = e.target.value; lj.page = 0; renderLJPanel(); });
+document.getElementById('ljTabs').addEventListener('click', e=>{
+  const b = e.target.closest('button');
+  if(!b || b.disabled) return;
+  lj.level = b.dataset.level; lj.page = 0;
+  renderLJPanel();
+});
+const ljBody = document.getElementById('ljBody');
+ljBody.addEventListener('click', e=>{
+  const b = e.target.closest('[data-pg]');
+  if(!b) return;
+  lj.page += +b.dataset.pg;
+  ljRenderRuns();
+});
+ljBody.addEventListener('mouseover', e=>{
+  const tip = document.getElementById('ljTip');
+  if(!tip || !lj.cur) return;
+  const p = e.target.closest('.lj-pt');
+  if(!p){ tip.classList.remove('show'); return; }
+  const i = +p.dataset.i, { runs, z } = lj.cur;
+  const box = document.getElementById('ljChart').getBoundingClientRect(), r = p.getBoundingClientRect();
+  tip.innerHTML = `<b>${ljEsc(runs[i].date)}</b><br>${runs[i].value.toFixed(3)} log₁₀ · ${z[i]>=0?'+':''}${z[i].toFixed(2)} SD`;
+  tip.style.left = (r.left-box.left+r.width/2)+'px';
+  tip.style.top = (r.top-box.top+6)+'px';
+  tip.classList.add('show');
+});
+ljBody.addEventListener('mouseleave', ()=>document.getElementById('ljTip')?.classList.remove('show'));
 
 function downloadChartPNG(canvasId){
   const c = document.getElementById(canvasId);
@@ -524,6 +758,7 @@ function removeFile(i){
   rebuildReports();
   renderFileList();
   updatePreview();
+  renderLJPanel();
 }
 
 /* ไฟล์ QC Data (.xlsx) หนึ่งไฟล์มีหลาย Reagent Lot → แตกเป็นรายงานย่อยต่อ Lot
@@ -559,6 +794,8 @@ function linkPeerStats(){
 }
 function clearAll(){
   uploadedFiles=[]; parsedReports=[];
+  lj.key = null; lj.cur = null;
+  document.getElementById('ljCard').style.display='none';
   document.getElementById('fileList').innerHTML='';
   document.getElementById('previewCard').style.display='none';
   document.getElementById('downloadSection').classList.remove('show');
@@ -597,6 +834,7 @@ async function processFile(entry){
     entry.status='done';
     rebuildReports();
     updatePreview();
+    renderLJPanel();
   }catch(e){
     entry.status='error';
     entry.errorMsg = e.message || String(e);
