@@ -17,7 +17,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--gray50);color:var(--gray800);min-height:100vh}
 /* ── header ── */
-header{background:linear-gradient(135deg,var(--navy) 0%,#2E5FA3 100%);color:#fff;padding:20px 32px;display:flex;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+header{background:linear-gradient(135deg,var(--navy) 0%,#2E5FA3 100%);color:#fff;padding:20px 32px;display:flex;flex-wrap:wrap;align-items:center;gap:16px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+header .back-btn{color:#fff;text-decoration:none;font-size:.82rem;font-weight:600;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);white-space:nowrap;transition:background .2s}
+header .back-btn:hover{background:rgba(255,255,255,.28)}
+header .back-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
 header .logo{width:52px;height:52px;background:rgba(255,255,255,.15);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px}
 header .title h1{font-size:1.4rem;font-weight:700}
 header .title p{font-size:.85rem;opacity:.8;margin-top:2px}
@@ -188,6 +191,7 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
 <body>
 
 <header>
+  <a class="back-btn" href="../index.html" title="กลับไปหน้า Dashboard หลักของห้องปฏิบัติการ">← กลับ Dashboard</a>
   <div class="logo">🔬</div>
   <div class="title">
     <h1>QCloud IQC HIV Viral Load — Report Generator</h1>
