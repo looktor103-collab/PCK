@@ -191,11 +191,11 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
     <div class="card-body">
       <div class="drop-zone" id="dropZone">
         <div class="icon">📄</div>
-        <h3>ลาก PDF มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</h3>
-        <p>รองรับหลายไฟล์พร้อมกัน · ไฟล์ QCloud IQC Report (Lab Mean Report)</p>
-        <button class="btn-upload" onclick="document.getElementById('fileInput').click()">เลือกไฟล์ PDF</button>
+        <h3>ลาก PDF หรือ Excel มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</h3>
+        <p>รองรับหลายไฟล์พร้อมกัน · PDF (Lab Mean Report) หรือ Excel (Peer Group Comparison .xlsx จาก QCloud)</p>
+        <button class="btn-upload" onclick="document.getElementById('fileInput').click()">เลือกไฟล์ PDF/Excel</button>
       </div>
-      <input type="file" id="fileInput" multiple accept=".pdf">
+      <input type="file" id="fileInput" multiple accept=".pdf,.xlsx">
       <div class="file-list" id="fileList"></div>
     </div>
   </div>
@@ -347,7 +347,7 @@ dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classL
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault(); dropZone.classList.remove('drag-over');
-  handleFiles([...e.dataTransfer.files].filter(f=>f.name.endsWith('.pdf')));
+  handleFiles([...e.dataTransfer.files].filter(f=>/\.(pdf|xlsx)$/i.test(f.name)));
 });
 document.getElementById('fileInput').addEventListener('change', e => {
   handleFiles([...e.target.files]); e.target.value='';
@@ -538,11 +538,30 @@ function clearAll(){
 async function processFile(entry){
   entry.status='parsing'; entry.errorMsg=''; renderFileList();
   try{
-    // ตรวจสอบ library
-    if(typeof pdfjsLib === 'undefined')
-      throw new Error('PDF.js ไม่ได้โหลด — กรุณาเชื่อม Internet แล้วรีเฟรชหน้า');
-    const ab = await entry.file.arrayBuffer();
-    entry.data = await parseQCloudPDF(ab);
+    const isXlsx = /\.xlsx$/i.test(entry.file.name);
+    if(isXlsx){
+      if(typeof ExcelJS === 'undefined')
+        throw new Error('ExcelJS ไม่ได้โหลด — กรุณาเชื่อม Internet แล้วรีเฟรชหน้า');
+      entry.data = await parseQCloudPeerGroupXLSX(entry.file);
+      // ถ้าไฟล์มีชีต "Peer Comparison" (ข้อมูลจัดอันดับทุก Lab) ป้อนเข้าการ์ด
+      // Peer Benchmark ให้อัตโนมัติ ไม่ต้องอัพโหลดไฟล์เดียวกันซ้ำสองที่
+      if(entry.data.peerComparisonRaw && entry.data.peerComparisonRaw.length){
+        const rows = normalizePeerBenchmarkRows(entry.data.peerComparisonRaw);
+        if(rows.length){
+          pbRows = rows;
+          const levels = [...new Set(pbRows.map(r=>r.level).filter(Boolean))];
+          pbLevel = levels[0] || '';
+          const labCode = document.getElementById('labCode').value;
+          if(labCode) document.getElementById('pbMyLab').value = labCode;
+          renderPeerBenchmark();
+        }
+      }
+    } else {
+      if(typeof pdfjsLib === 'undefined')
+        throw new Error('PDF.js ไม่ได้โหลด — กรุณาเชื่อม Internet แล้วรีเฟรชหน้า');
+      const ab = await entry.file.arrayBuffer();
+      entry.data = await parseQCloudPDF(ab);
+    }
     entry.status='done';
     parsedReports = uploadedFiles.filter(u=>u.data).map(u=>u.data);
     updatePreview();
@@ -552,6 +571,105 @@ async function processFile(entry){
     console.error('[IQC Parser Error]', e);
   }
   renderFileList();
+}
+
+// ══════════════════════════════════════════════════════
+// QCloud "Peer Group Comparison" — Excel export (.xlsx)
+// รูปแบบไฟล์จริงจาก QCloud มี 3 ชีต: "Lab vs Peer Summary" (สรุปต่อ Level),
+// "Raw Lab Records" (ผลรายวัน ใช้วาดกราฟ Levey-Jennings), และ "Peer Comparison"
+// (ข้อมูลจัดอันดับทุก Lab ในกลุ่ม peer — ป้อนเข้า Peer Benchmark อัตโนมัติถ้ามี)
+// ══════════════════════════════════════════════════════
+async function parseQCloudPeerGroupXLSX(file){
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(await file.arrayBuffer());
+
+  const summarySheet = wb.getWorksheet('Lab vs Peer Summary');
+  const rawSheet = wb.getWorksheet('Raw Lab Records');
+  if(!summarySheet || !rawSheet)
+    throw new Error('ไฟล์ Excel นี้ไม่ตรงกับรูปแบบ QCloud Peer Group Comparison (ไม่พบชีต "Lab vs Peer Summary" หรือ "Raw Lab Records")');
+
+  function readSheetRows(ws){
+    const header = (ws.getRow(1).values||[]).slice(1).map(v=>String(v==null?'':v).trim());
+    const rows = [];
+    for(let r=2; r<=ws.rowCount; r++){
+      const vals = (ws.getRow(r).values||[]).slice(1);
+      if(vals.every(v=>v===null||v===undefined||v==='')) continue;
+      const obj = {};
+      header.forEach((h,i)=>{ obj[h]=vals[i]; });
+      rows.push(obj);
+    }
+    return rows;
+  }
+  // จับคู่หัวคอลัมน์แบบยืดหยุ่น (ตัดช่องว่าง/วงเล็บ/หน่วย เช่น "Lab Mean (log₁₀)" → ยังจับ "labmean" เจอ)
+  function col(obj, name){
+    const target = name.toLowerCase().replace(/[^a-z0-9]/g,'');
+    const key = Object.keys(obj).find(k=>k.toLowerCase().replace(/[^a-z0-9]/g,'').startsWith(target));
+    return key!==undefined ? obj[key] : undefined;
+  }
+  function dateToSortKey(s){
+    const m = String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if(!m) return 0;
+    let [,d,mo,y] = m; if(y.length===2) y = '20'+y;
+    return new Date(+y,+mo-1,+d).getTime();
+  }
+  function computeNoViolation(runs, peer){
+    if(!peer || !runs.length) return true;
+    const sd = peer.sd || 1e-9;
+    const z = runs.map(r=>(r.value-peer.mean)/sd);
+    if(z.some(v=>Math.abs(v)>3)) return false;
+    for(let i=1;i<z.length;i++){
+      if(Math.abs(z[i])>2 && Math.abs(z[i-1])>2 && Math.sign(z[i])===Math.sign(z[i-1])) return false;
+    }
+    return true;
+  }
+
+  const summaryRows = readSheetRows(summarySheet);
+  const meta = { reagentLot:'Unknown', controlLot:'' };
+  const levelStats = {};
+  summaryRows.forEach(r=>{
+    const level = String(col(r,'level')||'').toUpperCase();
+    if(level!=='HPC' && level!=='LPC') return;
+    meta.reagentLot = col(r,'reagentlot') || meta.reagentLot;
+    meta.controlLot = col(r,'controllot') || meta.controlLot;
+    levelStats[level] = {
+      yourLab:   { mean:+col(r,'labmean'),  sd:+col(r,'labsd'),  cv:+col(r,'labcv'),  n:+col(r,'labn') },
+      peerGroup: { mean:+col(r,'peermean'), sd:+col(r,'peersd'), cv:+col(r,'peercv'), n:+col(r,'peern') },
+    };
+  });
+
+  const runsByLevel = { HPC:[], LPC:[] };
+  readSheetRows(rawSheet).forEach(r=>{
+    const level = String(col(r,'level')||'').toUpperCase();
+    if(!runsByLevel[level]) return;
+    const dateRaw = col(r,'date');
+    const dateStr = dateRaw instanceof Date
+      ? `${String(dateRaw.getDate()).padStart(2,'0')}/${String(dateRaw.getMonth()+1).padStart(2,'0')}/${dateRaw.getFullYear()}`
+      : String(dateRaw||'').trim();
+    const value = parseFloat(col(r,'log'));
+    if(!dateStr || isNaN(value)) return;
+    runsByLevel[level].push({ date:dateStr, value });
+  });
+  ['HPC','LPC'].forEach(lv => runsByLevel[lv].sort((a,b)=>dateToSortKey(a.date)-dateToSortKey(b.date)));
+
+  const pg = {
+    meta: { reagentLot: meta.reagentLot, controlLot: meta.controlLot },
+    hpc: levelStats.HPC ? { ...levelStats.HPC, runs: runsByLevel.HPC, noViolation: computeNoViolation(runsByLevel.HPC, levelStats.HPC.peerGroup) } : null,
+    lpc: levelStats.LPC ? { ...levelStats.LPC, runs: runsByLevel.LPC, noViolation: computeNoViolation(runsByLevel.LPC, levelStats.LPC.peerGroup) } : null,
+  };
+
+  const peerComparisonSheet = wb.getWorksheet('Peer Comparison');
+
+  return {
+    meta: { reagentLot: meta.reagentLot, controlLot: meta.controlLot, isAllReagents:false, dateFrom:'', dateTo:'' },
+    stats: {
+      hpc: pg.hpc?.yourLab ? { ...pg.hpc.yourLab, reagentLot: meta.reagentLot, controlLot: meta.controlLot } : null,
+      lpc: pg.lpc?.yourLab ? { ...pg.lpc.yourLab, reagentLot: meta.reagentLot, controlLot: meta.controlLot } : null,
+    },
+    runs: { hpc: pg.hpc?.runs||[], lpc: pg.lpc?.runs||[] },
+    thumbnail: '',
+    peerGroup: pg,
+    peerComparisonRaw: peerComparisonSheet ? readSheetRows(peerComparisonSheet) : null,
+  };
 }
 
 async function parseQCloudPDF(arrayBuffer){
@@ -1554,7 +1672,12 @@ async function parsePeerBenchmarkFile(file){
   } else {
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(await file.arrayBuffer());
-    const ws = wb.worksheets[0];
+    // ไฟล์อาจมีหลายชีต (เช่น export รวมของ QCloud ที่ชีตแรกเป็นสรุปภาพรวม
+    // ไม่ใช่ชีต Peer Comparison ที่ต้องใช้จริง) — เลือกชีตที่มีคอลัมน์ Lab/SDI ก่อน
+    const ws = wb.worksheets.find(s => {
+      const hdr = (s.getRow(1).values||[]).map(v=>String(v==null?'':v).trim().toLowerCase());
+      return hdr.includes('sdi') && hdr.includes('lab');
+    }) || wb.worksheets[0];
     const header = (ws.getRow(1).values||[]).slice(1).map(v=>String(v==null?'':v).trim());
     for(let r=2; r<=ws.rowCount; r++){
       const vals = (ws.getRow(r).values||[]).slice(1);
