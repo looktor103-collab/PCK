@@ -1,0 +1,14 @@
+{
+  "name": "splab-iqc-api",
+  "main": "index.js",
+  "compatibility_date": "2026-08-31",
+  "workers_dev": true,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "splab-iqc",
+      "database_id": "6a6cbbe8-0c9b-41e8-afe1-1fabec5184c3"
+    }
+  ]
+}

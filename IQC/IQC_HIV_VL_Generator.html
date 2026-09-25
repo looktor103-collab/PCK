@@ -61,6 +61,16 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
 .file-data-table th,.file-data-table td{padding:4px 8px;border-bottom:1px solid var(--gray200);text-align:left}
 .file-data-table th{color:var(--gray600);font-weight:600;white-space:nowrap}
 .file-data-table td{font-weight:600}
+/* ── Cloud autosave ── */
+.cloud-bar{margin-bottom:12px;padding:9px 14px;border-radius:8px;font-size:.82rem;background:var(--gray100);color:var(--gray600);line-height:1.5}
+.cloud-bar.ok{background:var(--blue-l);color:var(--navy)}
+.cloud-bar.err{background:var(--red-l);color:var(--red)}
+.cloud-bar button{margin-left:8px;border:1px solid currentColor;background:#fff;color:inherit;border-radius:6px;padding:2px 10px;cursor:pointer;font-family:inherit;font-size:.78rem}
+.cloud-badge{font-size:.74rem;padding:4px 10px;border-radius:12px;font-weight:600;white-space:nowrap;border:none;font-family:inherit}
+.cb-wait{background:var(--yellow-l);color:var(--yellow)}
+.cb-ok{background:var(--blue-l);color:var(--blue)}
+.cb-err{background:var(--red-l);color:var(--red);cursor:pointer}
+.cb-off{background:var(--gray100);color:var(--gray400)}
 /* ── Peer Group Analysis — กราฟ Levey-Jennings (Mean ±1/2/3 SD) ── */
 .lj-controls{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .lj-lot{padding:7px 10px;border:1px solid var(--gray200);border-radius:8px;font-size:.82rem;color:var(--gray800);background:#fff;font-family:inherit}
@@ -212,10 +222,10 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
         </div>
       </div>
       <div class="notice" style="margin-top:14px">
-        <strong>📌 วิธีใช้งาน (Offline Mode)</strong>
-        อัพโหลดไฟล์ PDF จาก QCloud IQC (Lab Mean Report) → กด Generate Excel → ดาวน์โหลดไฟล์ Excel<br>
-        รองรับหลายไฟล์พร้อมกัน: รายงานรวมทุก Reagent Lot และรายงานแยกต่อ Lot<br>
-        <em>⚠️ ต้องการ Internet ครั้งแรกสำหรับโหลด Library (PDF.js + ExcelJS) — หลังจากนั้นใช้ได้ Offline</em>
+        <strong>📌 วิธีใช้งาน</strong>
+        อัพโหลดไฟล์ Excel จาก QCloud (QC Data / Peer Group Comparison) → ระบบบันทึกขึ้น Cloud อัตโนมัติ และแสดงกราฟ Peer Group ทุกเครื่องที่เปิดหน้านี้<br>
+        ไฟล์ PDF (Lab Mean Report) ยังดูผลและสร้าง Excel ได้ แต่ไม่บันทึกขึ้น Cloud<br>
+        <em>⚠️ ต้องเชื่อมต่อ Internet เพื่อโหลดข้อมูลจาก Cloud และ Library (PDF.js + ExcelJS)</em>
       </div>
     </div>
   </div>
@@ -223,13 +233,14 @@ header .badge{margin-left:auto;background:rgba(255,255,255,.2);border-radius:20p
   <!-- Upload -->
   <div class="card">
     <div class="card-header">
-      <span>📂</span><h2>อัพโหลดไฟล์ PDF จาก QCloud</h2>
+      <span>📂</span><h2>อัพโหลดไฟล์จาก QCloud</h2>
     </div>
     <div class="card-body">
+      <div class="cloud-bar" id="cloudBar">☁️ กำลังเชื่อมต่อ Cloud...</div>
       <div class="drop-zone" id="dropZone">
         <div class="icon">📄</div>
         <h3>ลาก PDF หรือ Excel มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</h3>
-        <p>รองรับหลายไฟล์พร้อมกัน · PDF (Lab Mean Report) หรือ Excel (Peer Group Comparison .xlsx จาก QCloud)</p>
+        <p>รองรับหลายไฟล์พร้อมกัน · Excel (QC Data / Peer Group Comparison) บันทึกขึ้น Cloud อัตโนมัติ · PDF (Lab Mean Report) ดูได้แต่ไม่บันทึก</p>
         <button class="btn-upload" onclick="document.getElementById('fileInput').click()">เลือกไฟล์ PDF/Excel</button>
       </div>
       <input type="file" id="fileInput" multiple accept=".pdf,.xlsx">
@@ -428,10 +439,13 @@ function renderFileList(){
           <div class="name">${u.file.name}</div>
           <div class="meta">${(u.file.size/1024).toFixed(1)} KB
             ${u.status==='error' ? `<br><span style="color:var(--red);font-weight:600">⚠️ ${u.errorMsg||'ไม่ทราบสาเหตุ'}</span>` : ''}
+            ${u.cloud==='error' ? `<br><span style="color:var(--red);font-weight:600">⚠️ ${ljEsc(u.cloudMsg)}</span>` : ''}
+            ${u.cloud==='saved' ? `<br><span style="color:var(--green)">☁️ ${ljEsc(u.cloudMsg)}</span>` : ''}
           </div>
         </div>
         <span class="file-status status-${u.status}">${statusLabel(u.status)}</span>
-        <button class="file-remove" onclick="removeFile(${i})" title="ลบ">✕</button>
+        ${cloudBadge(u, i)}
+        <button class="file-remove" onclick="removeFile(${i})" title="ลบออกจากรายการ (ข้อมูลที่บันทึกบน Cloud แล้วจะยังอยู่)">✕</button>
       </div>
       ${u.data ? renderFileDataPreview(u.data, i) : ''}
     </div>`).join('');
@@ -761,51 +775,215 @@ function removeFile(i){
   renderLJPanel();
 }
 
-/* ไฟล์ QC Data (.xlsx) หนึ่งไฟล์มีหลาย Reagent Lot → แตกเป็นรายงานย่อยต่อ Lot
-   ถ้า Lot เดียวกันมีทั้ง QC Data และรายงาน Peer Group ให้ใช้ของ QC Data (ข้อมูลรายวันครบกว่า)
-   แล้วนำค่า Peer Group มาผูกให้ ไม่ให้ Lot ซ้ำในตารางสรุป/Excel */
-function rebuildReports(){
-  linkPeerStats();
-  const lotReports = uploadedFiles.flatMap(u => u.data?.lotReports || []);
-  const covered = new Set(lotReports.map(r => r.meta.reagentLot+'|'+r.meta.controlLot));
-  const singles = uploadedFiles
-    .filter(u => u.data && !u.data.lotReports).map(u => u.data)
-    .filter(d => !(d.peerGroup && covered.has(d.meta.reagentLot+'|'+d.meta.controlLot)));
-  parsedReports = [...singles, ...lotReports];
+/* ══════════════════════════════════════════════════════
+   บันทึกอัตโนมัติบน Cloud (Cloudflare Worker splab-iqc-api + D1)
+   ไฟล์ Excel ที่อัพโหลดจะถูกบันทึกทันที และทุกเครื่องที่เปิดหน้านี้จะโหลดข้อมูลชุดเดียวกัน
+   ไฟล์ PDF ไม่บันทึก: ค่าใน PDF ปัดเหลือ 2 ตำแหน่ง และรายงานแบบ All Reagents ซ้ำกับทุก Lot
+   ══════════════════════════════════════════════════════ */
+const IQC_API = 'https://splab-iqc-api.looktor103.workers.dev/api/iqc';
+// ฝังไว้ในหน้าเพื่อให้ทุกเครื่องใช้ได้โดยไม่ต้องกรอก จึงไม่ใช่ความลับจริง —
+// Worker รับเฉพาะคำขอจากโดเมนของเว็บนี้เป็นอีกชั้น
+const IQC_API_KEY = 'YWKvNwzgKfHgT2Z8DjuCCKlQ2XNa2wzm';
+const IQC_ASSAY = 'HIV-1';
+
+const cloud = { status:'idle', lab:'', runs:[], peer:[], benchmark:null, error:'', seq:0 };
+
+function currentLab(){
+  const v = (document.getElementById('labCode').value||'').trim();
+  return /^\d+$/.test(v) ? v.padStart(3,'0') : v;
+}
+function dmyToIso(s){
+  const m = String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(!m) return '';
+  const y = m[3].length===2 ? '20'+m[3] : m[3];
+  return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+}
+function isoToDmy(s){
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(s);
+}
+function reportDateFromName(name){
+  const m = String(name).match(/(20\d{2})(\d{2})(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : new Date().toISOString().slice(0,10);
+}
+const round4 = v => Math.round(v*10000)/10000;
+
+async function cloudLoad(){
+  const lab = currentLab();
+  const seq = ++cloud.seq;
+  if(lab !== cloud.lab) Object.assign(cloud, { lab, runs:[], peer:[], benchmark:null });
+  cloud.status = 'loading'; renderCloudStatus();
+  try{
+    const res = await fetch(`${IQC_API}?lab=${encodeURIComponent(lab)}&assay=${encodeURIComponent(IQC_ASSAY)}`,
+      { headers:{ 'X-API-Key': IQC_API_KEY } });
+    const j = await res.json().catch(()=>({}));
+    if(!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
+    if(seq !== cloud.seq) return;
+    Object.assign(cloud, { status:'ok', runs:j.runs||[], peer:j.peer||[], benchmark:j.benchmark||null, error:'' });
+    if(!pbRows.length && cloud.benchmark?.rows?.length){
+      const rows = normalizePeerBenchmarkRows(cloud.benchmark.rows);
+      if(rows.length){
+        pbRows = rows;
+        pbLevel = [...new Set(rows.map(r=>r.level).filter(Boolean))][0] || '';
+        document.getElementById('pbMyLab').value = lab;
+        renderPeerBenchmark();
+      }
+    }
+  }catch(e){
+    if(seq !== cloud.seq) return;
+    Object.assign(cloud, { status:'error', error: e.message || String(e) });
+  }
+  rebuildReports(); updatePreview(); renderLJPanel(); renderCloudStatus();
 }
 
-function linkPeerStats(){
-  const peers = uploadedFiles
-    .filter(u => u.data?.peerGroup && !u.data.lotReports)
-    .map(u => u.data.peerGroup);
-  uploadedFiles.forEach(u => {
-    if(!u.data?.lotReports) return;
-    u.data.lotReports.forEach(rep => {
-      const pg = peers.find(p => p.meta.reagentLot===rep.meta.reagentLot && p.meta.controlLot===rep.meta.controlLot);
-      if(!pg){ rep.peerGroup = null; return; }
-      const level = k => (pg[k] && rep.stats[k]) ? {
-        yourLab: rep.stats[k], peerGroup: pg[k].peerGroup, runs: rep.runs[k],
-        noViolation: noWestgardViolation(rep.runs[k], pg[k].peerGroup),
-      } : null;
-      rep.peerGroup = { meta: pg.meta, hpc: level('hpc'), lpc: level('lpc') };
+async function cloudSave(entry){
+  const p = entry.data?.payload;
+  if(!p) return;
+  const lab = currentLab();
+  const fileLabs = [...new Set(p.labCodes)];
+  if(fileLabs.some(l => l !== lab)){
+    entry.cloud = 'error';
+    entry.cloudMsg = `Lab Code ในไฟล์ (${fileLabs.join(', ')}) ไม่ตรงกับ Lab Code ที่ตั้งไว้ (${lab}) — ไม่ได้บันทึกขึ้น Cloud`;
+    renderFileList(); return;
+  }
+  entry.cloud = 'saving'; entry.cloudMsg = ''; renderFileList();
+  try{
+    const res = await fetch(IQC_API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'X-API-Key': IQC_API_KEY },
+      body: JSON.stringify({ lab, assay:IQC_ASSAY, sourceFile: entry.file.name, reportDate: p.reportDate,
+                             runs: p.runs, peer: p.peer, benchmark: p.benchmark }),
     });
-    u.data.peerGroup = u.data.lotReports.find(r => r.peerGroup)?.peerGroup || null;
-  });
+    const j = await res.json().catch(()=>({}));
+    if(!res.ok || !j.ok) throw new Error(j.error || `HTTP ${res.status}`);
+    entry.cloud = 'saved';
+    entry.cloudMsg = `บันทึกแล้ว: ผลรายวันใหม่ ${j.runs.inserted} ค่า · มีอยู่แล้ว ${j.runs.valid-j.runs.inserted} ค่า`
+      + (j.peer.received ? (j.peer.saved ? ' · อัพเดตค่า Peer Group' : ' · ค่า Peer Group บน Cloud ใหม่กว่าไฟล์นี้ จึงไม่เปลี่ยน') : '');
+  }catch(e){
+    entry.cloud = 'error';
+    entry.cloudMsg = 'บันทึกขึ้น Cloud ไม่สำเร็จ: ' + (e.message || e);
+  }
+  renderFileList();
+  if(entry.cloud === 'saved') cloudLoad();
 }
+
+function retryCloudSave(i){ if(uploadedFiles[i]) cloudSave(uploadedFiles[i]); }
+
+function cloudBadge(u, i){
+  switch(u.cloud){
+    case 'saving': return '<span class="cloud-badge cb-wait">⏳ กำลังบันทึก</span>';
+    case 'saved':  return '<span class="cloud-badge cb-ok">☁️ บันทึกแล้ว</span>';
+    case 'error':  return `<button class="cloud-badge cb-err" onclick="retryCloudSave(${i})" title="กดเพื่อลองบันทึกอีกครั้ง">❌ ลองบันทึกใหม่</button>`;
+    case 'skip':   return '<span class="cloud-badge cb-off" title="ไฟล์ PDF แสดงผลได้แต่ไม่บันทึกขึ้น Cloud — ใช้ไฟล์ Excel จาก QCloud เพื่อบันทึก">PDF · ไม่บันทึก</span>';
+    default: return '';
+  }
+}
+
+function renderCloudStatus(){
+  const el = document.getElementById('cloudBar');
+  const lab = ljEsc(cloud.lab || currentLab());
+  if(cloud.status === 'loading'){
+    el.className = 'cloud-bar'; el.innerHTML = `☁️ กำลังโหลดข้อมูล Lab ${lab} จาก Cloud...`; return;
+  }
+  if(cloud.status === 'error'){
+    el.className = 'cloud-bar err';
+    el.innerHTML = `⚠️ เชื่อมต่อ Cloud ไม่ได้ (${ljEsc(cloud.error)}) — ข้อมูลที่อัพโหลดตอนนี้จะหายเมื่อปิดหน้า <button onclick="cloudLoad()">ลองใหม่</button>`;
+    return;
+  }
+  if(cloud.status !== 'ok') return;
+  const lots = new Set(cloud.runs.map(r => r.reagentLot+'|'+r.controlLot));
+  const peerLots = new Set(cloud.peer.map(r => r.reagentLot+'|'+r.controlLot));
+  const last = cloud.runs.reduce((m,r) => r.date > m ? r.date : m, '');
+  el.className = 'cloud-bar ok';
+  el.innerHTML = cloud.runs.length
+    ? `☁️ ข้อมูลบน Cloud ของ Lab ${lab}: ผลรายวัน ${cloud.runs.length} ค่า · ${lots.size} Lot`
+      + (peerLots.size ? ` · มีค่า Peer Group ${peerLots.size} Lot` : '')
+      + ` · ล่าสุด ${isoToDmy(last)} — อัพโหลดไฟล์ Excel ใหม่จะบันทึกเพิ่มอัตโนมัติ`
+    : `☁️ ยังไม่มีข้อมูลของ Lab ${lab} บน Cloud — อัพโหลดไฟล์ Excel (QC Data / Peer Group) แล้วระบบจะบันทึกให้อัตโนมัติ`;
+}
+
+/* ══════════════════════════════════════════════════════
+   รวมข้อมูลเป็นรายงานต่อ Reagent Lot จาก Cloud + ไฟล์ Excel ที่อัพโหลดในหน้านี้
+   ผลรายวันที่ซ้ำกันนับครั้งเดียว; ค่า Peer Group ใช้รายงานล่าสุดของแต่ละ Lot
+   ไฟล์ PDF ยังแสดงแยกต่อไฟล์เหมือนเดิม
+   ══════════════════════════════════════════════════════ */
+function labStats(runs, reagentLot, controlLot){
+  const v = runs.map(r=>r.value);
+  if(!v.length) return null;
+  const mean = v.reduce((a,b)=>a+b,0)/v.length;
+  const sd = v.length>1 ? Math.sqrt(v.reduce((a,b)=>a+(b-mean)**2,0)/(v.length-1)) : 0;
+  return { mean, sd, cv: mean ? sd/mean*100 : 0, n: v.length, reagentLot, controlLot };
+}
+
+function rebuildReports(){
+  const pool = new Map();
+  const lotOf = (reagentLot, controlLot) => {
+    const key = reagentLot+'|'+(controlLot||'');
+    if(!pool.has(key)) pool.set(key, { reagentLot, controlLot: controlLot||'',
+      runs:{ hpc:new Map(), lpc:new Map() }, peer:{ hpc:null, lpc:null } });
+    return pool.get(key);
+  };
+  const add = (runs, peers, fallbackDate) => {
+    (runs||[]).forEach(r => {
+      const k = String(r.level).toLowerCase();
+      if(k!=='hpc' && k!=='lpc') return;
+      lotOf(r.reagentLot, r.controlLot).runs[k]
+        .set(r.date+'|'+round4(r.value), { date: isoToDmy(r.date), value: r.value });
+    });
+    (peers||[]).forEach(s => {
+      const k = String(s.level).toLowerCase();
+      if(k!=='hpc' && k!=='lpc') return;
+      const L = lotOf(s.reagentLot, s.controlLot);
+      const date = s.reportDate || fallbackDate || '';
+      if(!L.peer[k] || date >= L.peer[k].reportDate)
+        L.peer[k] = { mean:s.mean, sd:s.sd, cv:s.cv, n:s.n, reportDate:date };
+    });
+  };
+  add(cloud.runs, cloud.peer);
+  const lab = currentLab();
+  uploadedFiles.forEach(u => {
+    const p = u.data?.payload;
+    if(p && p.labCodes.every(l => l === lab)) add(p.runs, p.peer, p.reportDate);
+  });
+
+  const lotReports = [...pool.values()].map(L => {
+    const runs = {}, stats = {};
+    ['hpc','lpc'].forEach(k => {
+      runs[k] = [...L.runs[k].values()].sort((a,b)=>dmyToTime(a.date)-dmyToTime(b.date));
+      stats[k] = labStats(runs[k], L.reagentLot, L.controlLot);
+    });
+    const pgLevel = k => (L.peer[k] && stats[k]) ? {
+      yourLab: stats[k], peerGroup: L.peer[k], runs: runs[k],
+      noViolation: noWestgardViolation(runs[k], L.peer[k]),
+    } : null;
+    const dates = [...runs.hpc, ...runs.lpc].map(r=>r.date).sort((a,b)=>dmyToTime(a)-dmyToTime(b));
+    return {
+      meta: { reagentLot: L.reagentLot, controlLot: L.controlLot, isAllReagents:false,
+              dateFrom: dates[0]||'', dateTo: dates[dates.length-1]||'' },
+      stats, runs, thumbnail:'',
+      peerGroup: (L.peer.hpc || L.peer.lpc)
+        ? { meta:{ reagentLot:L.reagentLot, controlLot:L.controlLot }, hpc: pgLevel('hpc'), lpc: pgLevel('lpc') }
+        : null,
+    };
+  }).filter(r => r.runs.hpc.length || r.runs.lpc.length)
+    .sort((a,b)=>dmyToTime(b.meta.dateTo)-dmyToTime(a.meta.dateTo));
+
+  const pdfReports = uploadedFiles.filter(u => u.data && !u.data.payload).map(u => u.data);
+  parsedReports = [...pdfReports, ...lotReports];
+}
+
 function clearAll(){
-  uploadedFiles=[]; parsedReports=[];
-  lj.key = null; lj.cur = null;
-  document.getElementById('ljCard').style.display='none';
+  uploadedFiles = [];
   document.getElementById('fileList').innerHTML='';
-  document.getElementById('previewCard').style.display='none';
   document.getElementById('downloadSection').classList.remove('show');
+  rebuildReports(); updatePreview(); renderLJPanel();
 }
 
 // ══════════════════════════════════════════════════════
 // PDF Parsing
 // ══════════════════════════════════════════════════════
 async function processFile(entry){
-  entry.status='parsing'; entry.errorMsg=''; renderFileList();
+  entry.status='parsing'; entry.errorMsg=''; entry.cloud=null; renderFileList();
   try{
     const isXlsx = /\.xlsx$/i.test(entry.file.name);
     if(isXlsx){
@@ -820,8 +998,7 @@ async function processFile(entry){
           pbRows = rows;
           const levels = [...new Set(pbRows.map(r=>r.level).filter(Boolean))];
           pbLevel = levels[0] || '';
-          const labCode = document.getElementById('labCode').value;
-          if(labCode) document.getElementById('pbMyLab').value = labCode;
+          document.getElementById('pbMyLab').value = currentLab();
           renderPeerBenchmark();
         }
       }
@@ -830,6 +1007,7 @@ async function processFile(entry){
         throw new Error('PDF.js ไม่ได้โหลด — กรุณาเชื่อม Internet แล้วรีเฟรชหน้า');
       const ab = await entry.file.arrayBuffer();
       entry.data = await parseQCloudPDF(ab);
+      entry.cloud = 'skip';
     }
     entry.status='done';
     rebuildReports();
@@ -841,6 +1019,7 @@ async function processFile(entry){
     console.error('[IQC Parser Error]', e);
   }
   renderFileList();
+  if(entry.status==='done' && entry.data.payload) cloudSave(entry);
 }
 
 // ══════════════════════════════════════════════════════
@@ -848,6 +1027,7 @@ async function processFile(entry){
 //  1) Peer Group Comparison: ชีต "Lab vs Peer Summary" + "Raw Lab Records"
 //     (+ "Peer Comparison" ข้อมูลจัดอันดับทุก Lab → ป้อน Peer Benchmark อัตโนมัติ)
 //  2) QC Data: ชีตผลรายวันล้วน (Date, Level, Reagent Lot, Log₁₀) หลาย Lot ในไฟล์เดียว
+// ทั้งสองแบบคืนค่า payload (ข้อมูลรูปแบบเดียวกับที่บันทึกบน Cloud) ไว้ด้วย
 // ══════════════════════════════════════════════════════
 function xlsxReadRows(ws){
   const header = (ws.getRow(1).values||[]).slice(1).map(v=>String(v==null?'':v).trim());
@@ -873,6 +1053,10 @@ function xlsxDateStr(v){
     return `${String(v.getDate()).padStart(2,'0')}/${String(v.getMonth()+1).padStart(2,'0')}/${v.getFullYear()}`;
   return String(v==null?'':v).trim();
 }
+function xlsxLabCode(r){
+  const v = String(xlsxCol(r,'labcode') ?? '').trim();
+  return /^\d+$/.test(v) ? v.padStart(3,'0') : v;
+}
 function dmyToTime(s){
   const m = String(s).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
   if(!m) return 0;
@@ -893,25 +1077,26 @@ function noWestgardViolation(runs, peer){
 async function parseQCloudXLSX(file){
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(await file.arrayBuffer());
+  const reportDate = reportDateFromName(file.name);
   if(wb.getWorksheet('Lab vs Peer Summary') && wb.getWorksheet('Raw Lab Records'))
-    return parseQCloudPeerGroupWorkbook(wb);
+    return parseQCloudPeerGroupWorkbook(wb, reportDate);
   const rawSheet = wb.worksheets.find(ws => {
     const hdr = (ws.getRow(1).values||[]).slice(1).map(xlsxNorm);
     return ['date','level','reagentlot'].every(k => hdr.includes(k)) && hdr.some(h => h.startsWith('log'));
   });
   if(!rawSheet)
     throw new Error('ไฟล์ Excel นี้ไม่ตรงกับรูปแบบที่รองรับ — ต้องเป็น QCloud Peer Group Comparison หรือ QC Data (คอลัมน์ Date, Level, Reagent Lot, Log₁₀)');
-  return parseQCloudRawDataSheet(rawSheet);
+  return parseQCloudRawDataSheet(rawSheet, reportDate);
 }
 
-function parseQCloudPeerGroupWorkbook(wb){
+function parseQCloudPeerGroupWorkbook(wb, reportDate){
   const meta = { reagentLot:'Unknown', controlLot:'' };
   const levelStats = {};
   xlsxReadRows(wb.getWorksheet('Lab vs Peer Summary')).forEach(r=>{
     const level = String(xlsxCol(r,'level')||'').toUpperCase();
     if(level!=='HPC' && level!=='LPC') return;
-    meta.reagentLot = xlsxCol(r,'reagentlot') || meta.reagentLot;
-    meta.controlLot = xlsxCol(r,'controllot') || meta.controlLot;
+    meta.reagentLot = String(xlsxCol(r,'reagentlot') || meta.reagentLot).trim();
+    meta.controlLot = String(xlsxCol(r,'controllot') || meta.controlLot).trim();
     levelStats[level] = {
       yourLab:   { mean:+xlsxCol(r,'labmean'),  sd:+xlsxCol(r,'labsd'),  cv:+xlsxCol(r,'labcv'),  n:+xlsxCol(r,'labn') },
       peerGroup: { mean:+xlsxCol(r,'peermean'), sd:+xlsxCol(r,'peersd'), cv:+xlsxCol(r,'peercv'), n:+xlsxCol(r,'peern') },
@@ -919,13 +1104,15 @@ function parseQCloudPeerGroupWorkbook(wb){
   });
 
   const runsByLevel = { HPC:[], LPC:[] };
+  const labCodes = [];
   xlsxReadRows(wb.getWorksheet('Raw Lab Records')).forEach(r=>{
     const level = String(xlsxCol(r,'level')||'').toUpperCase();
     if(!runsByLevel[level]) return;
     const date = xlsxDateStr(xlsxCol(r,'date'));
     const value = parseFloat(xlsxCol(r,'log'));
-    if(!date || isNaN(value)) return;
+    if(!dmyToIso(date) || isNaN(value)) return;
     runsByLevel[level].push({ date, value });
+    const lc = xlsxLabCode(r); if(lc) labCodes.push(lc);
   });
   ['HPC','LPC'].forEach(lv => runsByLevel[lv].sort((a,b)=>dmyToTime(a.date)-dmyToTime(b.date)));
 
@@ -934,6 +1121,7 @@ function parseQCloudPeerGroupWorkbook(wb){
     : null;
   const pg = { meta: { reagentLot: meta.reagentLot, controlLot: meta.controlLot }, hpc: pgLevel('HPC'), lpc: pgLevel('LPC') };
   const peerComparisonSheet = wb.getWorksheet('Peer Comparison');
+  const peerComparisonRaw = peerComparisonSheet ? xlsxReadRows(peerComparisonSheet) : null;
 
   return {
     meta: { reagentLot: meta.reagentLot, controlLot: meta.controlLot, isAllReagents:false, dateFrom:'', dateTo:'' },
@@ -944,12 +1132,23 @@ function parseQCloudPeerGroupWorkbook(wb){
     runs: { hpc: pg.hpc?.runs||[], lpc: pg.lpc?.runs||[] },
     thumbnail: '',
     peerGroup: pg,
-    peerComparisonRaw: peerComparisonSheet ? xlsxReadRows(peerComparisonSheet) : null,
+    peerComparisonRaw,
+    payload: {
+      reportDate, labCodes,
+      runs: ['HPC','LPC'].flatMap(lv => runsByLevel[lv].map(r => ({
+        level: lv, reagentLot: meta.reagentLot, controlLot: meta.controlLot, date: dmyToIso(r.date), value: round4(r.value),
+      }))),
+      peer: ['HPC','LPC'].filter(lv => levelStats[lv]?.peerGroup.sd > 0).map(lv => ({
+        level: lv, reagentLot: meta.reagentLot, controlLot: meta.controlLot, ...levelStats[lv].peerGroup,
+      })),
+      benchmark: peerComparisonRaw && peerComparisonRaw.length ? peerComparisonRaw : null,
+    },
   };
 }
 
-function parseQCloudRawDataSheet(ws){
+function parseQCloudRawDataSheet(ws, reportDate){
   const byLot = new Map();
+  const payloadRuns = [], labCodes = [];
   xlsxReadRows(ws).forEach(r=>{
     const level = String(xlsxCol(r,'level')||'').toLowerCase();
     if(level!=='hpc' && level!=='lpc') return;
@@ -957,38 +1156,33 @@ function parseQCloudRawDataSheet(ws){
     const controlLot = String(xlsxCol(r,'controllot')||'').trim();
     const date = xlsxDateStr(xlsxCol(r,'date'));
     const value = parseFloat(xlsxCol(r,'log'));
-    if(!date || isNaN(value)) return;
+    if(!dmyToIso(date) || isNaN(value)) return;
     const key = reagentLot+'|'+controlLot;
     if(!byLot.has(key)) byLot.set(key, { reagentLot, controlLot, runs:{ hpc:[], lpc:[] } });
     byLot.get(key).runs[level].push({ date, value });
+    payloadRuns.push({ level: level.toUpperCase(), reagentLot, controlLot, date: dmyToIso(date), value: round4(value) });
+    const lc = xlsxLabCode(r); if(lc) labCodes.push(lc);
   });
   if(!byLot.size) throw new Error(`ไม่พบข้อมูล HPC/LPC ในชีต "${ws.name}"`);
 
   const lotReports = [...byLot.values()].map(lot=>{
     ['hpc','lpc'].forEach(k => lot.runs[k].sort((a,b)=>dmyToTime(a.date)-dmyToTime(b.date)));
-    const stat = k => {
-      const v = lot.runs[k].map(r=>r.value);
-      if(!v.length) return null;
-      const mean = v.reduce((a,b)=>a+b,0)/v.length;
-      const sd = v.length>1 ? Math.sqrt(v.reduce((a,b)=>a+(b-mean)**2,0)/(v.length-1)) : 0;
-      return { mean, sd, cv: mean ? sd/mean*100 : 0, n: v.length, reagentLot: lot.reagentLot, controlLot: lot.controlLot };
-    };
     const dates = [...lot.runs.hpc, ...lot.runs.lpc].map(r=>r.date).sort((a,b)=>dmyToTime(a)-dmyToTime(b));
     return {
       meta: { reagentLot: lot.reagentLot, controlLot: lot.controlLot, isAllReagents:false,
               dateFrom: dates[0]||'', dateTo: dates[dates.length-1]||'' },
-      stats: { hpc: stat('hpc'), lpc: stat('lpc') },
+      stats: { hpc: labStats(lot.runs.hpc, lot.reagentLot, lot.controlLot), lpc: labStats(lot.runs.lpc, lot.reagentLot, lot.controlLot) },
       runs: lot.runs,
-      thumbnail: '',
     };
   }).sort((a,b)=>dmyToTime(b.meta.dateTo)-dmyToTime(a.meta.dateTo));
 
-  // การ์ดไฟล์แสดงสถิติของ Lot ล่าสุด; ทุก Lot ไปอยู่ในตารางสรุป/Excel ผ่าน lotReports
+  // การ์ดไฟล์แสดงสถิติของ Lot ล่าสุด; ทุก Lot เข้าตารางสรุป/กราฟผ่าน payload ใน rebuildReports()
   const latest = lotReports[0];
   return {
     ...latest,
     meta: { ...latest.meta, reagentLot: `${latest.meta.reagentLot} (ล่าสุด · รวม ${lotReports.length} Lot)` },
-    lotReports,
+    thumbnail: '',
+    payload: { reportDate, labCodes, runs: payloadRuns, peer: [], benchmark: null },
   };
 }
 
@@ -2154,6 +2348,10 @@ function drawPeerBenchmarkChart(canvas, rows, myLab){
   ctx.fillStyle='#374151'; ctx.textAlign='center'; ctx.font='10px Sarabun, sans-serif';
   ctx.fillText('SDI', L+pw/2, T+rows.length*rowH+28);
 }
+
+// โหลดข้อมูลที่บันทึกไว้บน Cloud ทันทีที่เปิดหน้า และโหลดใหม่เมื่อเปลี่ยน Lab Code
+document.getElementById('labCode').addEventListener('change', cloudLoad);
+cloudLoad();
 </script>
 </body>
 </html>
