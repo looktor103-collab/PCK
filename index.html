@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
   <script src="/PCK/assets/pck-auth.js?v=2"></script>
 <title>Dashboard — Molecular Lab Phrachomklao Hospital</title>
+<!-- ติดตั้งเป็นแอปบนหน้าจอ iPhone / Android (PWA) -->
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lab PCK">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#8b3a52">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="/PCK/assets/pck.css?v=1">
 <style>body{font-family:'Sarabun',Tahoma,sans-serif;background:#fdf8f9;color:#2d2028}</style>
@@ -168,6 +177,11 @@ document.getElementById('kpi-year').textContent = PCK.fmt.be();
     if (!c) document.getElementById('kpi-range').textContent = 'เชื่อมต่อ Google Sheet ไม่ได้';
   });
 })();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
 </script>
 </body>
 </html>

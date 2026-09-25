@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QCloud IQC HIV VL — Report Generator</title>
+<!-- แอป Molecular Lab PCK (PWA) — ใช้ manifest/ไอคอนเดียวกับ Dashboard -->
+<link rel="manifest" href="../manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lab PCK">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1B3A6B">
 <style>
 :root{
   --navy:#1B3A6B;--blue:#2563EB;--blue-l:#DBEAFE;--teal:#0E7C7B;
@@ -2356,6 +2364,10 @@ function drawPeerBenchmarkChart(canvas, rows, myLab){
 // โหลดข้อมูลที่บันทึกไว้บน Cloud ทันทีที่เปิดหน้า และโหลดใหม่เมื่อเปลี่ยน Lab Code
 document.getElementById('labCode').addEventListener('change', cloudLoad);
 cloudLoad();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('../sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
