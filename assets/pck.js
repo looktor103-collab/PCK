@@ -129,6 +129,7 @@ window.PCK = (function () {
       main.innerHTML =
         '<header class="pck-topbar">' +
           '<button class="pck-btn icon" id="pck-rail-btn" title="ย่อ/ขยายเมนู" aria-label="ย่อหรือขยายเมนู">☰</button>' +
+          (page !== 'home' ? '<a class="pck-btn pck-back" href="' + BASE + '/index.html" style="text-decoration:none;white-space:nowrap;flex-shrink:0">← กลับ Dashboard</a>' : '') +
           '<div class="pck-crumb"><span>' + (opts.section || 'Dashboard') + '</span>' +
             (opts.title ? '<span aria-hidden="true">›</span><b>' + opts.title + '</b>' : '') + '</div>' +
           '<div class="pck-topbar-right">' +

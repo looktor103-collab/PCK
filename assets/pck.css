@@ -180,6 +180,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 @media (max-width:820px){
   .pck-shell,.pck-shell[data-collapsed="1"]{grid-template-columns:1fr}
+  .pck-back{display:none!important} /* เมนูล่างมีปุ่ม Dashboard อยู่แล้วบนจอแคบ */
   .pck-rail{
     position:fixed;bottom:0;left:0;right:0;top:auto;height:auto;
     flex-direction:row;overflow-x:auto;z-index:30;
