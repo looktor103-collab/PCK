@@ -66,6 +66,8 @@ body{font-family:'Sarabun',Tahoma,sans-serif;background:var(--bg,#fdf8f9);color:
 .eqa-zset legend{font-size:12px;font-weight:700;color:var(--text2);padding:0 6px}
 .eqa-zgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
 .eqa-zgrid input.bad{border-color:var(--fail-line);color:var(--fail);font-weight:700}
+.eqa-zgrid input.warn{border-color:var(--warn-line);color:var(--warn);font-weight:700}
+.eqa-zstat.warn{color:var(--warn)}
 .eqa-zstat{font-size:12.5px;font-weight:600}
 .eqa-zstat.ok{color:var(--pass)}
 .eqa-zstat.bad{color:var(--fail)}
@@ -176,7 +178,7 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
           </select></div>
       </div>
       <fieldset class="eqa-zset" id="zSet" hidden>
-        <legend>Z-score (HIV-1 Viral Load · สวส.) — เกณฑ์ผ่าน: |z| &lt; 2.0 ทุกค่า</legend>
+        <legend>Z-score (HIV-1 Viral Load · สวส.) — |z| &lt; 2.0 ผ่าน · 2.0–3.0 เฝ้าระวัง · ≥ 3.0 ไม่ผ่าน (ต้องทำ CAR)</legend>
         <div class="eqa-zgrid">
           <div class="eqa-f"><label for="zS1">z-1</label><input id="zS1" class="zin" inputmode="decimal" placeholder="เช่น -0.53"></div>
           <div class="eqa-f"><label for="zS2">z-2</label><input id="zS2" class="zin" inputmode="decimal"></div>
@@ -283,16 +285,19 @@ const fmtDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); 
 const toCE = iso => { const m = /^(\d{4})(-\d{2}-\d{2})$/.exec(iso || ''); return m ? (+m[1] > 2400 ? (+m[1] - 543) + m[2] : iso) : null; };
 const fmtNum = v => v == null ? '' : (Number.isInteger(v) ? String(v) : String(+v.toFixed(2)));
 const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round;
-// HIV-1 VL ของ สวส. ประเมินด้วย z-score: ผ่านเมื่อ |z| < 2.0 ทุกค่า (z ทุกตัวอย่าง + Between-lab + Within-lab)
+// HIV-1 VL ของ สวส. ประเมินด้วย z-score (ทุกตัวอย่าง + Between-lab + Within-lab):
+//   |z| < 2.0 ผ่าน · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (warning signal — ยังผ่าน ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน (ต้องทำ CAR)
 // QCMD ยังใช้ Score 0–3 ตามเดิม
 const Z_PASS = 2.0;
-const Z_CRITERIA = 'ผ่านเมื่อ |z| < 2.0 ทุกค่า (ทุกตัวอย่าง, Between-lab, Within-lab)';
+const Z_FAIL = 3.0;
+const Z_CRITERIA = '|z| < 2.0 ผ่าน · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (warning signal ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน ต้องทำ CAR — ใช้ทุกค่า (ทุกตัวอย่าง, Between-lab, Within-lab)';
 const isZRound = r => r.program === 'HIVVL' && r.provider !== 'QCMD';
 const zNum = v => { const s = String(v == null ? '' : v).trim().replace('−', '-'); return /^[+-]?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : null; };
 const zBad = v => { const s = String(v == null ? '' : v).trim(); return s !== '' && zNum(s) == null && !/^(ND|NA|N\/A|-|—)$/i.test(s); };
 const zValues = d => d ? [...Object.values(d.z || {}), d.betweenZ, d.withinZ].map(zNum).filter(v => v != null) : [];
 const zMax = d => { const v = zValues(d); return v.length ? Math.max(...v.map(Math.abs)) : null; };
-const zResult = d => { const m = zMax(d); return m == null ? null : m < Z_PASS ? 'PASS' : 'FAIL'; };
+const zResult = d => { const m = zMax(d); return m == null ? null : m < Z_FAIL ? 'PASS' : 'FAIL'; };
+const zLevel = m => m == null ? '' : m >= Z_FAIL ? 'bad' : m >= Z_PASS ? 'warn' : 'ok';
 const scoreText = r => isZRound(r)
   ? (zMax(r.details) == null ? '—' : `|z| สูงสุด ${zMax(r.details).toFixed(2)}`)
   : r.score == null ? '—' : (r.maxScore != null ? `${fmtNum(r.score)}/${fmtNum(r.maxScore)}` : `Score ${fmtNum(r.score)}`);
@@ -300,9 +305,9 @@ const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)
 const docUrl = d => `${EQA_API}/doc?id=${d.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docsFor = (pid, y, type) => docs.filter(d => d.program === pid && d.yearBE === y && (!type || d.type === type));
 const carsFor = r => docs.filter(d => d.type === 'car' && d.roundId === r.id);
-// ต้องมีใบ CAR/NC: ไม่ผ่าน, HIV VL สวส. มี |z| ≥ 2.0, คะแนนไม่เต็ม, หรือ QCMD score ≥ 2 (เฝ้าระวัง/ไม่ผ่าน)
+// ต้องมีใบ CAR/NC: ไม่ผ่าน, HIV VL สวส. มี |z| ≥ 3.0 (2.0–3.0 เป็นแค่ warning signal), คะแนนไม่เต็ม, หรือ QCMD score ≥ 2
 const needsCar = r => r.result === 'FAIL'
-  || (isZRound(r) ? (zMax(r.details) != null && zMax(r.details) >= Z_PASS) : false)
+  || (isZRound(r) ? (zMax(r.details) != null && zMax(r.details) >= Z_FAIL) : false)
   || (!isZRound(r) && r.score != null && r.maxScore != null && r.score < r.maxScore)
   || (r.score != null && r.maxScore == null && r.provider === 'QCMD' && r.score >= 2);
 const carMissing = list => list.filter(r => needsCar(r) && !carsFor(r).length);
@@ -444,9 +449,9 @@ function renderProgram(pid) {
         <td><b style="color:var(--text)">${esc(r.provider)}</b> · ${esc(roundLabel(r))}</td>
         <td>${esc(fmtDate(r.reportDate) || (r.details && r.details.dateText) || '—')}</td>
         <td>${esc(r.labId || '—')}</td>
-        <td class="num"${isZRound(r) && zMax(r.details) >= Z_PASS ? ' style="color:var(--fail);font-weight:700"' : ''}>${esc(scoreText(r))}</td>
+        <td class="num"${isZRound(r) && zLevel(zMax(r.details)) === 'bad' ? ' style="color:var(--fail);font-weight:700"' : isZRound(r) && zLevel(zMax(r.details)) === 'warn' ? ' style="color:var(--warn);font-weight:700"' : ''}>${esc(scoreText(r))}</td>
         <td>${esc(r.grade || '—')}</td>
-        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${needsCar(r)
+        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${isZRound(r) && r.result !== 'FAIL' && zLevel(zMax(r.details)) === 'warn' ? ' <span class="pck-tag warn" title="2.0 ≤ |z| < 3.0 — warning signal ยังไม่ต้องทำ CAR">⚠️ เฝ้าระวัง</span>' : ''}${needsCar(r)
           ? (carsFor(r).length ? ' <span class="pck-tag pass" title="มีใบ CAR/NC แล้ว">CAR ✓</span>' : ' <span class="pck-tag fail" title="คะแนนไม่เต็ม/ไม่ผ่าน — กดแถวเพื่อกรอก F-CP-631 หรือแนบใบ CAR/NC">ต้องทำ CAR</span>')
           : ''}</td>
         <td>${r.pdfName ? `<a href="${pdfUrl(r)}" target="_blank" rel="noopener" title="${esc(r.pdfName)}">📄 เปิด</a>` : '<span class="pck-muted">—</span>'}</td>
@@ -505,7 +510,7 @@ function renderDetails(r) {
   let h = '<div class="eqa-det">';
   if (kv.length) h += `<div class="eqa-kv">${kv.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>`;
   if (d.z) {
-    const zc = v => { const n = zNum(v); return n == null ? '' : isZRound(r) ? (Math.abs(n) >= Z_PASS ? 'eqa-z-bad' : '') : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
+    const zc = v => { const n = zNum(v); return n == null ? '' : isZRound(r) ? (Math.abs(n) >= Z_FAIL ? 'eqa-z-bad' : Math.abs(n) >= Z_PASS ? 'eqa-z-warn' : '') : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
     const keys = Object.keys(d.z);
     h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${keys.map(k => `<th>${esc(k)}</th>`).join('')}${d.betweenZ != null ? '<th>Between-lab z</th>' : ''}${d.withinZ != null ? '<th>Within-lab z</th>' : ''}</tr></thead>
       <tbody><tr>${keys.map(k => `<td class="${zc(d.z[k])}">${esc(d.z[k] ?? '—')}</td>`).join('')}${d.betweenZ != null ? `<td class="${zc(d.betweenZ)}">${esc(d.betweenZ)}</td>` : ''}${d.withinZ != null ? `<td class="${zc(d.withinZ)}">${esc(d.withinZ)}</td>` : ''}</tr></tbody></table></div>`;
@@ -691,15 +696,19 @@ function updateZMode(autoResult) {
 }
 function updateZStatus(autoResult) {
   const d = readZ();
-  document.querySelectorAll('#zSet .zin').forEach(el => { const n = zNum(el.value); el.classList.toggle('bad', zBad(el.value) || (n != null && Math.abs(n) >= Z_PASS)); });
+  document.querySelectorAll('#zSet .zin').forEach(el => { const n = zNum(el.value); el.classList.toggle('bad', zBad(el.value) || (n != null && Math.abs(n) >= Z_FAIL)); el.classList.toggle('warn', n != null && Math.abs(n) >= Z_PASS && Math.abs(n) < Z_FAIL); });
   const m = zMax(d), st = $('zStatus');
   const invalid = [...document.querySelectorAll('#zSet .zin')].filter(el => zBad(el.value)).map(el => el.previousElementSibling.textContent);
   if (invalid.length) { st.className = 'eqa-zstat bad'; st.textContent = `⚠️ ค่าไม่ถูกต้องที่ ${invalid.join(', ')} — ใส่ตัวเลข เช่น -0.53 หรือ ND/NA`; return; }
   if (m == null) { st.className = 'eqa-zstat'; st.textContent = 'กรอก z-score อย่างน้อย 1 ค่า (ND/NA สำหรับตัวอย่างลบ)'; return; }
-  const bad = [...Z_INPUTS.map(([id, k]) => [k, $(id).value]), ['Between-lab', $('zBtw').value], ['Within-lab', $('zWin').value]]
-    .filter(([, v]) => zNum(v) != null && Math.abs(zNum(v)) >= Z_PASS).map(([k, v]) => `${k} ${v}`);
-  st.className = 'eqa-zstat ' + (bad.length ? 'bad' : 'ok');
-  st.textContent = bad.length ? `❌ ไม่ผ่าน — |z| ≥ 2.0: ${bad.join(', ')} → ต้องทำใบ CAR/NC` : `✅ ผ่าน — |z| สูงสุด ${m.toFixed(2)} (< 2.0)`;
+  const all = [...Z_INPUTS.map(([id, k]) => [k, $(id).value]), ['Between-lab', $('zBtw').value], ['Within-lab', $('zWin').value]]
+    .filter(([, v]) => zNum(v) != null);
+  const over = lim => all.filter(([, v]) => Math.abs(zNum(v)) >= lim).map(([k, v]) => `${k} ${v}`);
+  const bad = over(Z_FAIL), warn = all.filter(([, v]) => Math.abs(zNum(v)) >= Z_PASS && Math.abs(zNum(v)) < Z_FAIL).map(([k, v]) => `${k} ${v}`);
+  st.className = 'eqa-zstat ' + (bad.length ? 'bad' : warn.length ? 'warn' : 'ok');
+  st.textContent = bad.length ? `❌ ไม่ผ่าน — |z| ≥ 3.0: ${bad.join(', ')} → ต้องทำใบ CAR/NC`
+    : warn.length ? `⚠️ ผ่าน แต่เฝ้าระวัง (warning signal) — 2.0 ≤ |z| < 3.0: ${warn.join(', ')} · ยังไม่ต้องทำ CAR`
+    : `✅ ผ่าน — |z| สูงสุด ${m.toFixed(2)} (< 2.0)`;
   if (autoResult) $('fResult').value = bad.length ? 'FAIL' : 'PASS';
 }
 $('fProgram').addEventListener('change', () => updateZMode(true));
