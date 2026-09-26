@@ -3,162 +3,725 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="/PCK/assets/pck-auth.js?v=2"></script>
 <title>EQA Summary — ห้องปฏิบัติการ ร.พ.พระจอมเกล้า เพชรบุรี</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lab PCK">
+<meta name="theme-color" content="#8b3a52">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="/PCK/assets/pck.css?v=1">
 <style>
-:root{
-  --bg:#f6f8fd; --card:#ffffff; --border:#dde2ef; --text:#2b3140; --muted:#6b7280;
-  --primary:#4f46e5; --primary-soft:#eef2ff; --success:#16a34a; --alert:#dc2626;
-  --radius:16px; --radius-sm:10px; --shadow:0 16px 40px rgba(15,23,42,.08);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.page-wrap{max-width:1080px;margin:0 auto;padding:24px 18px 36px}
-.header{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;align-items:center;margin-bottom:24px}
-.header h1{font-size:28px;line-height:1.1;margin-bottom:6px}
-.header p{font-size:14px;color:var(--muted);max-width:720px}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 18px;border-radius:999px;text-decoration:none;font-weight:700;border:1px solid transparent;transition:all .2s}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-outline{background:#fff;color:var(--primary);border-color:var(--primary)}
-.section{margin-top:20px}
-.section-title{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-size:16px;font-weight:700;color:var(--text)}
-.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:16px}
-.card h2{font-size:18px;margin-bottom:6px}
-.card p{color:var(--muted);line-height:1.75;font-size:14px}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:700}
-.badge-primary{background:var(--primary-soft);color:var(--primary)}
-.badge-success{background:#dcfce7;color:var(--166534)}
-.badge-alert{background:#fee2e2;color:var(--alert)}
-.btn-link{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;border:1px solid var(--border);color:var(--primary);text-decoration:none;font-weight:700}
-.btn-link:hover{background:var(--primary-soft)}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:12px 14px;text-align:left;border-bottom:1px solid #eef2f6}
-th{background:#f3f4ff;color:var(--primary);font-weight:700}
-.tr-alt{background:#fbfbff}
-@media(max-width:760px){.header{flex-direction:column;align-items:flex-start}.card-grid{grid-template-columns:1fr}}
+body{font-family:'Sarabun',Tahoma,sans-serif;background:var(--bg,#fdf8f9);color:var(--text,#2d2028)}
+[hidden]{display:none!important}
+.eqa-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.eqa-tab{border:1px solid var(--border);background:var(--card);color:var(--text2);border-radius:99px;padding:7px 15px;font:600 13px var(--ff);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.eqa-tab[aria-selected="true"]{background:var(--rose-dark);border-color:var(--rose-dark);color:#fff}
+.eqa-tab .n{font-family:var(--ff-mono);font-size:11px;opacity:.75}
+.eqa-cloud{font-size:12px;color:var(--text3);margin-bottom:12px}
+.eqa-cloud.err{color:var(--fail)}
+.eqa-cloud button{margin-left:6px}
+
+.eqa-drop{border:2px dashed var(--border2);border-radius:var(--radius);padding:18px;text-align:center;background:var(--surface-2);cursor:pointer;transition:background .15s,border-color .15s}
+.eqa-drop:hover,.eqa-drop.over{border-color:var(--rose);background:var(--rose-light)}
+.eqa-drop b{display:block;font-size:14px;color:var(--text);margin-bottom:4px}
+.eqa-drop span{font-size:12px;color:var(--text3)}
+.eqa-queue{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.eqa-qi{display:flex;gap:10px;align-items:center;font-size:12.5px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card)}
+.eqa-qi .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+
+.eqa-matrix td,.eqa-matrix th{text-align:center}
+.eqa-matrix td:first-child,.eqa-matrix th:first-child{text-align:left}
+.eqa-cell{display:inline-flex;align-items:center;gap:4px;border:0;border-radius:99px;padding:3px 10px;font:600 11.5px var(--ff-mono);cursor:pointer}
+.eqa-cell.pass{background:var(--pass-bg);color:var(--pass)}
+.eqa-cell.fail{background:var(--fail-bg);color:var(--fail)}
+.eqa-cell.pending{background:var(--warn-bg);color:var(--warn)}
+.eqa-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.eqa-pc{display:flex;flex-direction:column;gap:8px}
+.eqa-pc h3{font-size:14px;margin:0;display:flex;align-items:center;gap:8px}
+.eqa-pc .last{font-size:12.5px;color:var(--text2);line-height:1.5}
+.eqa-pc .foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+
+.eqa-year{margin-bottom:14px}
+.eqa-year-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.eqa-year-h h3{margin:0;font-size:15px}
+.eqa-year.flash{animation:eqaflash 1.6s ease-out}
+@keyframes eqaflash{0%{box-shadow:0 0 0 3px var(--rose-mid)}100%{box-shadow:none}}
+.eqa-rt td{vertical-align:middle}
+.eqa-rt tr.main{cursor:pointer}
+.eqa-rt tr.main td:first-child::before{content:'▸';display:inline-block;width:12px;color:var(--text3);transition:transform .15s}
+.eqa-rt tr.main.open td:first-child::before{transform:rotate(90deg)}
+.eqa-rt tr.det td{background:var(--surface-2);white-space:normal}
+.eqa-det{display:flex;flex-direction:column;gap:10px;padding:4px 0 6px}
+.eqa-kv{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--text2)}
+.eqa-kv b{color:var(--text);font-weight:600}
+.eqa-sub{border-collapse:collapse;font-size:11.5px;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.eqa-sub th,.eqa-sub td{padding:5px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.eqa-sub th{background:var(--surface-3);color:var(--text3);font-size:10.5px}
+.eqa-z-warn{color:var(--warn);font-weight:700}
+.eqa-z-bad{color:var(--fail);font-weight:700}
+.eqa-actions{display:flex;gap:6px;justify-content:flex-end}
+.eqa-actions .pck-btn{padding:4px 10px}
+.eqa-empty{padding:26px;text-align:center;color:var(--text3);font-size:13px}
+
+dialog.eqa-dlg{border:0;border-radius:var(--radius-lg);padding:0;width:min(960px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:var(--card);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
+.eqa-dlg-in{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:0;max-height:calc(100vh - 32px)}
+@media(max-width:760px){.eqa-dlg-in{grid-template-columns:1fr}.eqa-prev{display:none}}
+.eqa-form{padding:18px 20px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.eqa-form h2{margin:0;font-size:17px}
+.eqa-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.eqa-f{display:flex;flex-direction:column;gap:4px}
+.eqa-f label{font-size:11px;font-weight:700;color:var(--text3)}
+.eqa-f input,.eqa-f select,.eqa-f textarea{font:13px var(--ff);padding:7px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--card);color:var(--text)}
+.eqa-f textarea{min-height:54px;resize:vertical}
+.eqa-f input:focus,.eqa-f select:focus,.eqa-f textarea:focus{outline:2px solid var(--rose-mid);outline-offset:0}
+.eqa-f.auto input,.eqa-f.auto select{border-color:var(--pass-line);background:color-mix(in srgb,var(--pass-bg) 45%,var(--card))}
+.eqa-hint{font-size:12px;line-height:1.6}
+.eqa-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.eqa-btns .pck-btn.danger{color:var(--fail);border-color:var(--fail-line)}
+.eqa-err{color:var(--fail);font-size:12.5px;font-weight:600}
+.eqa-prev{background:var(--surface-3);padding:14px;overflow:auto;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:8px;align-items:center}
+.eqa-prev canvas{max-width:100%;height:auto;background:#fff;border:1px solid var(--border);border-radius:6px}
+.eqa-prev .cap{font-size:11px;color:var(--text3);text-align:center;word-break:break-all}
 </style>
 </head>
-<body>
-<div class="page-wrap">
-  <div class="header">
-    <div>
-      <h1>📊 EQA Summary</h1>
-      <p>สรุปผลการประเมินคุณภาพภายนอก (External Quality Assessment) ของห้องปฏิบัติการ โรงพยาบาลพระจอมเกล้า เพชรบุรี</p>
+<body data-page="eqa">
+
+<div id="pck-shell">
+
+  <div class="eqa-cloud" id="eqaCloud">☁️ กำลังโหลดข้อมูล EQA...</div>
+
+  <div class="eqa-tabs" role="tablist" id="eqaTabs"></div>
+
+  <div class="pck-card" style="margin-bottom:16px">
+    <div class="pck-card-h">📥 เพิ่มผล EQA <span class="sub">ระบบอ่านไฟล์แล้วจัดเข้าการทดสอบและปีให้อัตโนมัติ</span></div>
+    <div class="eqa-drop" id="eqaDrop" tabindex="0" role="button" aria-label="เลือกไฟล์ PDF ผล EQA">
+      <b>ลากไฟล์ PDF ผล EQA มาวาง หรือคลิกเพื่อเลือก (เลือกได้หลายไฟล์)</b>
+      <span>รองรับ QCMD Individual Report, ใบยืนยันส่งผล QCMD, รายงาน สวส. (ฉบับสมบูรณ์/เบื้องต้น) · ไฟล์สแกนก็แนบได้ แต่ต้องกรอกข้อมูลเอง</span>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <a href="index.html" class="btn btn-outline">← กลับ Dashboard</a>
-      <a href="EQA/HPV/EQA_index.html" class="btn btn-primary">ดู EQA Module เต็ม</a>
+    <input type="file" id="eqaFile" accept="application/pdf,.pdf" multiple hidden>
+    <div class="pck-row" style="margin-top:10px">
+      <button class="pck-btn" id="eqaManual">✏️ กรอกผลเองโดยไม่มีไฟล์</button>
     </div>
+    <div class="eqa-queue" id="eqaQueue"></div>
   </div>
 
-  <div class="section">
-    <div class="card">
-      <h2>ภาพรวม EQA</h2>
-      <p>หน้า EQA Summary นี้นำข้อมูลหลักจากเอกสารและหน้า EQA ที่มีอยู่แล้วในโฟลเดอร์ <code>EQA</code> มาแสดง เพื่อให้สามารถเข้าถึงผลการประเมินและรายละเอียดได้ทันทีจากหน้าหลักของเว็บไซต์.</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-        <div class="card" style="background:#eef2ff;border-color:#dbe4ff;padding:16px;box-shadow:none">
-          <div class="badge badge-primary">3 โปรแกรม EQA</div>
-          <p>HIV Viral Load, HPV DNA Test และ COVID-19</p>
-        </div>
-        <div class="card" style="background:#ecfdf5;border-color:#d1fae5;padding:16px;box-shadow:none">
-          <div class="badge badge-success">QCMD &amp; สวส.</div>
-          <p>ข้อมูลจาก QCMD (Glasgow) และ สวส. กรมวิทยาศาสตร์การแพทย์</p>
-        </div>
-        <div class="card" style="background:#fef2f2;border-color:#fee2e2;padding:16px;box-shadow:none">
-          <div class="badge badge-alert">2566–2569</div>
-          <p>ข้อมูล EQA ล่าสุดในระบบ ครอบคลุมปี พ.ศ. 2566 ถึง 2569</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">🧬 สรุปผลหลัก</div>
-    <div class="card-grid">
-      <div class="card">
-        <h2>EQA HIV Viral Load</h2>
-        <p>สรุปผลประเมิน EQA HIV-1 Viral Load จาก สวส. และ QCMD มีข้อมูลรอบต่าง ๆ ตั้งแต่ปี 2566 ถึง 2569</p>
-        <div style="display:grid;gap:10px;">
-          <span class="badge badge-primary">Lab ID: 00031 / 00039 / 00044</span>
-          <span class="badge badge-success">คะแนนล่าสุด: 20/20, 19/20, 20/20</span>
-          <span class="badge badge-alert">พบ 1 รอบ FAIL</span>
-        </div>
-        <div class="table-wrap" style="margin-top:18px;">
-          <table>
-            <thead><tr><th>รอบ</th><th>ปี</th><th>ผล</th><th>คะแนน</th><th>หมายเหตุ</th></tr></thead>
-            <tbody>
-              <tr><td>C1</td><td>2569</td><td>PASS</td><td>20/20</td><td>สวส. / QCMD</td></tr>
-              <tr class="tr-alt"><td>C1</td><td>2568</td><td>PASS</td><td>20/20</td><td>สวส.</td></tr>
-              <tr><td>C2</td><td>2568</td><td>PASS</td><td>19/20</td><td>สวส. (z=−2.50)</td></tr>
-              <tr class="tr-alt"><td>C1</td><td>2567</td><td>PASS</td><td>20/20</td><td>สวส.</td></tr>
-              <tr><td>C2</td><td>2567</td><td>PASS</td><td>20/20</td><td>สวส.</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <a href="EQA/EQA_HIV_VL.html" class="btn btn-primary">ดูรายละเอียด HIV VL</a>
-      </div>
-
-      <div class="card">
-        <h2>EQA HPV DNA Test</h2>
-        <p>สรุปผล EQA HPV สำหรับ cobas HPV (PreservCyt) โดย QCMD QAV094130 และ TH193 ครอบคลุม 5 Challenges</p>
-        <div style="display:grid;gap:10px;">
-          <span class="badge badge-success">5/5 PASS</span>
-          <span class="badge badge-primary">Sensitivity 100%</span>
-          <span class="badge badge-primary">Specificity 100%</span>
-        </div>
-        <div class="table-wrap" style="margin-top:18px;">
-          <table>
-            <thead><tr><th>โปรแกรม</th><th>ปี</th><th>Challenges</th><th>สถานะ</th><th>คะแนน</th></tr></thead>
-            <tbody>
-              <tr><td>QCMD</td><td>2567</td><td>C1</td><td>PASS</td><td>0</td></tr>
-              <tr class="tr-alt"><td>QCMD</td><td>2567</td><td>C2</td><td>PASS</td><td>0</td></tr>
-              <tr><td>QCMD</td><td>2568</td><td>C1</td><td>PASS</td><td>0</td></tr>
-              <tr class="tr-alt"><td>QCMD</td><td>2568</td><td>C2</td><td>PASS</td><td>0</td></tr>
-              <tr><td>QCMD</td><td>2569</td><td>C1</td><td>PASS</td><td>0</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <a href="EQA/HPV/EQA_HPV_HPV.html" class="btn btn-primary">ดูรายละเอียด HPV</a>
-      </div>
-
-      <div class="card">
-        <h2>EQA COVID-19</h2>
-        <p>สรุปผล EQA SARS-CoV-2 สำหรับห้องปฏิบัติการ ด้วยข้อมูลจาก QCMD และ สวส. ระหว่างปี 2566–2569</p>
-        <div style="display:grid;gap:10px;">
-          <span class="badge badge-success">COVID EQA</span>
-          <span class="badge badge-primary">SARS-CoV-2</span>
-          <span class="badge badge-primary">QCMD + สวส.</span>
-        </div>
-        <div class="table-wrap" style="margin-top:18px;">
-          <table>
-            <thead><tr><th>โปรแกรม</th><th>ปี</th><th>รอบ</th><th>ผล</th><th>คะแนน</th></tr></thead>
-            <tbody>
-              <tr><td>QCMD</td><td>2566</td><td>C1</td><td>PASS</td><td>ข้อมูลเบื้องต้น</td></tr>
-              <tr class="tr-alt"><td>QCMD</td><td>2567</td><td>C1</td><td>PASS</td><td>ข้อมูลเบื้องต้น</td></tr>
-              <tr><td>QCMD</td><td>2568</td><td>C1</td><td>PASS</td><td>ข้อมูลเบื้องต้น</td></tr>
-              <tr class="tr-alt"><td>สวส.</td><td>2569</td><td>C1</td><td>PASS</td><td>ข้อมูลเบื้องต้น</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <a href="EQA/covid/EQA_SARS-CoV-2_Dashboard.html" class="btn btn-primary">ดูรายละเอียด COVID</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="card">
-      <h2>ข้อมูลเพิ่มเติม</h2>
-      <p>หน้า EQA Summary นี้เชื่อมต่อไปยังรายละเอียดเพิ่มเติม และใช้ข้อมูลจริงจากโฟลเดอร์ <code>EQA</code> ที่มีอยู่แล้วใน repository.</p>
-      <ul style="margin-top:12px;padding-left:20px;color:var(--muted);line-height:1.75;">
-        <li>โปรแกรม HIV Viral Load: <strong>EQA/EQA_HIV_VL.html</strong></li>
-        <li>โปรแกรม HPV DNA Test: <strong>EQA/HPV/EQA_HPV_HPV.html</strong></li>
-        <li>โปรแกรม COVID-19: <strong>EQA/covid/EQA_SARS-CoV-2_Dashboard.html</strong></li>
-        <li>หน้า EQA Module เต็ม: <strong>EQA/HPV/EQA_index.html</strong></li>
-      </ul>
-    </div>
-  </div>
+  <div id="eqaView"></div>
 </div>
+
+<dialog class="eqa-dlg" id="eqaDlg" aria-labelledby="eqaDlgTitle">
+  <form class="eqa-dlg-in" id="eqaForm" method="dialog" novalidate>
+    <div class="eqa-form">
+      <h2 id="eqaDlgTitle">ตรวจสอบผล EQA</h2>
+      <div class="pck-note info eqa-hint" id="eqaHint"></div>
+      <div class="eqa-grid">
+        <div class="eqa-f"><label for="fProgram">การทดสอบ *</label><select id="fProgram" required></select></div>
+        <div class="eqa-f"><label for="fProvider">ผู้จัด (Provider) *</label><input id="fProvider" list="providerList" required placeholder="สวส. / QCMD"></div>
+        <div class="eqa-f"><label for="fYear">ปี พ.ศ. *</label><input id="fYear" type="number" inputmode="numeric" min="2540" max="2650" required placeholder="2569"></div>
+        <div class="eqa-f"><label for="fRound">รอบ *</label><input id="fRound" required placeholder="1, 2 หรือ C1, C2"></div>
+        <div class="eqa-f"><label for="fDate">วันที่ออกรายงาน</label><input id="fDate" type="date"></div>
+        <div class="eqa-f"><label for="fLab">รหัสสมาชิก / Lab ID</label><input id="fLab" placeholder="00031 / TH193"></div>
+        <div class="eqa-f"><label for="fScore">คะแนนที่ได้</label><input id="fScore" type="number" step="any" inputmode="decimal"></div>
+        <div class="eqa-f"><label for="fMax">คะแนนเต็ม</label><input id="fMax" type="number" step="any" inputmode="decimal" placeholder="เว้นว่างถ้าไม่มี (เช่น QCMD)"></div>
+        <div class="eqa-f"><label for="fGrade">ระดับ / การแปลผล</label><input id="fGrade" placeholder="Excellent / ยอมรับ"></div>
+        <div class="eqa-f"><label for="fResult">ผลประเมิน *</label>
+          <select id="fResult" required>
+            <option value="">— เลือก —</option>
+            <option value="PASS">ผ่าน (PASS)</option>
+            <option value="FAIL">ไม่ผ่าน (FAIL)</option>
+            <option value="PENDING">รอผล / รายงานเบื้องต้น</option>
+          </select></div>
+      </div>
+      <div class="eqa-f"><label for="fNote">หมายเหตุ</label><textarea id="fNote"></textarea></div>
+      <div class="eqa-f" id="fPdfWrap"><label for="fPdf">ไฟล์ PDF</label><input id="fPdf" type="file" accept="application/pdf,.pdf"><span class="pck-muted" id="fPdfName" style="font-size:12px"></span></div>
+      <div class="eqa-err" id="eqaErr" role="alert"></div>
+      <div class="eqa-btns">
+        <button class="pck-btn primary" id="eqaSave" type="submit" value="save">💾 บันทึก</button>
+        <button class="pck-btn" type="button" id="eqaCancel">ยกเลิก</button>
+        <span class="pck-spacer"></span>
+        <button class="pck-btn danger" type="button" id="eqaDelete" hidden>🗑️ ลบรอบนี้</button>
+      </div>
+    </div>
+    <div class="eqa-prev" id="eqaPrev"></div>
+  </form>
+</dialog>
+<datalist id="providerList"><option value="สวส."><option value="QCMD"><option value="อื่นๆ"></datalist>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="/PCK/assets/pck.js?v=1"></script>
+<script>
+PCK.shell.render({ section:'ประกันคุณภาพ', title:'EQA / PT Summary' });
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+/* ══════════════════════════════════════════════════════════════════════════
+   EQA Summary — ข้อมูลเก็บบน Cloudflare (Worker splab-iqc-api + D1, ไฟล์ PDF ใน KV)
+   อัพโหลด PDF → อ่านข้อมูลอัตโนมัติเท่าที่ไฟล์มีข้อความ → ผู้ใช้ตรวจ/เติม → บันทึก
+   → สรุปแยกการทดสอบ/ปี คำนวณใหม่จากข้อมูลทั้งหมดทุกครั้ง
+   ══════════════════════════════════════════════════════════════════════════ */
+const EQA_API = 'https://splab-iqc-api.looktor103.workers.dev/api/eqa';
+// ฝังในหน้าเพื่อให้ทุกเครื่องใช้ได้โดยไม่ต้องกรอก จึงไม่ใช่ความลับจริง (Worker จำกัดโดเมนที่เรียกได้อีกชั้น)
+const EQA_KEY = 'YWKvNwzgKfHgT2Z8DjuCCKlQ2XNa2wzm';
+
+const PROGRAMS = [
+  { id:'CD4',   name:'CD4',                    icon:'🩸', tone:'purple', detail:null },
+  { id:'HIVVL', name:'HIV-1 Viral Load',       icon:'🧫', tone:'sky',    detail:'EQA/EQA_HIV_VL.html' },
+  { id:'HPV',   name:'HPV DNA Test',           icon:'🧬', tone:'rose',   detail:'EQA/HPV/EQA_HPV_HPV.html' },
+  { id:'COVID', name:'COVID-19 (SARS-CoV-2)',  icon:'🦠', tone:'teal',   detail:'EQA/covid/EQA_SARS-CoV-2_Dashboard.html' },
+];
+const PROG = Object.fromEntries(PROGRAMS.map(p => [p.id, p]));
+const RESULT = {
+  PASS:    { label:'ผ่าน',    tag:'pass' },
+  FAIL:    { label:'ไม่ผ่าน', tag:'fail' },
+  PENDING: { label:'รอผล',    tag:'warn' },
+};
+const TH_MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+let rounds = [];
+let view = 'overview';
+const openRows = new Set();
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${+m[3]} ${TH_MON[m[2]-1]} ${+m[1]+543}` : ''; };
+const fmtNum = v => v == null ? '' : (Number.isInteger(v) ? String(v) : String(+v.toFixed(2)));
+const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round;
+const scoreText = r => r.score == null ? '—' : (r.maxScore != null ? `${fmtNum(r.score)}/${fmtNum(r.maxScore)}` : `Score ${fmtNum(r.score)}`);
+const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)}`;
+function api(path, opts = {}) {
+  return fetch(EQA_API + path, { ...opts, headers: { 'X-API-Key': EQA_KEY, ...(opts.headers || {}) } })
+    .then(async res => {
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) { const e = new Error(j.error || `HTTP ${res.status}`); e.status = res.status; e.body = j; throw e; }
+      return j;
+    });
+}
+
+/* ── load + render ───────────────────────────────────────────────────────── */
+async function load() {
+  const el = $('eqaCloud');
+  try {
+    const j = await api('');
+    rounds = (j.rounds || []).map(r => ({ ...r, details: parseJSON(r.details) }));
+    el.className = 'eqa-cloud';
+    const years = rounds.map(r => r.yearBE);
+    el.textContent = rounds.length
+      ? `☁️ ข้อมูล EQA บน Cloud: ${rounds.length} รอบ · ปี ${Math.min(...years)}–${Math.max(...years)} · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน`
+      : '☁️ ยังไม่มีข้อมูล EQA — อัพโหลดไฟล์ PDF ด้านล่างเพื่อเริ่ม';
+  } catch (e) {
+    el.className = 'eqa-cloud err';
+    el.innerHTML = `⚠️ โหลดข้อมูล EQA จาก Cloud ไม่ได้ (${esc(e.message)}) <button class="pck-btn" onclick="load()">ลองใหม่</button>`;
+  }
+  render();
+}
+function parseJSON(s) { try { return s ? JSON.parse(s) : null; } catch { return null; } }
+
+function counts(list) {
+  const c = { n:list.length, PASS:0, FAIL:0, PENDING:0 };
+  list.forEach(r => c[r.result]++);
+  return c;
+}
+function yearsOf(list) { return [...new Set(list.map(r => r.yearBE))].sort((a, b) => b - a); }
+function sortRounds(list) {
+  return [...list].sort((a, b) => (a.provider.localeCompare(b.provider, 'th')) || String(a.round).localeCompare(String(b.round), 'th', { numeric:true }));
+}
+
+function render() {
+  const tabs = [{ id:'overview', name:'ภาพรวม', icon:'📊' }, ...PROGRAMS];
+  $('eqaTabs').innerHTML = tabs.map(t => {
+    const n = t.id === 'overview' ? rounds.length : rounds.filter(r => r.program === t.id).length;
+    return `<button class="eqa-tab" role="tab" aria-selected="${view === t.id}" data-view="${t.id}">${t.icon} ${esc(t.name)} <span class="n">${n}</span></button>`;
+  }).join('');
+  $('eqaView').innerHTML = view === 'overview' ? renderOverview() : renderProgram(view);
+}
+
+function renderOverview() {
+  const c = counts(rounds);
+  const evaluated = c.PASS + c.FAIL;
+  const years = yearsOf(rounds).sort((a, b) => a - b);
+  const kpi = (l, v, s, tone) => `<div class="pck-kpi" ${tone ? `style="--tone-ink:var(--${tone})"` : ''}><div class="pck-kpi-l">${l}</div><div class="pck-kpi-v">${v}</div><div class="pck-kpi-s">${s}</div></div>`;
+  let h = `<div class="pck-section">ภาพรวมทุกการทดสอบ</div>
+    <div class="pck-kpis" style="margin-bottom:16px">
+      ${kpi('รอบทั้งหมด', c.n, `${PROGRAMS.length} การทดสอบ · ${years.length} ปี`)}
+      ${kpi('อัตราผ่าน', evaluated ? Math.round(c.PASS / evaluated * 100) + '%' : '—', `ผ่าน ${c.PASS} จาก ${evaluated} รอบที่ประเมินแล้ว`, 'pass')}
+      ${kpi('ไม่ผ่าน', c.FAIL, c.FAIL ? 'ต้องมีบันทึกแก้ไข (F-CP-64)' : 'ไม่มีรอบที่ไม่ผ่าน', c.FAIL ? 'fail' : '')}
+      ${kpi('รอผล', c.PENDING, 'รายงานเบื้องต้น / ยังไม่มีคะแนน', c.PENDING ? 'warn' : '')}
+    </div>`;
+
+  h += `<div class="pck-section">สรุปรายปีแยกการทดสอบ <span class="pck-muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ผ่าน/จำนวนรอบ — คลิกเพื่อดูรายละเอียดปีนั้น)</span></div>`;
+  if (!years.length) h += `<div class="pck-card eqa-empty">ยังไม่มีข้อมูล</div>`;
+  else {
+    h += `<div class="pck-tablewrap" style="margin-bottom:16px"><table class="pck-table eqa-matrix"><thead><tr><th>การทดสอบ</th>${years.map(y => `<th>${y}</th>`).join('')}</tr></thead><tbody>`;
+    PROGRAMS.forEach(p => {
+      h += `<tr><td><b style="color:var(--text)">${p.icon} ${esc(p.name)}</b></td>`;
+      years.forEach(y => {
+        const list = rounds.filter(r => r.program === p.id && r.yearBE === y);
+        if (!list.length) { h += '<td class="pck-muted">—</td>'; return; }
+        const k = counts(list);
+        const cls = k.FAIL ? 'fail' : (k.PENDING && !k.PASS ? 'pending' : 'pass');
+        const extra = [k.FAIL ? `${k.FAIL} ไม่ผ่าน` : '', k.PENDING ? `${k.PENDING} รอผล` : ''].filter(Boolean).join(', ');
+        h += `<td><button class="eqa-cell ${cls}" data-go="${p.id}" data-year="${y}" title="${esc(extra || 'ผ่านทุกรอบ')}">${k.FAIL ? '✗' : '✓'} ${k.PASS}/${k.n}</button></td>`;
+      });
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+  }
+
+  h += `<div class="pck-section">ผลล่าสุดของแต่ละการทดสอบ</div><div class="eqa-cards">`;
+  PROGRAMS.forEach(p => {
+    const list = rounds.filter(r => r.program === p.id);
+    const k = counts(list);
+    const last = [...list].sort((a, b) => (b.reportDate || String(b.yearBE)).localeCompare(a.reportDate || String(a.yearBE)))[0];
+    h += `<div class="pck-card eqa-pc">
+      <h3><span class="pck-tag ${p.tone}">${p.icon}</span>${esc(p.name)}</h3>
+      ${last ? `<div class="last">ล่าสุด: <b>${esc(last.provider)} ${esc(roundLabel(last))}/${last.yearBE}</b> · ${esc(scoreText(last))}
+        <span class="pck-tag ${RESULT[last.result].tag}">${RESULT[last.result].label}</span></div>
+        <div class="pck-tags"><span class="pck-tag pass">ผ่าน ${k.PASS}</span>${k.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${k.FAIL}</span>` : ''}${k.PENDING ? `<span class="pck-tag warn">รอผล ${k.PENDING}</span>` : ''}<span class="pck-tag navy">${k.n} รอบ · ${yearsOf(list).length} ปี</span></div>`
+      : `<div class="last pck-muted">ยังไม่มีข้อมูล — อัพโหลดไฟล์ PDF ผล EQA ${esc(p.name)} ได้ที่กล่องด้านบน</div>`}
+      <div class="foot"><button class="pck-btn" data-go="${p.id}">ดูสรุปรายปี →</button>
+        ${p.detail ? `<a class="pck-btn" href="${p.detail}" style="text-decoration:none">หน้า EQA เต็ม</a>` : ''}</div>
+    </div>`;
+  });
+  return h + '</div>';
+}
+
+function renderProgram(pid) {
+  const p = PROG[pid];
+  const list = rounds.filter(r => r.program === pid);
+  const k = counts(list);
+  let h = `<div class="pck-row" style="margin-bottom:12px">
+      <h2 style="margin:0;font-size:18px">${p.icon} EQA ${esc(p.name)}</h2>
+      <div class="pck-tags"><span class="pck-tag navy">${k.n} รอบ</span><span class="pck-tag pass">ผ่าน ${k.PASS}</span>${k.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${k.FAIL}</span>` : ''}${k.PENDING ? `<span class="pck-tag warn">รอผล ${k.PENDING}</span>` : ''}</div>
+      <span class="pck-spacer"></span>
+      ${p.detail ? `<a class="pck-btn" href="${p.detail}" style="text-decoration:none">หน้า EQA ${esc(p.name)} เต็ม ↗</a>` : ''}
+    </div>`;
+  if (!list.length) return h + `<div class="pck-card eqa-empty">ยังไม่มีผล EQA ${esc(p.name)}<br>อัพโหลดไฟล์ PDF ที่กล่อง "เพิ่มผล EQA" ด้านบน หรือกด "กรอกผลเองโดยไม่มีไฟล์"</div>`;
+
+  yearsOf(list).forEach(y => {
+    const yl = sortRounds(list.filter(r => r.yearBE === y));
+    const yk = counts(yl);
+    h += `<div class="pck-card eqa-year" id="year-${pid}-${y}">
+      <div class="eqa-year-h"><h3>ปี พ.ศ. ${y}</h3>
+        <div class="pck-tags"><span class="pck-tag navy">${yk.n} รอบ</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}</div></div>
+      <div class="pck-tablewrap"><table class="pck-table eqa-rt"><thead><tr>
+        <th>ผู้จัด / รอบ</th><th>วันที่ออกรายงาน</th><th>รหัสสมาชิก</th><th>คะแนน</th><th>ระดับ</th><th>ผลประเมิน</th><th>ไฟล์</th><th></th>
+      </tr></thead><tbody>`;
+    yl.forEach(r => {
+      const open = openRows.has(r.id);
+      h += `<tr class="main ${open ? 'open' : ''}" data-row="${r.id}" aria-expanded="${open}">
+        <td><b style="color:var(--text)">${esc(r.provider)}</b> · ${esc(roundLabel(r))}</td>
+        <td>${esc(fmtDate(r.reportDate) || (r.details && r.details.dateText) || '—')}</td>
+        <td>${esc(r.labId || '—')}</td>
+        <td class="num">${esc(scoreText(r))}</td>
+        <td>${esc(r.grade || '—')}</td>
+        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span></td>
+        <td>${r.pdfName ? `<a href="${pdfUrl(r)}" target="_blank" rel="noopener" title="${esc(r.pdfName)}">📄 เปิด</a>` : '<span class="pck-muted">—</span>'}</td>
+        <td><div class="eqa-actions"><button class="pck-btn" data-edit="${r.id}" title="แก้ไข / แนบไฟล์">✏️</button></div></td>
+      </tr>`;
+      if (open) h += `<tr class="det"><td colspan="8">${renderDetails(r)}</td></tr>`;
+    });
+    h += '</tbody></table></div></div>';
+  });
+  return h;
+}
+
+function renderDetails(r) {
+  const d = r.details || {};
+  const kv = [
+    ['หมายเลขรายงาน', d.reportNo], ['Ref Code', d.refCode], ['EQA Group', d.eqaGroup], ['วิธี/น้ำยา', d.method],
+    ['Sensitivity', d.sensitivity], ['Specificity', d.specificity], ['Between-lab z', d.betweenZ], ['Within-lab z', d.withinZ],
+    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', d.criteria], ['ไฟล์', r.pdfName],
+    ['หมายเหตุ', r.note],
+  ].filter(([, v]) => v != null && v !== '');
+  let h = '<div class="eqa-det">';
+  if (kv.length) h += `<div class="eqa-kv">${kv.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>`;
+  if (d.z) {
+    const zc = v => { const n = parseFloat(String(v).replace('−', '-')); return isNaN(n) ? '' : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
+    const keys = Object.keys(d.z);
+    h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${keys.map(k => `<th>${esc(k)}</th>`).join('')}${d.betweenZ != null ? '<th>Between-lab z</th>' : ''}${d.withinZ != null ? '<th>Within-lab z</th>' : ''}</tr></thead>
+      <tbody><tr>${keys.map(k => `<td class="${zc(d.z[k])}">${esc(d.z[k] ?? '—')}</td>`).join('')}${d.betweenZ != null ? `<td class="${zc(d.betweenZ)}">${esc(d.betweenZ)}</td>` : ''}${d.withinZ != null ? `<td class="${zc(d.withinZ)}">${esc(d.withinZ)}</td>` : ''}</tr></tbody></table></div>`;
+  }
+  if (Array.isArray(d.samples) && d.samples.length) {
+    const LABEL = { sample:'ตัวอย่าง', content:'เนื้อหา', status:'สถานะ', expected:'ค่ากำหนด', result:'ผลของแล็บ', score:'Score', ct:'Ct', peer:'Peer % ถูก' };
+    const cols = Object.keys(LABEL).filter(c => d.samples.some(s => s[c] != null && s[c] !== ''));
+    h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${cols.map(c => `<th>${LABEL[c]}</th>`).join('')}</tr></thead><tbody>
+      ${d.samples.map(s => `<tr>${cols.map(c => `<td>${esc(s[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
+  if (!kv.length && !d.z && !d.samples) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
+  return h + '</div>';
+}
+
+$('eqaTabs').addEventListener('click', e => {
+  const b = e.target.closest('[data-view]'); if (!b) return;
+  go(b.dataset.view);
+});
+$('eqaView').addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if (g) { go(g.dataset.go, g.dataset.year ? +g.dataset.year : null); return; }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) { e.stopPropagation(); openEditor({ round: rounds.find(r => r.id === +ed.dataset.edit) }); return; }
+  if (e.target.closest('a')) return;
+  const row = e.target.closest('tr.main');
+  if (row) { const id = +row.dataset.row; openRows.has(id) ? openRows.delete(id) : openRows.add(id); render(); }
+});
+function go(v, year) {
+  view = v;
+  try { history.replaceState(null, '', v === 'overview' ? location.pathname : '#' + v); } catch {}
+  render();
+  if (year) highlightYear(v, year);
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function highlightYear(pid, y) {
+  const el = $(`year-${pid}-${y}`); if (!el) return;
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+/* ── upload queue ────────────────────────────────────────────────────────── */
+const queue = [];
+const drop = $('eqaDrop');
+drop.addEventListener('click', () => $('eqaFile').click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('eqaFile').click(); } });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); addFiles([...e.dataTransfer.files]); });
+$('eqaFile').addEventListener('change', e => { addFiles([...e.target.files]); e.target.value = ''; });
+$('eqaManual').addEventListener('click', () => openEditor({ guess: { program: view !== 'overview' ? view : '' } }));
+
+function addFiles(files) {
+  files.filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf').forEach(file => queue.push({ file, state:'wait', msg:'' }));
+  renderQueue(); nextInQueue();
+}
+function renderQueue() {
+  const label = { wait:'⏳ รอ', read:'🔎 กำลังอ่าน', review:'📝 รอตรวจสอบ', saved:'✅ บันทึกแล้ว', skip:'⏭️ ข้ามไป', error:'❌ ผิดพลาด' };
+  $('eqaQueue').innerHTML = queue.map(q => `<div class="eqa-qi"><span class="nm">📄 ${esc(q.file.name)}</span>
+    <span class="pck-muted">${esc(q.msg)}</span><span>${label[q.state]}</span></div>`).join('');
+}
+let busy = false;
+async function nextInQueue() {
+  if (busy) return;
+  const q = queue.find(x => x.state === 'wait'); if (!q) return;
+  busy = true; q.state = 'read'; renderQueue();
+  let parsed;
+  try { parsed = await readEqaPdf(q.file); }
+  catch (e) { parsed = { guess:{}, found:[], warn:['อ่านไฟล์ไม่ได้: ' + (e.message || e)], text:'' }; }
+  q.state = 'review'; renderQueue();
+  openEditor({ file: q.file, parsed, queueItem: q });
+}
+
+/* ── editor dialog ───────────────────────────────────────────────────────── */
+const dlg = $('eqaDlg');
+let editing = null;
+$('fProgram').innerHTML = '<option value="">— เลือก —</option>' + PROGRAMS.map(p => `<option value="${p.id}">${p.icon} ${esc(p.name)}</option>`).join('');
+
+function openEditor({ round, file, parsed, queueItem, guess }) {
+  editing = { round: round || null, file: file || null, queueItem: queueItem || null, parsed: parsed || null };
+  const g = round ? {
+      program: round.program, provider: round.provider, yearBE: round.yearBE, round: round.round, reportDate: round.reportDate,
+      labId: round.labId, score: round.score, maxScore: round.maxScore, grade: round.grade, result: round.result, note: round.note,
+    } : { ...(parsed ? parsed.guess : {}), ...(guess || {}) };
+  const auto = new Set(parsed ? Object.keys(parsed.guess).filter(k => parsed.guess[k] != null && parsed.guess[k] !== '') : []);
+  const set = (id, key, v) => { $(id).value = v == null ? '' : v; $(id).closest('.eqa-f').classList.toggle('auto', auto.has(key)); };
+  set('fProgram', 'program', g.program); set('fProvider', 'provider', g.provider); set('fYear', 'yearBE', g.yearBE);
+  set('fRound', 'round', g.round); set('fDate', 'reportDate', g.reportDate); set('fLab', 'labId', g.labId);
+  set('fScore', 'score', g.score); set('fMax', 'maxScore', g.maxScore); set('fGrade', 'grade', g.grade);
+  set('fResult', 'result', g.result); set('fNote', 'note', g.note);
+  $('fPdf').value = '';
+  $('fPdfWrap').hidden = !!file;
+  $('fPdfName').textContent = round && round.pdfName ? `ไฟล์ปัจจุบัน: ${round.pdfName} (เลือกไฟล์ใหม่เพื่อแทนที่)` : '';
+  $('eqaDlgTitle').textContent = round ? `แก้ไขผล EQA — ${PROG[round.program].name} ${round.provider} ${roundLabel(round)}/${round.yearBE}` : 'ตรวจสอบผล EQA ก่อนบันทึก';
+  $('eqaDelete').hidden = !round; $('eqaDelete').dataset.confirm = ''; $('eqaDelete').textContent = '🗑️ ลบรอบนี้';
+  $('eqaErr').textContent = '';
+  $('eqaSave').textContent = '💾 บันทึก';
+  $('eqaSave').hidden = false;
+
+  const hint = $('eqaHint');
+  if (parsed) {
+    const found = parsed.found.length ? `✅ อ่านได้อัตโนมัติ: ${parsed.found.map(esc).join(' · ')}` : '';
+    const warn = parsed.warn.map(w => `⚠️ ${esc(w)}`).join('<br>');
+    hint.className = 'pck-note eqa-hint ' + (parsed.warn.length && !parsed.found.length ? 'warn' : 'info');
+    hint.innerHTML = [`<b>${esc(parsed.kind || 'ไม่รู้จักรูปแบบไฟล์')}</b> — ${esc(file.name)}`, found, warn,
+      'ช่องสีเขียว = ระบบกรอกให้ กรุณาตรวจทุกช่องก่อนบันทึก'].filter(Boolean).join('<br>');
+    hint.hidden = false;
+  } else if (round) { hint.hidden = true; }
+  else { hint.className = 'pck-note eqa-hint info'; hint.innerHTML = 'กรอกผล EQA เอง — แนบไฟล์ PDF ได้ในช่อง "ไฟล์ PDF"'; hint.hidden = false; }
+
+  const prev = $('eqaPrev');
+  prev.innerHTML = '';
+  prev.hidden = !file;
+  if (file) renderPreview(file, prev);
+  dlg.showModal();
+}
+
+async function renderPreview(file, box) {
+  if (!window.pdfjsLib) { box.innerHTML = '<div class="cap">ดูตัวอย่างไม่ได้ (โหลด PDF.js ไม่สำเร็จ)</div>'; return; }
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    for (let i = 1; i <= Math.min(pdf.numPages, 2); i++) {
+      const page = await pdf.getPage(i);
+      const vp = page.getViewport({ scale: 0.75 });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      box.appendChild(c);
+    }
+    box.insertAdjacentHTML('beforeend', `<div class="cap">${esc(file.name)} · ${pdf.numPages} หน้า${pdf.numPages > 2 ? ' (แสดง 2 หน้าแรก)' : ''}</div>`);
+  } catch (e) { box.innerHTML = `<div class="cap">แสดงตัวอย่างไม่ได้: ${esc(e.message)}</div>`; }
+}
+
+function closeEditor(state) {
+  const q = editing && editing.queueItem;
+  if (q) { q.state = state; renderQueue(); busy = false; setTimeout(nextInQueue, 50); }
+  editing = null;
+  if (dlg.open) dlg.close();
+}
+$('eqaCancel').addEventListener('click', () => closeEditor('skip'));
+dlg.addEventListener('cancel', e => { e.preventDefault(); closeEditor('skip'); });
+
+$('eqaForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('eqaErr'); err.textContent = '';
+  const numOrNull = v => v === '' ? null : Number(v);
+  const body = {
+    program: $('fProgram').value, provider: $('fProvider').value.trim(), yearBE: parseInt($('fYear').value, 10),
+    round: $('fRound').value.trim(), reportDate: $('fDate').value || null, labId: $('fLab').value.trim() || null,
+    score: numOrNull($('fScore').value), maxScore: numOrNull($('fMax').value), grade: $('fGrade').value.trim() || null,
+    result: $('fResult').value, note: $('fNote').value.trim() || null,
+  };
+  const missing = [['program','การทดสอบ'],['provider','ผู้จัด'],['round','รอบ'],['result','ผลประเมิน']].filter(([k]) => !body[k]).map(([, l]) => l);
+  if (!body.yearBE) missing.push('ปี พ.ศ.');
+  if (missing.length) { err.textContent = 'กรุณากรอก: ' + missing.join(', '); return; }
+  if (body.yearBE < 2540) { err.textContent = 'ปีต้องเป็น พ.ศ. (เช่น 2569) ไม่ใช่ ค.ศ.'; return; }
+
+  const r = editing.round;
+  const file = editing.file || $('fPdf').files[0] || null;
+
+  // รอบเดียวกันมีอยู่แล้ว (การทดสอบ/ผู้จัด/ปี/รอบ ตรงกัน) — ถามก่อนบันทึกทับ
+  const dup = rounds.find(x => x.program === body.program && x.provider === body.provider && x.yearBE === body.yearBE
+    && String(x.round).toLowerCase() === body.round.toLowerCase() && (!r || x.id !== r.id));
+  if (dup && editing.confirmedDup !== dup.id) {
+    const what = `${PROG[body.program].name} ${body.provider} ${roundLabel(dup)}/${dup.yearBE}`;
+    if (dup.result !== 'PENDING' && body.result === 'PENDING') {
+      // รายงานเบื้องต้น/ใบยืนยันส่งผล ห้ามทับผลฉบับสมบูรณ์ — อนุญาตแค่แนบไฟล์ถ้ารอบนั้นยังไม่มีไฟล์
+      if (dup.pdfName || !file) {
+        err.textContent = `${what} มีผลประเมินฉบับสมบูรณ์แล้ว (${RESULT[dup.result].label} ${scoreText(dup)}) — ไฟล์นี้เป็นรายงานเบื้องต้น/ใบส่งผล จึงไม่บันทึกทับ`;
+        $('eqaSave').hidden = true; return;
+      }
+      editing.attachOnly = dup.id; editing.confirmedDup = dup.id;
+      err.textContent = `${what} มีผลฉบับสมบูรณ์แล้ว — จะแนบไฟล์นี้เข้ารอบเดิมโดยไม่เปลี่ยนผลประเมิน`;
+      $('eqaSave').textContent = '📎 แนบไฟล์เข้ารอบเดิม'; return;
+    }
+    editing.confirmedDup = dup.id;
+    err.textContent = `มีผล ${what} อยู่แล้ว (${RESULT[dup.result].label} ${scoreText(dup)}) — กด "บันทึกทับรอบเดิม" เพื่ออัพเดตข้อมูล${file ? 'และแนบไฟล์นี้แทน' : ''}`;
+    $('eqaSave').textContent = '💾 บันทึกทับรอบเดิม'; return;
+  }
+  const id = r ? r.id : (dup ? dup.id : null);
+  if (id) body.id = id;
+  body.details = (editing.parsed && editing.parsed.details) || (r ? r.details : null) || (dup ? dup.details : null) || null;
+
+  $('eqaSave').disabled = true; $('eqaSave').textContent = '⏳ กำลังบันทึก...';
+  try {
+    const saved = editing.attachOnly
+      ? { id: editing.attachOnly }
+      : await api('', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+    if (file) {
+      if (file.size > 20 * 1024 * 1024) throw new Error('บันทึกข้อมูลแล้ว แต่ไฟล์ PDF ใหญ่เกิน 20 MB จึงไม่ได้แนบ');
+      await api(`/pdf?id=${saved.id}&name=${encodeURIComponent(file.name)}`, { method:'PUT', headers:{ 'Content-Type':'application/pdf' }, body: file });
+    }
+    const target = { program: body.program, year: body.yearBE };
+    closeEditor('saved');
+    await load();
+    openRows.add(saved.id);
+    go(target.program, target.year);
+  } catch (x) {
+    err.textContent = 'บันทึกไม่สำเร็จ: ' + (x.message || x);
+  } finally {
+    $('eqaSave').disabled = false;
+    if ($('eqaSave').textContent.startsWith('⏳')) $('eqaSave').textContent = '💾 บันทึก';
+  }
+});
+
+$('eqaDelete').addEventListener('click', async () => {
+  const b = $('eqaDelete');
+  if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = '⚠️ กดอีกครั้งเพื่อยืนยันการลบ'; return; }
+  const r = editing.round;
+  try {
+    await api(`?id=${r.id}`, { method:'DELETE' });
+    openRows.delete(r.id);
+    closeEditor('skip');
+    await load();
+  } catch (x) { $('eqaErr').textContent = 'ลบไม่สำเร็จ: ' + (x.message || x); }
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   อ่านไฟล์ PDF ผล EQA — รองรับรูปแบบที่มีข้อความจริงในไฟล์
+   1) QCMD Individual Report     2) QCMD ใบยืนยันการส่งผล (Results Review)
+   3) สวส. รายงานฉบับสมบูรณ์ (ตารางคะแนนทุก Lab)   4) สวส. รายงานเบื้องต้น
+   ไฟล์สแกน (ไม่มีข้อความ) เดาได้แค่จากชื่อไฟล์ ที่เหลือผู้ใช้กรอกเอง
+   ══════════════════════════════════════════════════════════════════════════ */
+const OUR_LAB_NAME = 'พระจอมเกล้า';
+const EN_MON = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+const TH_MON_FULL = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const pad = n => String(n).padStart(2, '0');
+function thDateToIso(s) {
+  const m = /(\d{1,2})\s*([ก-๙.]+|[A-Za-z]+)\s*(\d{2,4})/.exec(s || ''); if (!m) return null;
+  let mon = TH_MON.indexOf(m[2]) + 1 || TH_MON_FULL.indexOf(m[2]) + 1 || EN_MON[m[2].slice(0, 3).toLowerCase()];
+  if (!mon) return null;
+  let y = +m[3]; if (y < 100) y += 2500; if (y > 2400) y -= 543;
+  return `${y}-${pad(mon)}-${pad(+m[1])}`;
+}
+function programFromText(t) {
+  if (/SARS-?CoV-?2|nCoV|COVID|โควิด|SCV2/i.test(t)) return 'COVID';
+  if (/papillomavirus|\bHPV/i.test(t)) return 'HPV';
+  if (/\bCD4\b|CD3\s*\/?\s*CD4|ลิมโฟไซต์/i.test(t)) return 'CD4';
+  if (/HIV/i.test(t)) return 'HIVVL';
+  return '';
+}
+
+async function readEqaPdf(file) {
+  let text = '';
+  if (window.pdfjsLib) {
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    // ต่อข้อความตามตำแหน่งจริง: PDF.js มักแยกตัวเลขในไฟล์ภาษาไทยเป็นชิ้นเล็ก (เช่น "25" → "2","5")
+    // ชิ้นที่อยู่ติดกันบนบรรทัดเดียวกันจึงต่อโดยไม่เว้นวรรค ไม่งั้นเลขลำดับ/ปีจะแตก
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const c = await (await pdf.getPage(i)).getTextContent();
+      let prev = null;
+      for (const it of c.items) {
+        const x = it.transform[4], y = it.transform[5];
+        if (prev && !prev.hasEOL && Math.abs(y - prev.y) < 1.5 && x - prev.end < 0.8) text += it.str;
+        else text += (prev && (prev.hasEOL || Math.abs(y - prev.y) >= 1.5) ? '\n' : ' ') + it.str;
+        prev = { y, end: x + (it.width || 0), hasEOL: it.hasEOL };
+      }
+      text += '\n';
+    }
+  }
+  const flat = text.replace(/\s+/g, ' ').trim();
+  const out = { kind:'', guess:{}, found:[], warn:[], details:null };
+  const G = out.guess;
+  const note = (label, v) => { if (v != null && v !== '') out.found.push(label); };
+
+  if (/Individual Report/i.test(flat) && /QCMD/.test(flat) && /Ref Code:/i.test(flat)) parseQcmdIndividual(flat, out);
+  else if (/Results Review - Dataset/i.test(flat) && /QCMD/.test(flat)) parseQcmdReceipt(flat, out);
+  else if (/กรมวิทยาศาสตร์การแพทย์|สถาบันวิจัยวิทยาศาสตร์สาธารณสุข|แผนทดสอบความชำนาญ/.test(flat)) parseDmsc(flat, out);
+
+  if (!out.kind) {
+    out.kind = flat.length < 80 ? 'ไฟล์สแกน (ไม่มีข้อความให้อ่าน)' : 'ไม่รู้จักรูปแบบรายงานนี้';
+    out.warn.push(flat.length < 80
+      ? 'ไฟล์นี้เป็นภาพสแกน ระบบอ่านตัวเลขไม่ได้ — ดูภาพตัวอย่างด้านขวาแล้วกรอกข้อมูลเอง ไฟล์จะถูกแนบไว้กับรอบนี้'
+      : 'อ่านข้อความได้แต่ไม่ตรงกับรูปแบบที่รู้จัก — เดาจากคำในไฟล์ กรุณาตรวจทุกช่อง');
+  }
+  // เติมช่องที่ยังว่างจากคำในไฟล์และชื่อไฟล์ (เช่น "EQA CD4 2566.pdf")
+  const hay = flat + ' ' + file.name;
+  if (!G.program) { G.program = programFromText(hay); note('การทดสอบ (เดาจากคำในไฟล์)', G.program); }
+  if (!G.yearBE) {
+    const ys = [...hay.matchAll(/\b(25[4-9]\d)\b/g)].map(m => +m[1]);
+    if (ys.length) { G.yearBE = Math.max(...ys); note('ปี (เดาจากไฟล์)', G.yearBE); }
+  }
+  for (const k of Object.keys(G)) if (G[k] == null || G[k] === '') delete G[k];
+  return out;
+}
+
+function parseQcmdIndividual(t, out) {
+  const G = out.guess; out.kind = 'QCMD Individual Report';
+  G.provider = 'QCMD'; out.found.push('ผู้จัด');
+  const ref = /Ref Code:\s*(\S+)/.exec(t);
+  if (ref) {
+    const m = /^(.*?)(\d{2})$/.exec(ref[1]);
+    if (m) {
+      const pre = m[1].toUpperCase();
+      G.program = /^HIV/.test(pre) ? 'HIVVL' : /^HPV/.test(pre) ? 'HPV' : /^(SCV2|SARS|NCOV)/.test(pre) ? 'COVID' : programFromText(t);
+      G.yearBE = 2000 + +m[2] + 543;
+      out.found.push(`การทดสอบ+ปี จาก Ref Code ${ref[1]}`);
+    }
+  }
+  const ch = /Challenge:\s*(C\w+)/.exec(t); if (ch) { G.round = ch[1]; out.found.push('รอบ'); }
+  const lab = /Laboratory\s+(TH\d+|[A-Z]{2}\d{2,})/.exec(t); if (lab) { G.labId = lab[1]; out.found.push('Lab ID'); }
+  const iss = /Issue Date:\s*(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})/.exec(t); if (iss) { G.reportDate = thDateToIso(iss[1]); out.found.push('วันที่ออกรายงาน'); }
+  const det = /Core Panel Detection \(Qualitative\) Score\s+(N\/A|\d+)/i.exec(t);
+  const est = /Core Panel Estimation \(Quantitative\) Score\s+(N\/A|\d+)/i.exec(t);
+  const grp = /EQA Assessment Group\s+(.+?)\s+Core Panel/i.exec(t);
+  const scores = [det, est].filter(m => m && m[1] !== 'N/A').map(m => +m[1]);
+  out.details = { type:'qcmd', refCode: ref ? ref[1] : null, eqaGroup: grp ? grp[1] : null,
+    detectionScore: det ? det[1] : null, estimationScore: est ? est[1] : null,
+    criteria:'0 ดีเยี่ยม · 1 ยอมรับ · 2 เฝ้าระวัง · 3 ไม่ผ่าน' };
+  if (scores.length) {
+    const s = Math.max(...scores);
+    G.score = s; G.grade = ['ดีเยี่ยม','ยอมรับ','เฝ้าระวัง','ไม่ผ่าน'][Math.min(s, 3)];
+    G.result = s >= 3 ? 'FAIL' : 'PASS';
+    G.note = [det && `Detection Score ${det[1]}`, est && `Estimation Score ${est[1]}`].filter(Boolean).join(' · ');
+    out.found.push(`คะแนน (${G.note})`);
+  } else out.warn.push('หาคะแนน Core Panel ในไฟล์ไม่เจอ — กรุณากรอกคะแนนและผลประเมินเอง');
+}
+
+function parseQcmdReceipt(t, out) {
+  const G = out.guess; out.kind = 'QCMD ใบยืนยันการส่งผล (ยังไม่มีผลประเมิน)';
+  G.provider = 'QCMD'; out.found.push('ผู้จัด');
+  const m = /QCMD\s+(\d{4}).*?Programme\s*\((\w+?)(\d{2})\)\s*Challenge\s+(C\w+)/.exec(t);
+  if (m) {
+    G.yearBE = +m[1] + 543; G.round = m[4];
+    G.program = /^HIV/i.test(m[2]) ? 'HIVVL' : /^HPV/i.test(m[2]) ? 'HPV' : /^(SCV|SARS)/i.test(m[2]) ? 'COVID' : programFromText(t);
+    out.found.push('การทดสอบ', 'ปี', 'รอบ');
+  }
+  const lab = /\[(TH\d+)\]/.exec(t); if (lab) { G.labId = lab[1]; out.found.push('Lab ID'); }
+  const sub = /Submitted at:\s*\d{1,2}:\d{2}\s+(\d{2})\/(\d{2})\/(\d{4})/.exec(t);
+  if (sub) { G.reportDate = `${sub[3]}-${sub[2]}-${sub[1]}`; out.found.push('วันที่ส่งผล'); }
+  G.result = 'PENDING';
+  G.note = 'ใบยืนยันการส่งผลของ QCMD — ยังไม่มีคะแนน เมื่อได้ Individual Report ให้อัพโหลดทับรอบนี้';
+  out.warn.push('ไฟล์นี้เป็นแค่ใบยืนยันการส่งผล ยังไม่มีคะแนน — บันทึกเป็น "รอผล" ไว้ก่อน');
+}
+
+function parseDmsc(t, out) {
+  const G = out.guess;
+  G.provider = 'สวส.'; out.found.push('ผู้จัด');
+  G.program = programFromText(t); if (G.program) out.found.push('การทดสอบ');
+  // "แก้ไขครั้งที่ N" ในหัว/ท้ายกระดาษคือเลขแก้ไขแบบฟอร์ม FS ไม่ใช่รอบ EQA
+  const tr = t.replace(/แก้ไขครั้งที่\s*\d+/g, ' ');
+  let m = /(?:ครั้งที่|รอบที่)\s*(\d+)\s*\/\s*(25\d{2})/.exec(tr);
+  const fy = /ปีงบประมาณ\s*(25\d{2})\s*(?:รอบที่|ครั้งที่)\s*(\d+)/.exec(tr);
+  if (m) { G.round = m[1]; G.yearBE = +m[2]; out.found.push('รอบ', 'ปี'); }
+  else if (fy) { G.yearBE = +fy[1]; G.round = fy[2]; out.found.push('ปี', 'รอบ'); }
+  else {
+    const y = /(?:ปีงบประมาณ|พ\.ศ\.)\s*(25\d{2})/.exec(tr); if (y) { G.yearBE = +y[1]; out.found.push('ปี'); }
+    const r = /(?:รอบที่|ครั้งที่)\s*(\d+)/.exec(tr); if (r) { G.round = r[1]; out.found.push('รอบ (ตรวจสอบด้วย)'); }
+  }
+  const d = /(?:วันที่ออกรายงาน\s*:?|รายงานออก\s*ณ\s*วันที่)\s*(\d{1,2}\s*[ก-๙.]+\s*\d{2,4})/.exec(t);
+  if (d) { G.reportDate = thDateToIso(d[1]); if (G.reportDate) out.found.push('วันที่ออกรายงาน'); }
+  const rn = /หมายเลขรายงาน\s*:?\s*([\w\-\/ ]+?\d)\s/.exec(t);
+  out.details = { type:'dmsc', reportNo: rn ? rn[1].trim() : null };
+
+  // รายงานฉบับสมบูรณ์: หาลำดับของ รพ. ในรายชื่อสมาชิก แล้วอ่านแถวคะแนนของลำดับนั้น
+  const idx = new RegExp(OUR_LAB_NAME + '[^\\d]{0,40}?\\s(\\d{1,3})\\b').exec(t);
+  const maxS = /คะแนน\s*\(\s*(\d+)\s*คะแนน\s*\)/.exec(t);
+  if (idx) {
+    const row = new RegExp('(?:^|\\s)' + idx[1] + '\\s+(\\d{5})\\s+(.{0,400}?)\\s(\\d+(?:\\.\\d+)?)\\s+(Excellent|Very ?good|Good|Satisfactory|Acceptable|Unsatisfactory|Unacceptable|Poor|ผ่าน|ไม่ผ่าน)', 'i').exec(t);
+    if (row) {
+      out.kind = 'สวส. รายงานฉบับสมบูรณ์';
+      G.labId = row[1]; G.score = +row[3]; G.grade = row[4];
+      if (maxS) G.maxScore = +maxS[1];
+      G.result = /unsatisf|unaccept|poor|ไม่ผ่าน/i.test(row[4]) ? 'FAIL' : 'PASS';
+      out.found.push(`แถวของ รพ.${OUR_LAB_NAME} (ลำดับ ${idx[1]}, รหัส ${row[1]})`, 'คะแนน', 'ระดับ');
+      return;
+    }
+    out.warn.push(`เจอชื่อ รพ.${OUR_LAB_NAME} (ลำดับ ${idx[1]}) แต่อ่านแถวคะแนนไม่ได้ — กรุณากรอกคะแนนเอง`);
+  }
+  if (/รายงาน\s*(?:ผล)?\s*เบื้องต้น/.test(t)) {
+    out.kind = 'สวส. รายงานเบื้องต้น (ยังไม่มีคะแนน)';
+    G.result = 'PENDING';
+    G.note = 'รายงานเบื้องต้นของ สวส. — ยังไม่มีคะแนน เมื่อได้รายงานฉบับสมบูรณ์ให้อัพโหลดทับรอบนี้';
+    out.warn.push('รายงานเบื้องต้นมีแค่ค่ากำหนด ยังไม่มีคะแนน — บันทึกเป็น "รอผล" ไว้ก่อน');
+  } else out.kind = out.kind || 'รายงาน สวส.';
+}
+
+/* ── start ───────────────────────────────────────────────────────────────── */
+(() => {
+  const h = (location.hash || '').slice(1);
+  if (PROG[h]) view = h;
+  load();
+})();
+
+if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
 </body>
 </html>

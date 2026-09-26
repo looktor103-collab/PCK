@@ -42,3 +42,27 @@ CREATE TABLE IF NOT EXISTS iqc_benchmark (
   updated_at  TEXT NOT NULL,
   PRIMARY KEY (lab_code, assay)
 );
+
+-- EQA rounds for EQA_Summary.html — one row per programme / provider / year / round.
+-- program: CD4 | HIVVL | HPV | COVID; result: PASS | FAIL | PENDING (submitted, not yet evaluated).
+-- The original PDF report is stored in the EQA_PDF KV namespace under key "pdf:<id>".
+CREATE TABLE IF NOT EXISTS eqa_rounds (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  program     TEXT NOT NULL,
+  provider    TEXT NOT NULL,
+  year_be     INTEGER NOT NULL,
+  round       TEXT NOT NULL,
+  report_date TEXT,
+  lab_id      TEXT,
+  score       REAL,
+  max_score   REAL,
+  grade       TEXT,
+  result      TEXT NOT NULL,
+  details     TEXT,
+  note        TEXT,
+  pdf_name    TEXT,
+  pdf_size    INTEGER,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL,
+  UNIQUE (program, provider, year_be, round)
+);

@@ -10,5 +10,8 @@
       "database_name": "splab-iqc",
       "database_id": "6a6cbbe8-0c9b-41e8-afe1-1fabec5184c3"
     }
+  ],
+  "kv_namespaces": [
+    { "binding": "EQA_PDF", "id": "297fde7989c44a578385c1e4a57578cb" }
   ]
 }
