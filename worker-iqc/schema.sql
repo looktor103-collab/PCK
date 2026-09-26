@@ -82,3 +82,8 @@ CREATE TABLE IF NOT EXISTS eqa_docs (
   created_at   TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_eqa_docs_year ON eqa_docs (program, year_be);
+
+-- CAR/NC documents for rounds below full score (doc_type 'car'): round_id links the
+-- document to its round; form_data holds the field values of a filled F-CP-631 so it can be edited again.
+ALTER TABLE eqa_docs ADD COLUMN round_id INTEGER;
+ALTER TABLE eqa_docs ADD COLUMN form_data TEXT;

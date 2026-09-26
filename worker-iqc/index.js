@@ -19,6 +19,7 @@
      POST   /api/eqa/doc?program=HPV&yearBE=2569&type=cert&provider=QCMD&name=x.pdf  (body = file) → { ok, id }
      GET    /api/eqa/doc?id=3&key=…         → the stored file
      DELETE /api/eqa/doc?id=3               → delete the document and its file
+     POST   /api/eqa/car  { id?, roundId, name, form, pdf(base64) } → filled F-CP-631 (CAR/NC) for a round
    (GET /api/eqa also returns the document list as `docs`)
 
    The API key is embedded in the public page source so every computer works
@@ -65,7 +66,7 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
@@ -80,6 +81,7 @@ export default {
       if (route === '/api/eqa/doc' && m === 'POST') return await eqaDocAdd(request, url, env);
       if (route === '/api/eqa/doc' && m === 'GET') return await eqaDocGet(url, env);
       if (route === '/api/eqa/doc' && m === 'DELETE') return await eqaDocDelete(url, env);
+      if (route === '/api/eqa/car' && m === 'POST') return await eqaCarSave(request, env);
       return json({ ok: false, error: 'method not allowed' }, 405);
     } catch (err) {
       return json({ ok: false, error: String(err && err.message || err) }, 500);
@@ -98,13 +100,15 @@ async function eqaList(db) {
   const { results } = await db.prepare(`SELECT ${EQA_COLS} FROM eqa_rounds ORDER BY year_be DESC, program, round`).all();
   const docs = await db.prepare(
     `SELECT id, program, year_be AS yearBE, doc_type AS type, provider, file_name AS name, file_size AS size,
-            content_type AS contentType, created_at AS createdAt FROM eqa_docs ORDER BY year_be DESC, program, doc_type, id`
+            content_type AS contentType, created_at AS createdAt, round_id AS roundId, form_data AS form
+       FROM eqa_docs ORDER BY year_be DESC, program, doc_type, id`
   ).all();
   return json({ ok: true, rounds: results, docs: docs.results });
 }
 
-/* ── yearly documents (certificates / full reports) ──────────────────────── */
-const DOC_TYPES = ['cert', 'report'];
+/* ── documents: yearly (cert / report) and per round (car = CAR/NC for a round
+   below full score). A filled F-CP-631 also keeps its field values in form_data. */
+const DOC_TYPES = ['cert', 'report', 'car'];
 const DOC_MIME = { '%PDF-': 'application/pdf', '\x89PNG': 'image/png', '\xFF\xD8\xFF': 'image/jpeg' };
 
 function sniffType(buf) {
@@ -116,12 +120,18 @@ function sniffType(buf) {
 
 async function eqaDocAdd(request, url, env) {
   const p = url.searchParams;
-  const program = str(p.get('program')).toUpperCase();
-  const yearBE = parseInt(p.get('yearBE'), 10);
+  let program = str(p.get('program')).toUpperCase();
+  let yearBE = parseInt(p.get('yearBE'), 10);
   const type = str(p.get('type')).toLowerCase();
+  if (!DOC_TYPES.includes(type)) return json({ ok: false, error: 'type must be cert, report or car' }, 400);
+  let roundId = null;
+  if (type === 'car') {
+    const round = await env.DB.prepare('SELECT id, program, year_be FROM eqa_rounds WHERE id=?').bind(Number(p.get('roundId'))).first();
+    if (!round) return json({ ok: false, error: 'CAR/NC ต้องผูกกับรอบที่มีอยู่ (roundId)' }, 400);
+    roundId = round.id; program = round.program; yearBE = round.year_be;
+  }
   if (!EQA_PROGRAMS.includes(program)) return json({ ok: false, error: 'program must be one of ' + EQA_PROGRAMS.join(', ') }, 400);
   if (!yearBE || yearBE < 2540 || yearBE > 2650) return json({ ok: false, error: 'yearBE must be a Buddhist year, e.g. 2569' }, 400);
-  if (!DOC_TYPES.includes(type)) return json({ ok: false, error: 'type must be cert or report' }, 400);
   const buf = await request.arrayBuffer();
   if (!buf.byteLength) return json({ ok: false, error: 'empty file' }, 400);
   if (buf.byteLength > MAX_PDF_BYTES) return json({ ok: false, error: 'ไฟล์ใหญ่เกิน 20 MB' }, 413);
@@ -129,11 +139,43 @@ async function eqaDocAdd(request, url, env) {
   if (!contentType) return json({ ok: false, error: 'รับเฉพาะไฟล์ PDF, PNG หรือ JPG' }, 400);
   const name = str(p.get('name'), 200) || `eqa-${type}.${contentType.split('/')[1]}`;
   const res = await env.DB.prepare(
-    `INSERT INTO eqa_docs (program, year_be, doc_type, provider, file_name, file_size, content_type, created_at)
-     VALUES (?,?,?,?,?,?,?,?)`
-  ).bind(program, yearBE, type, str(p.get('provider'), 40) || null, name, buf.byteLength, contentType, new Date().toISOString()).run();
+    `INSERT INTO eqa_docs (program, year_be, doc_type, provider, file_name, file_size, content_type, created_at, round_id)
+     VALUES (?,?,?,?,?,?,?,?,?)`
+  ).bind(program, yearBE, type, str(p.get('provider'), 40) || null, name, buf.byteLength, contentType, new Date().toISOString(), roundId).run();
   const id = res.meta.last_row_id;
   await env.EQA_PDF.put('doc:' + id, buf, { metadata: { name, contentType } });
+  return json({ ok: true, id });
+}
+
+// Filled F-CP-631 from the page: { id?, roundId, name, form, pdf (base64) } → create or replace
+async function eqaCarSave(request, env) {
+  const text = await request.text();
+  if (text.length > 12_000_000) return json({ ok: false, error: 'payload too large' }, 413);
+  let b;
+  try { b = JSON.parse(text); } catch { return json({ ok: false, error: 'invalid JSON' }, 400); }
+  const round = await env.DB.prepare('SELECT id, program, year_be, provider FROM eqa_rounds WHERE id=?').bind(Number(b.roundId)).first();
+  if (!round) return json({ ok: false, error: 'ไม่พบรอบ EQA นี้' }, 404);
+  let bytes;
+  try { bytes = Uint8Array.from(atob(String(b.pdf || '')), c => c.charCodeAt(0)); } catch { return json({ ok: false, error: 'pdf must be base64' }, 400); }
+  if (bytes.byteLength < 5 || sniffType(bytes.buffer) !== 'application/pdf') return json({ ok: false, error: 'ไฟล์ที่ส่งมาไม่ใช่ PDF' }, 400);
+  if (bytes.byteLength > MAX_PDF_BYTES) return json({ ok: false, error: 'ไฟล์ใหญ่เกิน 20 MB' }, 413);
+  const form = JSON.stringify(b.form || {}).slice(0, 200_000);
+  const name = str(b.name, 200) || `F-CP-631_${round.program}_${round.year_be}.pdf`;
+  const now = new Date().toISOString();
+  let id = Number.isInteger(b.id) ? b.id : null;
+  if (id) {
+    const res = await env.DB.prepare(
+      `UPDATE eqa_docs SET file_name=?, file_size=?, form_data=?, created_at=? WHERE id=? AND round_id=? AND doc_type='car'`
+    ).bind(name, bytes.byteLength, form, now, id, round.id).run();
+    if (!res.meta.changes) return json({ ok: false, error: 'ไม่พบแบบฟอร์มเดิม' }, 404);
+  } else {
+    const res = await env.DB.prepare(
+      `INSERT INTO eqa_docs (program, year_be, doc_type, provider, file_name, file_size, content_type, created_at, round_id, form_data)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`
+    ).bind(round.program, round.year_be, 'car', round.provider, name, bytes.byteLength, 'application/pdf', now, round.id, form).run();
+    id = res.meta.last_row_id;
+  }
+  await env.EQA_PDF.put('doc:' + id, bytes, { metadata: { name, contentType: 'application/pdf' } });
   return json({ ok: true, id });
 }
 
@@ -209,7 +251,10 @@ async function eqaDelete(url, env) {
   if (!Number.isInteger(id) || id <= 0) return json({ ok: false, error: 'id is required' }, 400);
   const res = await env.DB.prepare('DELETE FROM eqa_rounds WHERE id=?').bind(id).run();
   await env.EQA_PDF.delete('pdf:' + id);
-  return json({ ok: true, deleted: res.meta.changes });
+  const { results: cars } = await env.DB.prepare("SELECT id FROM eqa_docs WHERE round_id=? AND doc_type='car'").bind(id).all();
+  for (const c of cars) await env.EQA_PDF.delete('doc:' + c.id);
+  if (cars.length) await env.DB.prepare("DELETE FROM eqa_docs WHERE round_id=? AND doc_type='car'").bind(id).run();
+  return json({ ok: true, deleted: res.meta.changes, carDeleted: cars.length });
 }
 
 async function eqaPdfPut(request, url, env) {

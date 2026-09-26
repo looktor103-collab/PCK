@@ -65,6 +65,25 @@ body{font-family:'Sarabun',Tahoma,sans-serif;background:var(--bg,#fdf8f9);color:
 .eqa-actions{display:flex;gap:6px;justify-content:flex-end}
 .eqa-actions .pck-btn{padding:4px 10px}
 .eqa-empty{padding:26px;text-align:center;color:var(--text3);font-size:13px}
+.eqa-car{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);font-size:12.5px}
+.eqa-car.miss{background:var(--fail-bg);border-color:color-mix(in srgb,var(--fail-line) 45%,transparent);color:var(--fail)}
+.eqa-car.ok{background:var(--pass-bg);border-color:color-mix(in srgb,var(--pass-line) 45%,transparent);color:var(--pass)}
+.eqa-car .pck-btn{padding:5px 12px}
+dialog.car-dlg{width:min(1000px,calc(100vw - 16px));height:calc(100vh - 24px);max-height:none}
+dialog.car-dlg[open]{display:flex;flex-direction:column}
+.car-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--border)}
+.car-top h2{margin:0;font-size:16px}
+.car-help{font-size:12px;color:var(--text3);padding:6px 16px;border-bottom:1px solid var(--border)}
+.car-scroll{flex:1;overflow:auto;background:var(--surface-3);padding:16px}
+.car-page{position:relative;margin:0 auto;box-shadow:0 4px 18px rgba(0,0,0,.18);background:#fff}
+.car-page canvas{display:block;width:100%;height:100%}
+.car-layer{position:absolute;inset:0}
+.car-cb{position:absolute;border:0;padding:0;margin:0;background:rgba(255,214,90,.28);cursor:pointer;color:#14307a;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:1px}
+.car-cb:hover{background:rgba(255,190,40,.5)}
+.car-cb[aria-pressed="true"]{background:rgba(120,180,255,.25)}
+.car-cb:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.car-tx{position:absolute;border:0;border-bottom:1px dashed rgba(37,99,235,.45);background:rgba(255,245,170,.35);color:#14307a;font-family:'Sarabun',Tahoma,sans-serif;padding:0 1px;margin:0;outline:none}
+.car-tx:focus{background:rgba(190,215,255,.55);border-bottom-color:#2563eb}
 .eqa-docs{display:flex;flex-direction:column;gap:6px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
 .eqa-doc-slot{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
 .eqa-doc-slot .lbl{font-size:12px;font-weight:700;color:var(--text2);min-width:190px}
@@ -185,7 +204,22 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
   </form>
 </dialog>
 
+<dialog class="eqa-dlg car-dlg" id="carDlg" aria-labelledby="carDlgTitle">
+  <div class="car-top">
+    <div><h2 id="carDlgTitle">F-CP-631 ปฏิบัติการแก้ไข</h2><div class="pck-muted" id="carDlgSub" style="font-size:12px"></div></div>
+    <span class="pck-spacer"></span>
+    <span class="eqa-err" id="carErr" role="alert"></span>
+    <button class="pck-btn" type="button" id="carClear">ล้างช่องที่กรอก</button>
+    <button class="pck-btn" type="button" id="carCancel">ยกเลิก</button>
+    <button class="pck-btn primary" type="button" id="carSave">💾 บันทึก + แนบ PDF</button>
+  </div>
+  <div class="car-help">คลิกช่องสี่เหลี่ยมเพื่อทำเครื่องหมาย ✓ · พิมพ์ลงบนเส้นประได้เลย · แบบฟอร์มต้นฉบับไม่ถูกแก้ไข ระบบเขียนเฉพาะสิ่งที่กรอกลงบนไฟล์ F-CP-631</div>
+  <div class="car-scroll" id="carScroll"><div class="car-page" id="carPage"><canvas id="carCanvas"></canvas><div class="car-layer" id="carLayer"></div></div></div>
+</dialog>
+<input type="file" id="carFile" accept="application/pdf,.pdf,image/png,image/jpeg" hidden>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="/PCK/assets/pck.js?v=1"></script>
 <script>
 PCK.shell.render({ section:'ประกันคุณภาพ', title:'EQA / PT Summary' });
@@ -234,6 +268,12 @@ const scoreText = r => r.score == null ? '—' : (r.maxScore != null ? `${fmtNum
 const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docUrl = d => `${EQA_API}/doc?id=${d.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docsFor = (pid, y, type) => docs.filter(d => d.program === pid && d.yearBE === y && (!type || d.type === type));
+const carsFor = r => docs.filter(d => d.type === 'car' && d.roundId === r.id);
+// ต้องมีใบ CAR/NC: ไม่ผ่าน, คะแนนไม่เต็ม, หรือ QCMD score ≥ 2 (เฝ้าระวัง/ไม่ผ่าน)
+const needsCar = r => r.result === 'FAIL'
+  || (r.score != null && r.maxScore != null && r.score < r.maxScore)
+  || (r.score != null && r.maxScore == null && r.provider === 'QCMD' && r.score >= 2);
+const carMissing = list => list.filter(r => needsCar(r) && !carsFor(r).length);
 function api(path, opts = {}) {
   return fetch(EQA_API + path, { ...opts, headers: { 'X-API-Key': EQA_KEY, ...(opts.headers || {}) } })
     .then(async res => {
@@ -254,7 +294,7 @@ async function load() {
     const years = rounds.map(r => r.yearBE);
     el.textContent = rounds.length
       ? `☁️ ข้อมูล EQA บน Cloud: ${rounds.length} รอบ · ปี ${Math.min(...years)}–${Math.max(...years)}`
-        + (docs.length ? ` · เอกสารประจำปี ${docs.length} ไฟล์` : '') + ' · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน'
+        + (docs.some(d => d.type !== 'car') ? ` · เอกสารประจำปี ${docs.filter(d => d.type !== 'car').length} ไฟล์` : '') + ' · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน'
       : '☁️ ยังไม่มีข้อมูล EQA — อัพโหลดไฟล์ PDF ด้านล่างเพื่อเริ่ม';
   } catch (e) {
     el.className = 'eqa-cloud err';
@@ -292,7 +332,10 @@ function renderOverview() {
     <div class="pck-kpis" style="margin-bottom:16px">
       ${kpi('รอบทั้งหมด', c.n, `${PROGRAMS.length} การทดสอบ · ${years.length} ปี`)}
       ${kpi('อัตราผ่าน', evaluated ? Math.round(c.PASS / evaluated * 100) + '%' : '—', `ผ่าน ${c.PASS} จาก ${evaluated} รอบที่ประเมินแล้ว`, 'pass')}
-      ${kpi('ไม่ผ่าน', c.FAIL, c.FAIL ? 'ต้องมีบันทึกแก้ไข (F-CP-64)' : 'ไม่มีรอบที่ไม่ผ่าน', c.FAIL ? 'fail' : '')}
+      ${kpi('ไม่ผ่าน', c.FAIL, c.FAIL ? 'ต้องมีบันทึกแก้ไข' : 'ไม่มีรอบที่ไม่ผ่าน', c.FAIL ? 'fail' : '')}
+      ${(() => { const need = rounds.filter(needsCar), miss = carMissing(rounds);
+        return kpi('ใบ CAR/NC', need.length ? `${need.length - miss.length}/${need.length}` : '—',
+          miss.length ? `ขาด ${miss.length} รอบ (ไม่ผ่าน/คะแนนไม่เต็ม)` : need.length ? 'ครบทุกรอบที่ต้องแก้ไข' : 'ไม่มีรอบที่ต้องแก้ไข', miss.length ? 'fail' : need.length ? 'pass' : ''); })()}
       ${kpi('รอผล', c.PENDING, 'รายงานเบื้องต้น / ยังไม่มีคะแนน', c.PENDING ? 'warn' : '')}
     </div>`;
 
@@ -356,7 +399,7 @@ function renderProgram(pid) {
     const yk = counts(yl);
     h += `<div class="pck-card eqa-year" id="year-${pid}-${y}">
       <div class="eqa-year-h"><h3>ปี พ.ศ. ${y}</h3>
-        <div class="pck-tags">${yl.length ? `<span class="pck-tag navy">${yk.n} รอบ</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}` : '<span class="pck-tag navy">ยังไม่มีผลรายรอบ</span>'}</div></div>
+        <div class="pck-tags">${yl.length ? `<span class="pck-tag navy">${yk.n} รอบ</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}${carMissing(yl).length ? `<span class="pck-tag fail">⚠️ ขาดใบ CAR/NC ${carMissing(yl).length}</span>` : ''}` : '<span class="pck-tag navy">ยังไม่มีผลรายรอบ</span>'}</div></div>
       ${renderYearDocs(pid, y)}`;
     if (!yl.length) { h += '</div>'; return; }
     h += `
@@ -371,7 +414,9 @@ function renderProgram(pid) {
         <td>${esc(r.labId || '—')}</td>
         <td class="num">${esc(scoreText(r))}</td>
         <td>${esc(r.grade || '—')}</td>
-        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span></td>
+        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${needsCar(r)
+          ? (carsFor(r).length ? ' <span class="pck-tag pass" title="มีใบ CAR/NC แล้ว">CAR ✓</span>' : ' <span class="pck-tag fail" title="คะแนนไม่เต็ม/ไม่ผ่าน — กดแถวเพื่อกรอก F-CP-631 หรือแนบใบ CAR/NC">ต้องทำ CAR</span>')
+          : ''}</td>
         <td>${r.pdfName ? `<a href="${pdfUrl(r)}" target="_blank" rel="noopener" title="${esc(r.pdfName)}">📄 เปิด</a>` : '<span class="pck-muted">—</span>'}</td>
         <td><div class="eqa-actions"><button class="pck-btn" data-edit="${r.id}" title="แก้ไข / แนบไฟล์">✏️</button></div></td>
       </tr>`;
@@ -380,6 +425,24 @@ function renderProgram(pid) {
     h += '</tbody></table></div></div>';
   });
   return h;
+}
+
+function renderCarBox(r) {
+  const cars = carsFor(r);
+  const why = r.result === 'FAIL' ? 'ผลประเมินไม่ผ่าน'
+    : r.maxScore != null ? `คะแนน ${fmtNum(r.score)}/${fmtNum(r.maxScore)} ไม่เต็ม` : `QCMD Score ${fmtNum(r.score)} (เฝ้าระวัง/ไม่ผ่าน)`;
+  return `<div class="eqa-car ${cars.length ? 'ok' : 'miss'}">
+    <div><b>${cars.length ? '✅ มีใบ CAR/NC แล้ว' : '⚠️ ต้องมีใบ CAR/NC'}</b> <span class="pck-muted">${needsCar(r) ? '· ' + esc(why) : ''}</span></div>
+    ${cars.length ? `<div class="eqa-doc-slot">${cars.map(c => `<span class="eqa-doc">
+        <a href="${docUrl(c)}" target="_blank" rel="noopener" title="${esc(c.name)}">${c.form ? '📝 F-CP-631' : '📄 CAR/NC'} · ${esc(c.name)}</a>
+        ${c.form ? `<button type="button" data-caredit="${c.id}" title="แก้ไขแบบฟอร์ม F-CP-631" aria-label="แก้ไขแบบฟอร์ม">✏️</button>` : ''}
+        <button type="button" data-deldoc="${c.id}" aria-label="ลบ ${esc(c.name)}" title="ลบเอกสารนี้">✕</button>
+      </span>`).join('')}</div>` : ''}
+    <div class="pck-row">
+      <button type="button" class="pck-btn primary" data-carform="${r.id}">📝 กรอกแบบฟอร์ม F-CP-631</button>
+      <button type="button" class="pck-btn" data-carfile="${r.id}">📎 แนบไฟล์ CAR/NC ที่มีอยู่</button>
+    </div>
+  </div>`;
 }
 
 function renderYearDocs(pid, y) {
@@ -421,7 +484,8 @@ function renderDetails(r) {
     h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${cols.map(c => `<th>${LABEL[c]}</th>`).join('')}</tr></thead><tbody>
       ${d.samples.map(s => `<tr>${cols.map(c => `<td>${esc(s[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
-  if (!kv.length && !d.z && !d.samples) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
+  if (needsCar(r) || carsFor(r).length) h += renderCarBox(r);
+  else if (!kv.length && !d.z && !d.samples) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
   return h + '</div>';
 }
 
@@ -434,6 +498,12 @@ $('eqaView').addEventListener('click', e => {
   if (g) { go(g.dataset.go, g.dataset.year ? +g.dataset.year : null); return; }
   const ed = e.target.closest('[data-edit]');
   if (ed) { e.stopPropagation(); openEditor({ round: rounds.find(r => r.id === +ed.dataset.edit) }); return; }
+  const cf = e.target.closest('[data-carform]');
+  if (cf) { openCarForm(rounds.find(r => r.id === +cf.dataset.carform)); return; }
+  const ce = e.target.closest('[data-caredit]');
+  if (ce) { const d = docs.find(x => x.id === +ce.dataset.caredit); openCarForm(rounds.find(r => r.id === d.roundId), d); return; }
+  const cu = e.target.closest('[data-carfile]');
+  if (cu) { carFileRound = +cu.dataset.carfile; $('carFile').click(); return; }
   const ad = e.target.closest('[data-adddoc]');
   if (ad) { openDocDialog({ type: ad.dataset.adddoc, program: ad.dataset.prog, yearBE: +ad.dataset.year }); return; }
   const dd = e.target.closest('[data-deldoc]');
@@ -643,6 +713,178 @@ $('eqaDelete').addEventListener('click', async () => {
     await load();
   } catch (x) { $('eqaErr').textContent = 'ลบไม่สำเร็จ: ' + (x.message || x); }
 });
+
+/* ── ใบ CAR/NC: กรอกแบบฟอร์ม F-CP-631 บนหน้าจอ ─────────────────────────────
+   ใช้ไฟล์ต้นฉบับ EQA/forms/F-CP-631.pdf เป็นแม่แบบ ไม่แก้ไขข้อความใดๆ ของฟอร์ม
+   ตำแหน่งช่องสี่เหลี่ยม/เส้นประ วัดจากไฟล์ต้นฉบับ (หน่วย pt, มุมซ้ายบน)
+   ตอนบันทึก: วาด ✓ ลงช่องที่เลือก และวางข้อความที่พิมพ์ลงบนเส้นประ
+   (ข้อความไทยวาดด้วยเบราว์เซอร์เป็นภาพความละเอียดสูง เพื่อให้สระ/วรรณยุกต์วางถูกที่) */
+const FCP631 = { w:595.32, h:841.92, box:{w:14.2,h:9},
+  boxes:[[407.9,169.1],[33.5,182.4],[71.8,182.4],[108.7,182.4],[407.9,182.4],[474.1,182.4],[33.5,195.5],[71.8,195.5],[242.6,197.4],[317.0,197.4],[407.9,194.4],[474.1,194.4],[182.1,210.1],[242.6,210.1],[317.0,210.1],[407.9,210.1],[242.6,225.1],[317.0,225.1],[407.9,237.3],[33.5,253.3],[71.8,253.3],[108.7,253.3],[407.9,253.3],[484.2,253.3],[242.6,267.6],[317.0,267.6],[407.9,266.7],[484.2,266.7],[182.1,280.3],[242.6,280.3],[317.0,280.3],[407.9,280.1],[484.2,279.5],[407.9,293.5],[242.6,295.3],[317.0,295.3],[407.9,308.8],[33.5,323.8],[407.9,323.5],[484.2,323.8],[33.5,337.8],[242.6,337.8],[317.0,337.8],[407.9,336.9],[484.2,336.9],[484.2,349.6],[182.1,350.5],[242.6,350.5],[317.0,350.5],[407.9,350.3],[242.6,365.5],[317.0,365.5],[407.9,363.7],[407.9,378.5],[37.3,405.4],[75.9,405.4],[113.3,405.4],[407.9,405.4],[312.1,408.6],[312.1,419.3],[407.9,418.9],[477.0,418.9],[407.9,432.5],[242.6,448.4],[317.0,448.4],[407.9,447.8],[182.1,462.1],[242.6,462.2],[317.0,462.2],[242.6,477.1],[317.0,477.1],[410.6,490.1],[271.2,505.1],[329.0,505.1],[410.6,505.1],[491.3,505.1],[271.2,517.9],[329.0,517.9],[410.6,519.3],[410.6,533.9],[410.6,545.9],[307.0,547.2],[351.1,547.2],[307.0,560.7],[351.1,560.6],[410.6,558.2],[474.1,558.2],[410.6,572.5],[474.1,572.5],[307.0,574.2],[351.1,574.2],[42.0,616.9],[151.4,614.6],[262.1,614.6],[380.0,614.6],[151.4,628.5],[262.1,628.5],[380.0,628.5],[42.0,630.8],[42.0,644.2],[285.5,644.2],[42.0,657.6],[285.5,657.6],[42.0,671.0],[42.0,700.5],[90.2,700.5],[151.4,700.5],[231.8,700.5],[307.0,700.5]],
+  lines:[[88.5,134.6,28.1,13.8,12.0],[118.7,134.6,25.9,13.8,12.0],[146.7,134.6,23.6,13.8,12.0],[233.2,134.6,120.5,13.8,12.0],[432.3,134.6,86.7,13.8,12.0],[180.7,180.4,16.3,11.4,10.0],[216.4,180.4,59.6,11.4,10.0],[287.4,180.4,42.9,11.4,10.0],[332.6,221.9,36.4,11.4,10.0],[180.7,250.6,16.3,11.4,10.0],[216.4,250.6,59.6,11.4,10.0],[287.4,250.6,42.9,11.4,10.0],[332.6,292.1,36.4,11.4,10.0],[180.7,320.8,16.3,11.4,10.0],[216.4,320.8,59.6,11.4,10.0],[287.4,320.8,42.9,11.4,10.0],[332.5,362.3,36.4,11.4,10.0],[231.1,404.7,34.5,11.4,10.0],[51.8,419.5,86.3,10.3,9.0],[35.5,432.4,101.8,10.3,9.0],[180.7,432.4,16.3,11.4,10.0],[216.4,432.4,59.6,11.4,10.0],[287.4,432.4,42.9,11.4,10.0],[35.5,444.9,103.5,10.3,9.0],[35.5,457.4,103.5,10.3,9.0],[332.6,474.1,36.4,11.4,10.0],[235.3,488.4,114.1,12.1,11.0],[426.7,585.8,108.5,11.4,10.0],[197.6,642.2,74.8,11.4,10.0],[393.7,642.2,138.6,11.4,10.0],[88.3,669.9,444.6,11.4,10.0],[393.7,698.5,151.9,10.3,9.0],[160.9,735.8,80.2,12.7,11.0],[394.7,735.8,28.0,12.7,11.0],[424.8,735.8,30.0,12.7,11.0],[456.9,735.8,26.0,12.7,11.0]],
+  dateTop:[0,1,2], dateBottom:[33,34,35] };
+const CAR_TEMPLATE_URL = 'EQA/forms/F-CP-631.pdf';
+let carTemplate = null;          // ArrayBuffer ของแม่แบบ (โหลดครั้งเดียว)
+let carCtx = null;               // { round, doc }
+let carFileRound = null;
+
+async function loadCarTemplate() {
+  if (!carTemplate) {
+    const res = await fetch(CAR_TEMPLATE_URL);
+    if (!res.ok) throw new Error('โหลดแบบฟอร์ม F-CP-631 ไม่ได้ (HTTP ' + res.status + ')');
+    carTemplate = await res.arrayBuffer();
+  }
+  return carTemplate.slice(0);   // pdf.js/pdf-lib อาจยึด buffer ไป จึงส่งสำเนาทุกครั้ง
+}
+
+function carDefaults(r) {
+  const d = new Date();
+  const today = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()+543}`;
+  const [dd, mm, yyyy] = today.split('/');
+  const t = { 3: `${PROG[r.program].name} — EQA ${r.provider} ${roundLabel(r)}/${r.yearBE}` };
+  [FCP631.dateTop, FCP631.dateBottom].forEach(ix => { t[ix[0]] = dd; t[ix[1]] = mm; t[ix[2]] = yyyy; });
+  return { v:1, c:[], t };
+}
+
+async function openCarForm(round, doc) {
+  if (!round) return;
+  carCtx = { round, doc: doc || null };
+  $('carErr').textContent = '';
+  $('carSave').disabled = false; $('carSave').textContent = '💾 บันทึก + แนบ PDF';
+  $('carDlgSub').textContent = `${PROG[round.program].name} · ${round.provider} ${roundLabel(round)}/${round.yearBE} · ${scoreText(round)} · ${RESULT[round.result].label}`
+    + (doc ? ' · แก้ไขฉบับที่บันทึกไว้' : '');
+  const form = (doc && parseJSON(doc.form)) || carDefaults(round);
+  const layer = $('carLayer');
+  layer.innerHTML = FCP631.boxes.map((b, i) =>
+      `<button type="button" class="car-cb" data-i="${i}" aria-pressed="${form.c.includes(i)}" aria-label="ช่องเลือกที่ ${i + 1}">${form.c.includes(i) ? '✓' : ''}</button>`).join('')
+    + FCP631.lines.map((l, i) => `<input class="car-tx" data-i="${i}" id="car_t${i}" aria-label="ช่องกรอกข้อความที่ ${i + 1}" value="${esc(form.t[i] || '')}">`).join('');
+  $('carDlg').showModal();
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(await loadCarTemplate()) }).promise;
+    carCtx.page = await pdf.getPage(1);
+    layoutCarForm();
+  } catch (e) { $('carErr').textContent = e.message || String(e); }
+}
+
+async function layoutCarForm() {
+  if (!carCtx || !carCtx.page) return;
+  const box = $('carScroll');
+  const widthPx = Math.min(900, box.clientWidth - 32);
+  const s = widthPx / FCP631.w;
+  const page = $('carPage');
+  page.style.width = widthPx + 'px'; page.style.height = (FCP631.h * s) + 'px';
+  const dpr = window.devicePixelRatio || 1;
+  const vp = carCtx.page.getViewport({ scale: s * dpr });
+  const cv = $('carCanvas'); cv.width = vp.width; cv.height = vp.height;
+  $('carLayer').querySelectorAll('.car-cb').forEach(el => {
+    const [x, y] = FCP631.boxes[+el.dataset.i];
+    Object.assign(el.style, { left: x*s + 'px', top: y*s + 'px', width: FCP631.box.w*s + 'px', height: FCP631.box.h*s + 'px', fontSize: 10*s + 'px' });
+  });
+  $('carLayer').querySelectorAll('.car-tx').forEach(el => {
+    const [x, y, w, h, size] = FCP631.lines[+el.dataset.i];
+    Object.assign(el.style, { left: x*s + 'px', top: (y - 1)*s + 'px', width: w*s + 'px', height: (h + 2)*s + 'px', fontSize: size*0.95*s + 'px' });
+  });
+  await carCtx.page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+}
+window.addEventListener('resize', () => { if ($('carDlg').open) layoutCarForm(); });
+
+$('carLayer').addEventListener('click', e => {
+  const b = e.target.closest('.car-cb'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  b.setAttribute('aria-pressed', on); b.textContent = on ? '✓' : '';
+});
+$('carClear').addEventListener('click', () => {
+  $('carLayer').querySelectorAll('.car-cb').forEach(b => { b.setAttribute('aria-pressed', false); b.textContent = ''; });
+  $('carLayer').querySelectorAll('.car-tx').forEach(t => { t.value = ''; });
+});
+$('carCancel').addEventListener('click', () => $('carDlg').close());
+
+function collectCarForm() {
+  const c = [...$('carLayer').querySelectorAll('.car-cb[aria-pressed="true"]')].map(b => +b.dataset.i);
+  const t = {};
+  $('carLayer').querySelectorAll('.car-tx').forEach(el => { if (el.value.trim()) t[+el.dataset.i] = el.value.trim(); });
+  return { v:1, c, t };
+}
+
+function carTextPng(text, wPt, hPt, size) {
+  const S = 4;                                   // 4 px ต่อ 1 pt → คมชัดเวลาพิมพ์
+  const maxW = wPt - 2;
+  const c = document.createElement('canvas'), ctx = c.getContext('2d');
+  const font = fs => `${fs * S}px Sarabun, Tahoma, sans-serif`;
+  let fs = size * 0.95;
+  ctx.font = font(fs);
+  let tw = ctx.measureText(text).width / S;
+  if (tw > maxW) { fs = Math.max(fs * maxW / tw, size * 0.55); ctx.font = font(fs); tw = Math.min(ctx.measureText(text).width / S, maxW); }
+  c.width = Math.max(1, Math.ceil((tw + 1) * S)); c.height = Math.ceil(hPt * S);
+  ctx.font = font(fs); ctx.fillStyle = '#14307a'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, 0, hPt * S * 0.78, maxW * S);
+  const bin = atob(c.toDataURL('image/png').split(',')[1]);
+  return { bytes: Uint8Array.from(bin, ch => ch.charCodeAt(0)), wPt: c.width / S };
+}
+
+async function buildCarPdf(form) {
+  const pdf = await PDFLib.PDFDocument.load(await loadCarTemplate());
+  const page = pdf.getPage(0);
+  const H = page.getHeight();
+  const ink = PDFLib.rgb(0.08, 0.19, 0.48);
+  const { w, h } = FCP631.box;
+  form.c.forEach(i => {
+    const [x, y] = FCP631.boxes[i]; const yb = H - (y + h);
+    page.drawLine({ start:{ x: x + 3.4, y: yb + h * 0.52 }, end:{ x: x + 6.2, y: yb + 1.7 }, thickness: 1.3, color: ink });
+    page.drawLine({ start:{ x: x + 6.2, y: yb + 1.7 }, end:{ x: x + w - 3, y: yb + h - 1.1 }, thickness: 1.3, color: ink });
+  });
+  try { await document.fonts.load('48px Sarabun'); } catch {}
+  for (const [i, text] of Object.entries(form.t)) {
+    const [x, y, lw, lh, size] = FCP631.lines[+i];
+    const png = carTextPng(text, lw, lh, size);
+    const img = await pdf.embedPng(png.bytes);
+    page.drawImage(img, { x: x + 1, y: H - (y + lh), width: png.wPt, height: lh });
+  }
+  pdf.setModificationDate(new Date());
+  return pdf.save();
+}
+
+function bytesToBase64(u8) {
+  let s = '';
+  for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+$('carSave').addEventListener('click', async () => {
+  const { round, doc } = carCtx;
+  const form = collectCarForm();
+  if (!form.c.length && Object.keys(form.t).length <= 7) { $('carErr').textContent = 'ยังไม่ได้กรอกข้อมูลการแก้ไข — ทำเครื่องหมายหรือพิมพ์อย่างน้อย 1 ช่อง'; return; }
+  const btn = $('carSave'); btn.disabled = true; btn.textContent = '⏳ กำลังสร้าง PDF...';
+  try {
+    const bytes = await buildCarPdf(form);
+    const name = `F-CP-631_${round.program}_${round.provider}_${String(round.round).replace(/[^\w]/g, '')}_${round.yearBE}.pdf`;
+    await api('/car', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ id: doc ? doc.id : undefined, roundId: round.id, name, form, pdf: bytesToBase64(bytes) }) });
+    $('carDlg').close();
+    await load();
+    openRows.add(round.id);
+    go(round.program, round.yearBE);
+  } catch (e) {
+    $('carErr').textContent = 'บันทึกไม่สำเร็จ: ' + (e.message || e);
+    btn.disabled = false; btn.textContent = '💾 บันทึก + แนบ PDF';
+  }
+});
+
+$('carFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  const round = rounds.find(r => r.id === carFileRound);
+  if (!file || !round) return;
+  if (file.size > 20 * 1024 * 1024) { alertInline(round, 'ไฟล์ใหญ่เกิน 20 MB'); return; }
+  try {
+    await api(`/doc?${new URLSearchParams({ type:'car', roundId: round.id, provider: round.provider, name: file.name })}`,
+      { method:'POST', headers:{ 'Content-Type': file.type || 'application/octet-stream' }, body: file });
+    await load(); openRows.add(round.id); go(round.program, round.yearBE);
+  } catch (x) { alertInline(round, 'แนบไม่สำเร็จ: ' + (x.message || x)); }
+});
+function alertInline(round, msg) {
+  const box = document.querySelector(`#year-${round.program}-${round.yearBE} [data-carfile="${round.id}"]`);
+  if (box) box.insertAdjacentHTML('afterend', `<span class="eqa-err">${esc(msg)}</span>`);
+}
 
 /* ── เอกสารประจำปี (ใบประกาศนียบัตร / รายงานฉบับสมบูรณ์) ──────────────────── */
 const docDlg = $('docDlg');
