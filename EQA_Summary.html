@@ -62,6 +62,13 @@ body{font-family:'Sarabun',Tahoma,sans-serif;background:var(--bg,#fdf8f9);color:
 .eqa-sub th{background:var(--surface-3);color:var(--text3);font-size:10.5px}
 .eqa-z-warn{color:var(--warn);font-weight:700}
 .eqa-z-bad{color:var(--fail);font-weight:700}
+.eqa-zset{border:1px solid var(--border2);border-radius:10px;padding:10px 12px 12px;margin:0;display:flex;flex-direction:column;gap:8px}
+.eqa-zset legend{font-size:12px;font-weight:700;color:var(--text2);padding:0 6px}
+.eqa-zgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.eqa-zgrid input.bad{border-color:var(--fail-line);color:var(--fail);font-weight:700}
+.eqa-zstat{font-size:12.5px;font-weight:600}
+.eqa-zstat.ok{color:var(--pass)}
+.eqa-zstat.bad{color:var(--fail)}
 .eqa-actions{display:flex;gap:6px;justify-content:flex-end}
 .eqa-actions .pck-btn{padding:4px 10px}
 .eqa-empty{padding:26px;text-align:center;color:var(--text3);font-size:13px}
@@ -168,6 +175,18 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
             <option value="PENDING">รอผล / รายงานเบื้องต้น</option>
           </select></div>
       </div>
+      <fieldset class="eqa-zset" id="zSet" hidden>
+        <legend>Z-score (HIV-1 Viral Load · สวส.) — เกณฑ์ผ่าน: |z| &lt; 2.0 ทุกค่า</legend>
+        <div class="eqa-zgrid">
+          <div class="eqa-f"><label for="zS1">z-1</label><input id="zS1" class="zin" inputmode="decimal" placeholder="เช่น -0.53"></div>
+          <div class="eqa-f"><label for="zS2">z-2</label><input id="zS2" class="zin" inputmode="decimal"></div>
+          <div class="eqa-f"><label for="zS3">z-3</label><input id="zS3" class="zin" inputmode="decimal"></div>
+          <div class="eqa-f"><label for="zS4">z-4</label><input id="zS4" class="zin" inputmode="decimal" placeholder="ND ถ้าเป็นตัวอย่างลบ"></div>
+          <div class="eqa-f"><label for="zBtw">Between-lab z</label><input id="zBtw" class="zin" inputmode="decimal"></div>
+          <div class="eqa-f"><label for="zWin">Within-lab z</label><input id="zWin" class="zin" inputmode="decimal"></div>
+        </div>
+        <div class="eqa-zstat" id="zStatus"></div>
+      </fieldset>
       <div class="eqa-f"><label for="fNote">หมายเหตุ</label><textarea id="fNote"></textarea></div>
       <div class="eqa-f" id="fPdfWrap"><label for="fPdf">ไฟล์ PDF</label><input id="fPdf" type="file" accept="application/pdf,.pdf"><span class="pck-muted" id="fPdfName" style="font-size:12px"></span></div>
       <div class="eqa-err" id="eqaErr" role="alert"></div>
@@ -264,14 +283,27 @@ const fmtDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); 
 const toCE = iso => { const m = /^(\d{4})(-\d{2}-\d{2})$/.exec(iso || ''); return m ? (+m[1] > 2400 ? (+m[1] - 543) + m[2] : iso) : null; };
 const fmtNum = v => v == null ? '' : (Number.isInteger(v) ? String(v) : String(+v.toFixed(2)));
 const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round;
-const scoreText = r => r.score == null ? '—' : (r.maxScore != null ? `${fmtNum(r.score)}/${fmtNum(r.maxScore)}` : `Score ${fmtNum(r.score)}`);
+// HIV-1 VL ของ สวส. ประเมินด้วย z-score: ผ่านเมื่อ |z| < 2.0 ทุกค่า (z ทุกตัวอย่าง + Between-lab + Within-lab)
+// QCMD ยังใช้ Score 0–3 ตามเดิม
+const Z_PASS = 2.0;
+const Z_CRITERIA = 'ผ่านเมื่อ |z| < 2.0 ทุกค่า (ทุกตัวอย่าง, Between-lab, Within-lab)';
+const isZRound = r => r.program === 'HIVVL' && r.provider !== 'QCMD';
+const zNum = v => { const s = String(v == null ? '' : v).trim().replace('−', '-'); return /^[+-]?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : null; };
+const zBad = v => { const s = String(v == null ? '' : v).trim(); return s !== '' && zNum(s) == null && !/^(ND|NA|N\/A|-|—)$/i.test(s); };
+const zValues = d => d ? [...Object.values(d.z || {}), d.betweenZ, d.withinZ].map(zNum).filter(v => v != null) : [];
+const zMax = d => { const v = zValues(d); return v.length ? Math.max(...v.map(Math.abs)) : null; };
+const zResult = d => { const m = zMax(d); return m == null ? null : m < Z_PASS ? 'PASS' : 'FAIL'; };
+const scoreText = r => isZRound(r)
+  ? (zMax(r.details) == null ? '—' : `|z| สูงสุด ${zMax(r.details).toFixed(2)}`)
+  : r.score == null ? '—' : (r.maxScore != null ? `${fmtNum(r.score)}/${fmtNum(r.maxScore)}` : `Score ${fmtNum(r.score)}`);
 const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docUrl = d => `${EQA_API}/doc?id=${d.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docsFor = (pid, y, type) => docs.filter(d => d.program === pid && d.yearBE === y && (!type || d.type === type));
 const carsFor = r => docs.filter(d => d.type === 'car' && d.roundId === r.id);
-// ต้องมีใบ CAR/NC: ไม่ผ่าน, คะแนนไม่เต็ม, หรือ QCMD score ≥ 2 (เฝ้าระวัง/ไม่ผ่าน)
+// ต้องมีใบ CAR/NC: ไม่ผ่าน, HIV VL สวส. มี |z| ≥ 2.0, คะแนนไม่เต็ม, หรือ QCMD score ≥ 2 (เฝ้าระวัง/ไม่ผ่าน)
 const needsCar = r => r.result === 'FAIL'
-  || (r.score != null && r.maxScore != null && r.score < r.maxScore)
+  || (isZRound(r) ? (zMax(r.details) != null && zMax(r.details) >= Z_PASS) : false)
+  || (!isZRound(r) && r.score != null && r.maxScore != null && r.score < r.maxScore)
   || (r.score != null && r.maxScore == null && r.provider === 'QCMD' && r.score >= 2);
 const carMissing = list => list.filter(r => needsCar(r) && !carsFor(r).length);
 function api(path, opts = {}) {
@@ -412,7 +444,7 @@ function renderProgram(pid) {
         <td><b style="color:var(--text)">${esc(r.provider)}</b> · ${esc(roundLabel(r))}</td>
         <td>${esc(fmtDate(r.reportDate) || (r.details && r.details.dateText) || '—')}</td>
         <td>${esc(r.labId || '—')}</td>
-        <td class="num">${esc(scoreText(r))}</td>
+        <td class="num"${isZRound(r) && zMax(r.details) >= Z_PASS ? ' style="color:var(--fail);font-weight:700"' : ''}>${esc(scoreText(r))}</td>
         <td>${esc(r.grade || '—')}</td>
         <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${needsCar(r)
           ? (carsFor(r).length ? ' <span class="pck-tag pass" title="มีใบ CAR/NC แล้ว">CAR ✓</span>' : ' <span class="pck-tag fail" title="คะแนนไม่เต็ม/ไม่ผ่าน — กดแถวเพื่อกรอก F-CP-631 หรือแนบใบ CAR/NC">ต้องทำ CAR</span>')
@@ -467,13 +499,13 @@ function renderDetails(r) {
   const kv = [
     ['หมายเลขรายงาน', d.reportNo], ['Ref Code', d.refCode], ['EQA Group', d.eqaGroup], ['วิธี/น้ำยา', d.method],
     ['Sensitivity', d.sensitivity], ['Specificity', d.specificity], ['Between-lab z', d.betweenZ], ['Within-lab z', d.withinZ],
-    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', d.criteria], ['ไฟล์', r.pdfName],
+    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', isZRound(r) ? Z_CRITERIA : d.criteria], ['ไฟล์', r.pdfName],
     ['หมายเหตุ', r.note],
   ].filter(([, v]) => v != null && v !== '');
   let h = '<div class="eqa-det">';
   if (kv.length) h += `<div class="eqa-kv">${kv.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>`;
   if (d.z) {
-    const zc = v => { const n = parseFloat(String(v).replace('−', '-')); return isNaN(n) ? '' : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
+    const zc = v => { const n = zNum(v); return n == null ? '' : isZRound(r) ? (Math.abs(n) >= Z_PASS ? 'eqa-z-bad' : '') : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
     const keys = Object.keys(d.z);
     h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${keys.map(k => `<th>${esc(k)}</th>`).join('')}${d.betweenZ != null ? '<th>Between-lab z</th>' : ''}${d.withinZ != null ? '<th>Within-lab z</th>' : ''}</tr></thead>
       <tbody><tr>${keys.map(k => `<td class="${zc(d.z[k])}">${esc(d.z[k] ?? '—')}</td>`).join('')}${d.betweenZ != null ? `<td class="${zc(d.betweenZ)}">${esc(d.betweenZ)}</td>` : ''}${d.withinZ != null ? `<td class="${zc(d.withinZ)}">${esc(d.withinZ)}</td>` : ''}</tr></tbody></table></div>`;
@@ -586,6 +618,8 @@ function openEditor({ round, file, parsed, queueItem, guess }) {
   set('fRound', 'round', g.round); set('fDate', 'reportDate', g.reportDate); set('fLab', 'labId', g.labId);
   set('fScore', 'score', g.score); set('fMax', 'maxScore', g.maxScore); set('fGrade', 'grade', g.grade);
   set('fResult', 'result', g.result); set('fNote', 'note', g.note);
+  fillZ(round ? round.details : parsed && parsed.details);
+  updateZMode(!round || round.result !== 'PENDING');
   $('fPdf').value = '';
   $('fPdfWrap').hidden = !!file;
   $('fPdfName').textContent = round && round.pdfName ? `ไฟล์ปัจจุบัน: ${round.pdfName} (เลือกไฟล์ใหม่เพื่อแทนที่)` : '';
@@ -634,6 +668,52 @@ function closeEditor(state) {
   editing = null;
   if (dlg.open) dlg.close();
 }
+/* ── z-score ในฟอร์ม (HIV-1 VL · สวส.) ─────────────────────────────────── */
+const Z_INPUTS = [['zS1', 'z-1'], ['zS2', 'z-2'], ['zS3', 'z-3'], ['zS4', 'z-4']];
+const zModeOn = () => $('fProgram').value === 'HIVVL' && $('fProvider').value.trim() !== 'QCMD';
+function fillZ(d) {
+  d = d || {};
+  Z_INPUTS.forEach(([id, k]) => { $(id).value = d.z && d.z[k] != null ? d.z[k] : ''; });
+  $('zBtw').value = d.betweenZ != null ? d.betweenZ : '';
+  $('zWin').value = d.withinZ != null ? d.withinZ : '';
+}
+function readZ() {
+  const v = id => { const s = $(id).value.trim().replace('−', '-'); return s === '' ? null : s; };
+  const z = {}; Z_INPUTS.forEach(([id, k]) => { z[k] = v(id); });
+  return { type:'zscore', z, betweenZ: v('zBtw'), withinZ: v('zWin'), criteria: Z_CRITERIA };
+}
+function updateZMode(autoResult) {
+  const on = zModeOn();
+  $('zSet').hidden = !on;
+  $('fScore').closest('.eqa-f').hidden = on;
+  $('fMax').closest('.eqa-f').hidden = on;
+  if (on) updateZStatus(autoResult);
+}
+function updateZStatus(autoResult) {
+  const d = readZ();
+  document.querySelectorAll('#zSet .zin').forEach(el => { const n = zNum(el.value); el.classList.toggle('bad', zBad(el.value) || (n != null && Math.abs(n) >= Z_PASS)); });
+  const m = zMax(d), st = $('zStatus');
+  const invalid = [...document.querySelectorAll('#zSet .zin')].filter(el => zBad(el.value)).map(el => el.previousElementSibling.textContent);
+  if (invalid.length) { st.className = 'eqa-zstat bad'; st.textContent = `⚠️ ค่าไม่ถูกต้องที่ ${invalid.join(', ')} — ใส่ตัวเลข เช่น -0.53 หรือ ND/NA`; return; }
+  if (m == null) { st.className = 'eqa-zstat'; st.textContent = 'กรอก z-score อย่างน้อย 1 ค่า (ND/NA สำหรับตัวอย่างลบ)'; return; }
+  const bad = [...Z_INPUTS.map(([id, k]) => [k, $(id).value]), ['Between-lab', $('zBtw').value], ['Within-lab', $('zWin').value]]
+    .filter(([, v]) => zNum(v) != null && Math.abs(zNum(v)) >= Z_PASS).map(([k, v]) => `${k} ${v}`);
+  st.className = 'eqa-zstat ' + (bad.length ? 'bad' : 'ok');
+  st.textContent = bad.length ? `❌ ไม่ผ่าน — |z| ≥ 2.0: ${bad.join(', ')} → ต้องทำใบ CAR/NC` : `✅ ผ่าน — |z| สูงสุด ${m.toFixed(2)} (< 2.0)`;
+  if (autoResult) $('fResult').value = bad.length ? 'FAIL' : 'PASS';
+}
+$('fProgram').addEventListener('change', () => updateZMode(true));
+$('fProvider').addEventListener('input', () => updateZMode(true));
+document.querySelectorAll('#zSet .zin').forEach(el => el.addEventListener('input', () => updateZStatus(true)));
+$('fLab').addEventListener('change', () => {
+  const p = editing && editing.parsed;
+  if (!p || !p.vlText) return;
+  const tmp = { guess:{}, found:[], warn:[], vlText: p.vlText };
+  applyVLz(tmp, $('fLab').value.trim());
+  if (tmp.details) { p.details = tmp.details; fillZ(tmp.details); if (tmp.guess.grade) $('fGrade').value = tmp.guess.grade; updateZStatus(true); $('eqaErr').textContent = ''; }
+  else $('eqaErr').textContent = tmp.warn.join(' ');
+});
+
 $('eqaCancel').addEventListener('click', () => closeEditor('skip'));
 dlg.addEventListener('cancel', e => { e.preventDefault(); closeEditor('skip'); });
 
@@ -679,6 +759,13 @@ $('eqaForm').addEventListener('submit', async e => {
   const id = r ? r.id : (dup ? dup.id : null);
   if (id) body.id = id;
   body.details = (editing.parsed && editing.parsed.details) || (r ? r.details : null) || (dup ? dup.details : null) || null;
+  if (zModeOn()) {
+    const zd = readZ();
+    if ([...document.querySelectorAll('#zSet .zin')].some(el => zBad(el.value))) { $('eqaErr').textContent = 'มีค่า z ที่ไม่ใช่ตัวเลข — แก้ช่องที่เป็นสีแดงก่อนบันทึก'; return; }
+    if (zMax(zd) == null && body.result !== 'PENDING') { $('eqaErr').textContent = 'HIV-1 VL (สวส.) ประเมินด้วย z-score — กรุณากรอก z อย่างน้อย 1 ค่า หรือเลือก "รอผล"'; return; }
+    body.details = { ...(body.details || {}), ...zd };
+    body.score = null; body.maxScore = null;
+  }
 
   $('eqaSave').disabled = true; $('eqaSave').textContent = '⏳ กำลังบันทึก...';
   try {
@@ -1007,6 +1094,7 @@ async function readEqaPdf(file) {
   }
   else if (/Individual Report/i.test(flat) && /QCMD/.test(flat) && /Ref Code:/i.test(flat)) parseQcmdIndividual(flat, out);
   else if (/Results Review - Dataset/i.test(flat) && /QCMD/.test(flat)) parseQcmdReceipt(flat, out);
+  else if (/ปริมาณเชื้อเอชไอวี/.test(flat) && /HIVL\s*\d{3}-1/.test(flat)) parseDmscVL(flat, out);
   else if (/กรมวิทยาศาสตร์การแพทย์|สถาบันวิจัยวิทยาศาสตร์สาธารณสุข|แผนทดสอบความชำนาญ/.test(flat)) parseDmsc(flat, out);
 
   if (!out.kind) {
@@ -1073,6 +1161,70 @@ function parseQcmdReceipt(t, out) {
   G.result = 'PENDING';
   G.note = 'ใบยืนยันการส่งผลของ QCMD — ยังไม่มีคะแนน เมื่อได้ Individual Report ให้อัพโหลดทับรอบนี้';
   out.warn.push('ไฟล์นี้เป็นแค่ใบยืนยันการส่งผล ยังไม่มีคะแนน — บันทึกเป็น "รอผล" ไว้ก่อน');
+}
+
+/* สวส. แผนทดสอบความชำนาญ HIV-1 Viral Load (รายงานฉบับสมบูรณ์ "HIVL 692-1 …")
+   รายงานไม่มีชื่อ รพ. มีแต่รหัสสมาชิก — รหัสเดิมใช้ทั้งปี จึงดึงจากรอบอื่นของปีเดียวกันได้
+   แถวของรหัสสมาชิกมี 3 ตาราง: (ตารางที่ 4) ผลแต่ละตัวอย่าง copies/log/z,
+   (ตารางที่ 5) log ตัวอย่างซ้ำ + Between-lab z + Within-lab z, (ตารางที่ 9) คะแนน + ระดับ */
+function parseDmscVL(t, out) {
+  const G = out.guess;
+  out.kind = 'สวส. รายงาน HIV-1 Viral Load (ประเมินด้วย z-score)';
+  G.provider = 'สวส.'; G.program = 'HIVVL'; out.found.push('ผู้จัด', 'การทดสอบ');
+  const h = /HIVL\s*(\d{2})(\d)-1/.exec(t);
+  if (h) { G.yearBE = 2500 + +h[1]; G.round = h[2]; out.found.push(`ปี+รอบ จาก HIVL ${h[1]}${h[2]}`); }
+  const d = /(?:วันที่ออกรายงาน\s*:?|รายงานออก\s*ณ\s*วันที่)\s*(\d{1,2}\s*[ก-๙.]+\s*\d{2,4})/.exec(t);
+  if (d) { G.reportDate = thDateToIso(d[1]); if (G.reportDate) out.found.push('วันที่ออกรายงาน'); }
+  out.vlText = t;
+  const known = rounds.find(r => r.program === 'HIVVL' && r.provider === 'สวส.' && r.yearBE === G.yearBE && r.labId);
+  if (known) {
+    G.labId = known.labId; out.found.push(`รหัสสมาชิก ${known.labId} (จากรอบอื่นของปี ${G.yearBE})`);
+    applyVLz(out, known.labId);
+  } else out.warn.push('ยังไม่รู้รหัสสมาชิกของปีนี้ — กรอกช่อง "รหัสสมาชิก / Lab ID" แล้วระบบจะอ่าน z-score ให้');
+}
+
+function applyVLz(out, code) {
+  const v = extractVLz(out.vlText, code);
+  if (!v.z) { out.warn.push(`ไม่พบแถวของรหัสสมาชิก ${code} ในตาราง z-score ของรายงานนี้`); return; }
+  const z = {}; v.z.forEach((val, i) => { z[`z-${i + 1}`] = val; });
+  out.details = { type:'zscore', z, betweenZ: v.btw, withinZ: v.win, criteria: Z_CRITERIA,
+                  legacyScore: v.total != null ? `${v.total}/20` : null };
+  if (v.grade) out.guess.grade = v.grade;
+  out.guess.result = zResult(out.details) || 'PENDING';
+  out.found.push(`z-score ของรหัส ${code}` + (v.btw != null ? ' + Between/Within-lab' : ''));
+}
+
+function extractVLz(t, code) {
+  const toks = t.split(' ');
+  const Z = /^[+-]?\d+\.\d{2}$/;
+  const n = new Set([...t.matchAll(/HIVL\s*\d{3}-(\d)/g)].map(m => m[1])).size || 4;
+  const res = { z:null, btw:null, win:null, total:null, grade:null };
+  for (let i = 0; i < toks.length; i++) {
+    if (toks[i] !== code) continue;
+    const nx = toks.slice(i + 1, i + 1 + 3 * n + 3);
+    if (res.btw == null && nx.length >= 4 && nx.slice(0, 4).every(x => Z.test(x))) {           // ตารางที่ 5
+      res.btw = nx[2]; res.win = nx[3]; continue;
+    }
+    if (res.total == null && nx.slice(0, 7).every(x => /^\d$/.test(x)) && /^\d{1,2}$/.test(nx[7] || '')) {  // ตารางที่ 9
+      res.total = +nx[7];
+      const g = /ผลการทดสอบอยู่ในระดับ(\S+)/.exec(nx.slice(8, 10).join(' ')); res.grade = g ? g[1] : null;
+      continue;
+    }
+    if (!res.z) {                                                                               // ตารางที่ 4
+      const zs = []; let k = 0, ok = true;
+      for (let s = 0; s < n; s++) {
+        const copies = nx[k];
+        if (copies == null || !(/^<?\d+(\.\d+)?$/.test(copies) || /^(NA|N\/A|ND)$/.test(copies))) { ok = false; break; }
+        k += 2;
+        const zt = nx[k];
+        if (zt != null && Z.test(zt)) { zs.push(zt); k++; }
+        else if (zt != null && /^(NA|N\/A)$/.test(zt)) { zs.push('NA'); k++; }
+        else zs.push('ND');
+      }
+      if (ok && zs.some(x => Z.test(x))) res.z = zs;
+    }
+  }
+  return res;
 }
 
 function parseDmsc(t, out) {
