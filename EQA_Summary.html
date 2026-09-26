@@ -65,6 +65,20 @@ body{font-family:'Sarabun',Tahoma,sans-serif;background:var(--bg,#fdf8f9);color:
 .eqa-actions{display:flex;gap:6px;justify-content:flex-end}
 .eqa-actions .pck-btn{padding:4px 10px}
 .eqa-empty{padding:26px;text-align:center;color:var(--text3);font-size:13px}
+.eqa-docs{display:flex;flex-direction:column;gap:6px;margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2)}
+.eqa-doc-slot{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.eqa-doc-slot .lbl{font-size:12px;font-weight:700;color:var(--text2);min-width:190px}
+.eqa-doc{display:inline-flex;align-items:center;gap:2px;max-width:100%;background:var(--card);border:1px solid var(--border);border-radius:99px;padding:2px 4px 2px 10px;font-size:12px}
+.eqa-doc a{color:var(--text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px}
+.eqa-doc a:hover{text-decoration:underline}
+.eqa-doc button{border:0;background:none;color:var(--text3);cursor:pointer;border-radius:99px;padding:2px 7px;font:inherit}
+.eqa-doc button:hover,.eqa-doc button[data-confirm]{background:var(--fail-bg);color:var(--fail)}
+.eqa-doc-none{font-size:12px}
+.eqa-doc-add{padding:3px 10px!important;font-size:11.5px}
+.eqa-cell.docs{background:var(--surface-3);color:var(--text2)}
+.eqa-cert-mark{font-size:11px}
+dialog.eqa-dlg-sm{width:min(560px,calc(100vw - 24px))}
+@media(max-width:600px){.eqa-doc-slot .lbl{min-width:0;width:100%}.eqa-doc a{max-width:200px}}
 
 dialog.eqa-dlg{border:0;border-radius:var(--radius-lg);padding:0;width:min(960px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:var(--card);color:var(--text);box-shadow:0 20px 60px rgba(0,0,0,.3)}
 dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
@@ -100,9 +114,9 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
     <div class="pck-card-h">📥 เพิ่มผล EQA <span class="sub">ระบบอ่านไฟล์แล้วจัดเข้าการทดสอบและปีให้อัตโนมัติ</span></div>
     <div class="eqa-drop" id="eqaDrop" tabindex="0" role="button" aria-label="เลือกไฟล์ PDF ผล EQA">
       <b>ลากไฟล์ PDF ผล EQA มาวาง หรือคลิกเพื่อเลือก (เลือกได้หลายไฟล์)</b>
-      <span>รองรับ QCMD Individual Report, ใบยืนยันส่งผล QCMD, รายงาน สวส. (ฉบับสมบูรณ์/เบื้องต้น) · ไฟล์สแกนก็แนบได้ แต่ต้องกรอกข้อมูลเอง</span>
+      <span>รองรับ QCMD Individual Report, ใบยืนยันส่งผล QCMD, รายงาน สวส. (ฉบับสมบูรณ์/เบื้องต้น), ใบประกาศนียบัตร (PDF/รูปภาพ) · ไฟล์สแกนก็แนบได้ แต่ต้องกรอกข้อมูลเอง</span>
     </div>
-    <input type="file" id="eqaFile" accept="application/pdf,.pdf" multiple hidden>
+    <input type="file" id="eqaFile" accept="application/pdf,.pdf,image/png,image/jpeg" multiple hidden>
     <div class="pck-row" style="margin-top:10px">
       <button class="pck-btn" id="eqaManual">✏️ กรอกผลเองโดยไม่มีไฟล์</button>
     </div>
@@ -150,6 +164,27 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
 </dialog>
 <datalist id="providerList"><option value="สวส."><option value="QCMD"><option value="อื่นๆ"></datalist>
 
+<dialog class="eqa-dlg eqa-dlg-sm" id="docDlg" aria-labelledby="docDlgTitle">
+  <form class="eqa-form" id="docForm" method="dialog" novalidate>
+    <h2 id="docDlgTitle">แนบเอกสารประจำปี</h2>
+    <div class="pck-note info eqa-hint" id="docHint" hidden></div>
+    <div class="eqa-grid">
+      <div class="eqa-f"><label for="dType">ประเภทเอกสาร *</label>
+        <select id="dType" required><option value="cert">🏆 ใบประกาศนียบัตรรับรอง</option><option value="report">📘 รายงานฉบับสมบูรณ์</option></select></div>
+      <div class="eqa-f"><label for="dProgram">การทดสอบ *</label><select id="dProgram" required></select></div>
+      <div class="eqa-f"><label for="dYear">ปี พ.ศ. *</label><input id="dYear" type="number" inputmode="numeric" min="2540" max="2650" required placeholder="2569"></div>
+      <div class="eqa-f"><label for="dProvider">ผู้จัด</label><input id="dProvider" list="providerList" placeholder="สวส. / QCMD"></div>
+    </div>
+    <div class="eqa-f"><label for="dFile">ไฟล์ (PDF, PNG, JPG · ไม่เกิน 20 MB) *</label>
+      <input id="dFile" type="file" accept="application/pdf,.pdf,image/png,image/jpeg"><span class="pck-muted" id="dFileName" style="font-size:12px"></span></div>
+    <div class="eqa-err" id="docErr" role="alert"></div>
+    <div class="eqa-btns">
+      <button class="pck-btn primary" id="docSave" type="submit">📎 แนบเอกสาร</button>
+      <button class="pck-btn" type="button" id="docCancel">ยกเลิก</button>
+    </div>
+  </form>
+</dialog>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="/PCK/assets/pck.js?v=1"></script>
 <script>
@@ -180,16 +215,25 @@ const RESULT = {
 const TH_MON = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
 let rounds = [];
+let docs = [];
 let view = 'overview';
+const DOC_TYPES = {
+  cert:   { icon:'🏆', label:'ใบประกาศนียบัตรรับรอง' },
+  report: { icon:'📘', label:'รายงานฉบับสมบูรณ์' },
+};
 const openRows = new Set();
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmtDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${+m[3]} ${TH_MON[m[2]-1]} ${+m[1]+543}` : ''; };
+// ปีเกิน 2400 = ถูกกรอกเป็น พ.ศ. ลงช่องวันที่ (ซึ่งเป็น ค.ศ.) มาแล้ว — ไม่บวก 543 ซ้ำ
+const fmtDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${+m[3]} ${TH_MON[m[2]-1]} ${+m[1] > 2400 ? +m[1] : +m[1]+543}` : ''; };
+const toCE = iso => { const m = /^(\d{4})(-\d{2}-\d{2})$/.exec(iso || ''); return m ? (+m[1] > 2400 ? (+m[1] - 543) + m[2] : iso) : null; };
 const fmtNum = v => v == null ? '' : (Number.isInteger(v) ? String(v) : String(+v.toFixed(2)));
 const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round;
 const scoreText = r => r.score == null ? '—' : (r.maxScore != null ? `${fmtNum(r.score)}/${fmtNum(r.maxScore)}` : `Score ${fmtNum(r.score)}`);
 const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)}`;
+const docUrl = d => `${EQA_API}/doc?id=${d.id}&key=${encodeURIComponent(EQA_KEY)}`;
+const docsFor = (pid, y, type) => docs.filter(d => d.program === pid && d.yearBE === y && (!type || d.type === type));
 function api(path, opts = {}) {
   return fetch(EQA_API + path, { ...opts, headers: { 'X-API-Key': EQA_KEY, ...(opts.headers || {}) } })
     .then(async res => {
@@ -205,10 +249,12 @@ async function load() {
   try {
     const j = await api('');
     rounds = (j.rounds || []).map(r => ({ ...r, details: parseJSON(r.details) }));
+    docs = j.docs || [];
     el.className = 'eqa-cloud';
     const years = rounds.map(r => r.yearBE);
     el.textContent = rounds.length
-      ? `☁️ ข้อมูล EQA บน Cloud: ${rounds.length} รอบ · ปี ${Math.min(...years)}–${Math.max(...years)} · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน`
+      ? `☁️ ข้อมูล EQA บน Cloud: ${rounds.length} รอบ · ปี ${Math.min(...years)}–${Math.max(...years)}`
+        + (docs.length ? ` · เอกสารประจำปี ${docs.length} ไฟล์` : '') + ' · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน'
       : '☁️ ยังไม่มีข้อมูล EQA — อัพโหลดไฟล์ PDF ด้านล่างเพื่อเริ่ม';
   } catch (e) {
     el.className = 'eqa-cloud err';
@@ -240,8 +286,8 @@ function render() {
 function renderOverview() {
   const c = counts(rounds);
   const evaluated = c.PASS + c.FAIL;
-  const years = yearsOf(rounds).sort((a, b) => a - b);
-  const kpi = (l, v, s, tone) => `<div class="pck-kpi" ${tone ? `style="--tone-ink:var(--${tone})"` : ''}><div class="pck-kpi-l">${l}</div><div class="pck-kpi-v">${v}</div><div class="pck-kpi-s">${s}</div></div>`;
+  const years = yearsOf([...rounds, ...docs]).sort((a, b) => a - b);
+  const kpi =(l, v, s, tone) => `<div class="pck-kpi" ${tone ? `style="--tone-ink:var(--${tone})"` : ''}><div class="pck-kpi-l">${l}</div><div class="pck-kpi-v">${v}</div><div class="pck-kpi-s">${s}</div></div>`;
   let h = `<div class="pck-section">ภาพรวมทุกการทดสอบ</div>
     <div class="pck-kpis" style="margin-bottom:16px">
       ${kpi('รอบทั้งหมด', c.n, `${PROGRAMS.length} การทดสอบ · ${years.length} ปี`)}
@@ -250,7 +296,7 @@ function renderOverview() {
       ${kpi('รอผล', c.PENDING, 'รายงานเบื้องต้น / ยังไม่มีคะแนน', c.PENDING ? 'warn' : '')}
     </div>`;
 
-  h += `<div class="pck-section">สรุปรายปีแยกการทดสอบ <span class="pck-muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ผ่าน/จำนวนรอบ — คลิกเพื่อดูรายละเอียดปีนั้น)</span></div>`;
+  h += `<div class="pck-section">สรุปรายปีแยกการทดสอบ <span class="pck-muted" style="font-weight:400;text-transform:none;letter-spacing:0">(ผ่าน/จำนวนรอบ · 🏆 = มีใบประกาศนียบัตร — คลิกเพื่อดูรายละเอียดปีนั้น)</span></div>`;
   if (!years.length) h += `<div class="pck-card eqa-empty">ยังไม่มีข้อมูล</div>`;
   else {
     h += `<div class="pck-tablewrap" style="margin-bottom:16px"><table class="pck-table eqa-matrix"><thead><tr><th>การทดสอบ</th>${years.map(y => `<th>${y}</th>`).join('')}</tr></thead><tbody>`;
@@ -258,11 +304,16 @@ function renderOverview() {
       h += `<tr><td><b style="color:var(--text)">${p.icon} ${esc(p.name)}</b></td>`;
       years.forEach(y => {
         const list = rounds.filter(r => r.program === p.id && r.yearBE === y);
-        if (!list.length) { h += '<td class="pck-muted">—</td>'; return; }
+        const certs = docsFor(p.id, y, 'cert').length;
+        const cert = certs ? ` <span class="eqa-cert-mark" title="มีใบประกาศนียบัตร ${certs} ไฟล์">🏆</span>` : '';
+        if (!list.length) {
+          h += docsFor(p.id, y).length ? `<td><button class="eqa-cell docs" data-go="${p.id}" data-year="${y}" title="มีเอกสารประจำปี ยังไม่มีผลรายรอบ">📎${cert}</button></td>` : '<td class="pck-muted">—</td>';
+          return;
+        }
         const k = counts(list);
         const cls = k.FAIL ? 'fail' : (k.PENDING && !k.PASS ? 'pending' : 'pass');
         const extra = [k.FAIL ? `${k.FAIL} ไม่ผ่าน` : '', k.PENDING ? `${k.PENDING} รอผล` : ''].filter(Boolean).join(', ');
-        h += `<td><button class="eqa-cell ${cls}" data-go="${p.id}" data-year="${y}" title="${esc(extra || 'ผ่านทุกรอบ')}">${k.FAIL ? '✗' : '✓'} ${k.PASS}/${k.n}</button></td>`;
+        h += `<td><button class="eqa-cell ${cls}" data-go="${p.id}" data-year="${y}" title="${esc(extra || 'ผ่านทุกรอบ')}">${k.FAIL ? '✗' : '✓'} ${k.PASS}/${k.n}${cert}</button></td>`;
       });
       h += '</tr>';
     });
@@ -297,14 +348,18 @@ function renderProgram(pid) {
       <span class="pck-spacer"></span>
       ${p.detail ? `<a class="pck-btn" href="${p.detail}" style="text-decoration:none">หน้า EQA ${esc(p.name)} เต็ม ↗</a>` : ''}
     </div>`;
-  if (!list.length) return h + `<div class="pck-card eqa-empty">ยังไม่มีผล EQA ${esc(p.name)}<br>อัพโหลดไฟล์ PDF ที่กล่อง "เพิ่มผล EQA" ด้านบน หรือกด "กรอกผลเองโดยไม่มีไฟล์"</div>`;
+  const pdocs = docs.filter(d => d.program === pid);
+  if (!list.length && !pdocs.length) return h + `<div class="pck-card eqa-empty">ยังไม่มีผล EQA ${esc(p.name)}<br>อัพโหลดไฟล์ PDF ที่กล่อง "เพิ่มผล EQA" ด้านบน หรือกด "กรอกผลเองโดยไม่มีไฟล์"</div>`;
 
-  yearsOf(list).forEach(y => {
+  yearsOf([...list, ...pdocs]).forEach(y => {
     const yl = sortRounds(list.filter(r => r.yearBE === y));
     const yk = counts(yl);
     h += `<div class="pck-card eqa-year" id="year-${pid}-${y}">
       <div class="eqa-year-h"><h3>ปี พ.ศ. ${y}</h3>
-        <div class="pck-tags"><span class="pck-tag navy">${yk.n} รอบ</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}</div></div>
+        <div class="pck-tags">${yl.length ? `<span class="pck-tag navy">${yk.n} รอบ</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}` : '<span class="pck-tag navy">ยังไม่มีผลรายรอบ</span>'}</div></div>
+      ${renderYearDocs(pid, y)}`;
+    if (!yl.length) { h += '</div>'; return; }
+    h += `
       <div class="pck-tablewrap"><table class="pck-table eqa-rt"><thead><tr>
         <th>ผู้จัด / รอบ</th><th>วันที่ออกรายงาน</th><th>รหัสสมาชิก</th><th>คะแนน</th><th>ระดับ</th><th>ผลประเมิน</th><th>ไฟล์</th><th></th>
       </tr></thead><tbody>`;
@@ -325,6 +380,23 @@ function renderProgram(pid) {
     h += '</tbody></table></div></div>';
   });
   return h;
+}
+
+function renderYearDocs(pid, y) {
+  const slot = type => {
+    const t = DOC_TYPES[type];
+    const list = docsFor(pid, y, type);
+    return `<div class="eqa-doc-slot">
+      <span class="lbl">${t.icon} ${t.label}</span>
+      ${list.map(d => `<span class="eqa-doc">
+          <a href="${docUrl(d)}" target="_blank" rel="noopener" title="${esc(d.name)}">${/^image\//.test(d.contentType) ? '🖼️' : '📄'} ${d.provider ? `<b>${esc(d.provider)}</b> · ` : ''}${esc(d.name)}</a>
+          <button type="button" data-deldoc="${d.id}" aria-label="ลบ ${esc(d.name)}" title="ลบเอกสารนี้">✕</button>
+        </span>`).join('')}
+      ${list.length ? '' : '<span class="pck-muted eqa-doc-none">ยังไม่มี</span>'}
+      <button type="button" class="pck-btn eqa-doc-add" data-adddoc="${type}" data-prog="${pid}" data-year="${y}">＋ แนบ</button>
+    </div>`;
+  };
+  return `<div class="eqa-docs">${slot('cert')}${slot('report')}</div>`;
 }
 
 function renderDetails(r) {
@@ -362,6 +434,10 @@ $('eqaView').addEventListener('click', e => {
   if (g) { go(g.dataset.go, g.dataset.year ? +g.dataset.year : null); return; }
   const ed = e.target.closest('[data-edit]');
   if (ed) { e.stopPropagation(); openEditor({ round: rounds.find(r => r.id === +ed.dataset.edit) }); return; }
+  const ad = e.target.closest('[data-adddoc]');
+  if (ad) { openDocDialog({ type: ad.dataset.adddoc, program: ad.dataset.prog, yearBE: +ad.dataset.year }); return; }
+  const dd = e.target.closest('[data-deldoc]');
+  if (dd) { deleteDoc(dd); return; }
   if (e.target.closest('a')) return;
   const row = e.target.closest('tr.main');
   if (row) { const id = +row.dataset.row; openRows.has(id) ? openRows.delete(id) : openRows.add(id); render(); }
@@ -391,7 +467,8 @@ $('eqaFile').addEventListener('change', e => { addFiles([...e.target.files]); e.
 $('eqaManual').addEventListener('click', () => openEditor({ guess: { program: view !== 'overview' ? view : '' } }));
 
 function addFiles(files) {
-  files.filter(f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf').forEach(file => queue.push({ file, state:'wait', msg:'' }));
+  files.filter(f => /\.(pdf|png|jpe?g)$/i.test(f.name) || /^(application\/pdf|image\/(png|jpeg))$/.test(f.type))
+    .forEach(file => queue.push({ file, state:'wait', msg:'' }));
   renderQueue(); nextInQueue();
 }
 function renderQueue() {
@@ -404,10 +481,21 @@ async function nextInQueue() {
   if (busy) return;
   const q = queue.find(x => x.state === 'wait'); if (!q) return;
   busy = true; q.state = 'read'; renderQueue();
+  // รูปภาพ = ใบประกาศนียบัตร (ผลรายรอบต้องเป็น PDF)
+  if (/^image\//.test(q.file.type) || /\.(png|jpe?g)$/i.test(q.file.name)) {
+    q.state = 'review'; renderQueue();
+    openDocDialog({ type:'cert', file: q.file, queueItem: q, hint:'ไฟล์รูปภาพ — บันทึกเป็นเอกสารประจำปี เลือกการทดสอบและปีให้ถูกต้อง' });
+    return;
+  }
   let parsed;
   try { parsed = await readEqaPdf(q.file); }
   catch (e) { parsed = { guess:{}, found:[], warn:['อ่านไฟล์ไม่ได้: ' + (e.message || e)], text:'' }; }
   q.state = 'review'; renderQueue();
+  if (parsed.docType === 'cert') {
+    openDocDialog({ type:'cert', program: parsed.guess.program, yearBE: parsed.guess.yearBE, provider: parsed.guess.provider,
+      file: q.file, queueItem: q, hint: `ระบบอ่านว่าเป็นใบประกาศนียบัตร — ${parsed.found.join(' · ') || 'กรุณาเลือกการทดสอบและปี'}` });
+    return;
+  }
   openEditor({ file: q.file, parsed, queueItem: q });
 }
 
@@ -485,7 +573,9 @@ $('eqaForm').addEventListener('submit', async e => {
   const numOrNull = v => v === '' ? null : Number(v);
   const body = {
     program: $('fProgram').value, provider: $('fProvider').value.trim(), yearBE: parseInt($('fYear').value, 10),
-    round: $('fRound').value.trim(), reportDate: $('fDate').value || null, labId: $('fLab').value.trim() || null,
+    // "ครั้งที่ 2", "2/2569" → "2" ให้รอบเดียวกันเขียนแบบเดียวกันเสมอ (กันรอบซ้ำที่ตรวจไม่เจอ)
+    round: $('fRound').value.trim().replace(/^(?:ครั้งที่|รอบที่)\s*/, '').replace(/^(\d+)\s*[\/-]\s*25\d{2}$/, '$1'),
+    reportDate: toCE($('fDate').value), labId: $('fLab').value.trim() || null,
     score: numOrNull($('fScore').value), maxScore: numOrNull($('fMax').value), grade: $('fGrade').value.trim() || null,
     result: $('fResult').value, note: $('fNote').value.trim() || null,
   };
@@ -554,6 +644,68 @@ $('eqaDelete').addEventListener('click', async () => {
   } catch (x) { $('eqaErr').textContent = 'ลบไม่สำเร็จ: ' + (x.message || x); }
 });
 
+/* ── เอกสารประจำปี (ใบประกาศนียบัตร / รายงานฉบับสมบูรณ์) ──────────────────── */
+const docDlg = $('docDlg');
+let docCtx = null;
+$('dProgram').innerHTML = '<option value="">— เลือก —</option>' + PROGRAMS.map(p => `<option value="${p.id}">${p.icon} ${esc(p.name)}</option>`).join('');
+
+function openDocDialog({ type, program, yearBE, provider, file, queueItem, hint }) {
+  docCtx = { file: file || null, queueItem: queueItem || null };
+  $('dType').value = type || 'cert';
+  $('dProgram').value = program || (view !== 'overview' ? view : '');
+  $('dYear').value = yearBE || '';
+  $('dProvider').value = provider || '';
+  $('dFile').value = '';
+  $('dFile').hidden = !!file;
+  $('dFileName').textContent = file ? `ไฟล์: ${file.name}` : '';
+  $('docHint').hidden = !hint; $('docHint').textContent = hint || '';
+  $('docErr').textContent = '';
+  $('docSave').disabled = false; $('docSave').textContent = '📎 แนบเอกสาร';
+  docDlg.showModal();
+}
+function closeDocDialog(state) {
+  const q = docCtx && docCtx.queueItem;
+  if (q) { q.state = state; renderQueue(); busy = false; setTimeout(nextInQueue, 50); }
+  docCtx = null;
+  if (docDlg.open) docDlg.close();
+}
+$('docCancel').addEventListener('click', () => closeDocDialog('skip'));
+docDlg.addEventListener('cancel', e => { e.preventDefault(); closeDocDialog('skip'); });
+
+$('docForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = $('docErr'); err.textContent = '';
+  const type = $('dType').value, program = $('dProgram').value, yearBE = parseInt($('dYear').value, 10);
+  const provider = $('dProvider').value.trim();
+  const file = docCtx.file || $('dFile').files[0];
+  const missing = [!program && 'การทดสอบ', !yearBE && 'ปี พ.ศ.', !file && 'ไฟล์'].filter(Boolean);
+  if (missing.length) { err.textContent = 'กรุณากรอก: ' + missing.join(', '); return; }
+  if (yearBE < 2540) { err.textContent = 'ปีต้องเป็น พ.ศ. (เช่น 2569) ไม่ใช่ ค.ศ.'; return; }
+  if (file.size > 20 * 1024 * 1024) { err.textContent = 'ไฟล์ใหญ่เกิน 20 MB'; return; }
+  $('docSave').disabled = true; $('docSave').textContent = '⏳ กำลังแนบ...';
+  try {
+    const qs = new URLSearchParams({ program, yearBE, type, provider, name: file.name });
+    await api(`/doc?${qs}`, { method:'POST', headers:{ 'Content-Type': file.type || 'application/octet-stream' }, body: file });
+    closeDocDialog('saved');
+    await load();
+    go(program, yearBE);
+  } catch (x) {
+    err.textContent = 'แนบไม่สำเร็จ: ' + (x.message || x);
+    $('docSave').disabled = false; $('docSave').textContent = '📎 แนบเอกสาร';
+  }
+});
+
+async function deleteDoc(btn) {
+  if (!btn.dataset.confirm) {
+    btn.dataset.confirm = '1'; btn.textContent = 'ลบ?'; btn.title = 'กดอีกครั้งเพื่อยืนยันการลบ';
+    setTimeout(() => { if (btn.isConnected) { delete btn.dataset.confirm; btn.textContent = '✕'; btn.title = 'ลบเอกสารนี้'; } }, 4000);
+    return;
+  }
+  btn.disabled = true;
+  try { await api(`/doc?id=${btn.dataset.deldoc}`, { method:'DELETE' }); await load(); }
+  catch (x) { btn.disabled = false; btn.textContent = '⚠️'; btn.title = 'ลบไม่สำเร็จ: ' + (x.message || x); }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    อ่านไฟล์ PDF ผล EQA — รองรับรูปแบบที่มีข้อความจริงในไฟล์
    1) QCMD Individual Report     2) QCMD ใบยืนยันการส่งผล (Results Review)
@@ -575,7 +727,7 @@ function programFromText(t) {
   if (/SARS-?CoV-?2|nCoV|COVID|โควิด|SCV2/i.test(t)) return 'COVID';
   if (/papillomavirus|\bHPV/i.test(t)) return 'HPV';
   if (/\bCD4\b|CD3\s*\/?\s*CD4|ลิมโฟไซต์/i.test(t)) return 'CD4';
-  if (/HIV/i.test(t)) return 'HIVVL';
+  if (/HIV|Immunodeficiency/i.test(t)) return 'HIVVL';
   return '';
 }
 
@@ -602,7 +754,16 @@ async function readEqaPdf(file) {
   const G = out.guess;
   const note = (label, v) => { if (v != null && v !== '') out.found.push(label); };
 
-  if (/Individual Report/i.test(flat) && /QCMD/.test(flat) && /Ref Code:/i.test(flat)) parseQcmdIndividual(flat, out);
+  // ใบประกาศนียบัตร (สั้น ไม่มีตารางผล) → บันทึกเป็นเอกสารประจำปี ไม่ใช่ผลรายรอบ
+  if (flat.length < 3000 && /certificate is valid|certificate of (participation|achievement|performance)|participation certificate|ใบประกาศนียบัตร|เกียรติบัตร|วุฒิบัตร/i.test(flat + ' ' + file.name)) {
+    out.docType = 'cert'; out.kind = 'ใบประกาศนียบัตร';
+    if (/QCMD/.test(flat)) { G.provider = 'QCMD'; out.found.push('ผู้จัด QCMD'); }
+    else if (/กรมวิทยาศาสตร์การแพทย์|สถาบันวิจัยวิทยาศาสตร์สาธารณสุข/.test(flat)) { G.provider = 'สวส.'; out.found.push('ผู้จัด สวส.'); }
+    const qy = /QCMD\s+(20\d{2})/.exec(flat);
+    if (qy) { G.yearBE = +qy[1] + 543; out.found.push(`ปี ${G.yearBE} (QCMD ${qy[1]})`); }
+    G.program = programFromText(flat); if (G.program) out.found.push(`การทดสอบ ${PROG[G.program].name}`);
+  }
+  else if (/Individual Report/i.test(flat) && /QCMD/.test(flat) && /Ref Code:/i.test(flat)) parseQcmdIndividual(flat, out);
   else if (/Results Review - Dataset/i.test(flat) && /QCMD/.test(flat)) parseQcmdReceipt(flat, out);
   else if (/กรมวิทยาศาสตร์การแพทย์|สถาบันวิจัยวิทยาศาสตร์สาธารณสุข|แผนทดสอบความชำนาญ/.test(flat)) parseDmsc(flat, out);
 

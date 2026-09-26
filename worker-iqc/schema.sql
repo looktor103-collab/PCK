@@ -66,3 +66,19 @@ CREATE TABLE IF NOT EXISTS eqa_rounds (
   updated_at  TEXT NOT NULL,
   UNIQUE (program, provider, year_be, round)
 );
+
+-- Yearly documents per programme for EQA_Summary.html: certificates (doc_type 'cert') and
+-- full/annual reports ('report'). Several per programme-year (e.g. a สวส. and a QCMD certificate).
+-- The file itself (PDF / PNG / JPG) is in the EQA_PDF KV namespace under key "doc:<id>".
+CREATE TABLE IF NOT EXISTS eqa_docs (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  program      TEXT NOT NULL,
+  year_be      INTEGER NOT NULL,
+  doc_type     TEXT NOT NULL,
+  provider     TEXT,
+  file_name    TEXT NOT NULL,
+  file_size    INTEGER NOT NULL,
+  content_type TEXT NOT NULL,
+  created_at   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_eqa_docs_year ON eqa_docs (program, year_be);

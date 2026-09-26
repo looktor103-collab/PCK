@@ -15,6 +15,12 @@
      PUT    /api/eqa/pdf?id=12&name=x.pdf   (body = PDF bytes) → store the original report in KV
      GET    /api/eqa/pdf?id=12&key=…        → the stored PDF (key in the URL so a plain link can open it)
 
+   Yearly documents per programme (certificates, full/annual reports) — many per year:
+     POST   /api/eqa/doc?program=HPV&yearBE=2569&type=cert&provider=QCMD&name=x.pdf  (body = file) → { ok, id }
+     GET    /api/eqa/doc?id=3&key=…         → the stored file
+     DELETE /api/eqa/doc?id=3               → delete the document and its file
+   (GET /api/eqa also returns the document list as `docs`)
+
    The API key is embedded in the public page source so every computer works
    without typing it, so it is not a real secret. The Origin allow-list only stops
    other websites' scripts; a non-browser client can still send any Origin.
@@ -59,7 +65,7 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/iqc', '/api/eqa', '/api/eqa/pdf'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
@@ -71,6 +77,9 @@ export default {
       if (route === '/api/eqa' && m === 'DELETE') return await eqaDelete(url, env);
       if (route === '/api/eqa/pdf' && m === 'PUT') return await eqaPdfPut(request, url, env);
       if (route === '/api/eqa/pdf' && m === 'GET') return await eqaPdfGet(url, env);
+      if (route === '/api/eqa/doc' && m === 'POST') return await eqaDocAdd(request, url, env);
+      if (route === '/api/eqa/doc' && m === 'GET') return await eqaDocGet(url, env);
+      if (route === '/api/eqa/doc' && m === 'DELETE') return await eqaDocDelete(url, env);
       return json({ ok: false, error: 'method not allowed' }, 405);
     } catch (err) {
       return json({ ok: false, error: String(err && err.message || err) }, 500);
@@ -87,7 +96,68 @@ const EQA_COLS = `id, program, provider, year_be AS yearBE, round, report_date A
 
 async function eqaList(db) {
   const { results } = await db.prepare(`SELECT ${EQA_COLS} FROM eqa_rounds ORDER BY year_be DESC, program, round`).all();
-  return json({ ok: true, rounds: results });
+  const docs = await db.prepare(
+    `SELECT id, program, year_be AS yearBE, doc_type AS type, provider, file_name AS name, file_size AS size,
+            content_type AS contentType, created_at AS createdAt FROM eqa_docs ORDER BY year_be DESC, program, doc_type, id`
+  ).all();
+  return json({ ok: true, rounds: results, docs: docs.results });
+}
+
+/* ── yearly documents (certificates / full reports) ──────────────────────── */
+const DOC_TYPES = ['cert', 'report'];
+const DOC_MIME = { '%PDF-': 'application/pdf', '\x89PNG': 'image/png', '\xFF\xD8\xFF': 'image/jpeg' };
+
+function sniffType(buf) {
+  const b = new Uint8Array(buf, 0, Math.min(5, buf.byteLength));
+  const head = String.fromCharCode(...b);
+  for (const [sig, type] of Object.entries(DOC_MIME)) if (head.startsWith(sig)) return type;
+  return null;
+}
+
+async function eqaDocAdd(request, url, env) {
+  const p = url.searchParams;
+  const program = str(p.get('program')).toUpperCase();
+  const yearBE = parseInt(p.get('yearBE'), 10);
+  const type = str(p.get('type')).toLowerCase();
+  if (!EQA_PROGRAMS.includes(program)) return json({ ok: false, error: 'program must be one of ' + EQA_PROGRAMS.join(', ') }, 400);
+  if (!yearBE || yearBE < 2540 || yearBE > 2650) return json({ ok: false, error: 'yearBE must be a Buddhist year, e.g. 2569' }, 400);
+  if (!DOC_TYPES.includes(type)) return json({ ok: false, error: 'type must be cert or report' }, 400);
+  const buf = await request.arrayBuffer();
+  if (!buf.byteLength) return json({ ok: false, error: 'empty file' }, 400);
+  if (buf.byteLength > MAX_PDF_BYTES) return json({ ok: false, error: 'ไฟล์ใหญ่เกิน 20 MB' }, 413);
+  const contentType = sniffType(buf);
+  if (!contentType) return json({ ok: false, error: 'รับเฉพาะไฟล์ PDF, PNG หรือ JPG' }, 400);
+  const name = str(p.get('name'), 200) || `eqa-${type}.${contentType.split('/')[1]}`;
+  const res = await env.DB.prepare(
+    `INSERT INTO eqa_docs (program, year_be, doc_type, provider, file_name, file_size, content_type, created_at)
+     VALUES (?,?,?,?,?,?,?,?)`
+  ).bind(program, yearBE, type, str(p.get('provider'), 40) || null, name, buf.byteLength, contentType, new Date().toISOString()).run();
+  const id = res.meta.last_row_id;
+  await env.EQA_PDF.put('doc:' + id, buf, { metadata: { name, contentType } });
+  return json({ ok: true, id });
+}
+
+async function eqaDocGet(url, env) {
+  const id = Number(url.searchParams.get('id'));
+  const { value, metadata } = await env.EQA_PDF.getWithMetadata('doc:' + id, { type: 'arrayBuffer' });
+  if (!value) return json({ ok: false, error: 'ไม่พบไฟล์เอกสารนี้' }, 404);
+  const name = (metadata && metadata.name) || `eqa-doc-${id}`;
+  return new Response(value, {
+    headers: {
+      ...CORS,
+      'Content-Type': (metadata && metadata.contentType) || 'application/octet-stream',
+      'Content-Disposition': `inline; filename="eqa-doc-${id}"; filename*=UTF-8''${encodeURIComponent(name)}`,
+      'Cache-Control': 'private, max-age=300',
+    },
+  });
+}
+
+async function eqaDocDelete(url, env) {
+  const id = Number(url.searchParams.get('id'));
+  if (!Number.isInteger(id) || id <= 0) return json({ ok: false, error: 'id is required' }, 400);
+  const res = await env.DB.prepare('DELETE FROM eqa_docs WHERE id=?').bind(id).run();
+  await env.EQA_PDF.delete('doc:' + id);
+  return json({ ok: true, deleted: res.meta.changes });
 }
 
 async function eqaSave(request, db) {
@@ -105,7 +175,9 @@ async function eqaSave(request, db) {
   if (!provider || !round) return json({ ok: false, error: 'provider and round are required' }, 400);
   if (!yearBE || yearBE < 2540 || yearBE > 2650) return json({ ok: false, error: 'yearBE must be a Buddhist year, e.g. 2569' }, 400);
   if (!EQA_RESULTS.includes(result)) return json({ ok: false, error: 'result must be PASS, FAIL or PENDING' }, 400);
-  const reportDate = ISO_DATE.test(b.reportDate) ? b.reportDate : null;
+  // a Buddhist year typed into a date field (e.g. 2569-07-01) is stored as the Christian year
+  let reportDate = ISO_DATE.test(b.reportDate) ? b.reportDate : null;
+  if (reportDate && +reportDate.slice(0, 4) > 2400) reportDate = (+reportDate.slice(0, 4) - 543) + reportDate.slice(4);
   const details = b.details == null ? null : JSON.stringify(b.details).slice(0, 100_000);
   const now = new Date().toISOString();
   const vals = [program, provider, yearBE, round, reportDate, str(b.labId, 40) || null, num(b.score), num(b.maxScore),
