@@ -147,7 +147,7 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
     <div class="pck-card-h">📥 เพิ่มผล EQA <span class="sub">ระบบอ่านไฟล์แล้วจัดเข้าการทดสอบและปีให้อัตโนมัติ</span></div>
     <div class="eqa-drop" id="eqaDrop" tabindex="0" role="button" aria-label="เลือกไฟล์ PDF ผล EQA">
       <b>ลากไฟล์ PDF ผล EQA มาวาง หรือคลิกเพื่อเลือก (เลือกได้หลายไฟล์)</b>
-      <span>รองรับ QCMD Individual Report, ใบยืนยันส่งผล QCMD, รายงาน สวส. (ฉบับสมบูรณ์/เบื้องต้น), ใบประกาศนียบัตร (PDF/รูปภาพ) · ไฟล์สแกนก็แนบได้ แต่ต้องกรอกข้อมูลเอง</span>
+      <span>รองรับ CD4 COE (ศิริราช) — อ่าน Lab's Z-score แล้วบันทึกให้เองทีละไฟล์ · QCMD Individual Report, ใบยืนยันส่งผล QCMD, รายงาน สวส. (ฉบับสมบูรณ์/เบื้องต้น), ใบประกาศนียบัตร (PDF/รูปภาพ) · ไฟล์สแกนก็แนบได้ แต่ต้องกรอกข้อมูลเอง</span>
     </div>
     <input type="file" id="eqaFile" accept="application/pdf,.pdf,image/png,image/jpeg" multiple hidden>
     <div class="pck-row" style="margin-top:10px">
@@ -195,6 +195,14 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
         </div>
         <div class="eqa-zstat" id="zStatus"></div>
       </fieldset>
+      <fieldset class="eqa-zset" id="cdSet" hidden>
+        <legend>Lab's Z-score (CD4 · COE CD4 ศิริราช) — |z| &lt; 2.0 ผ่าน · 2.0–3.0 เฝ้าระวัง · ≥ 3.0 ไม่ผ่าน (ต้องทำ CAR)</legend>
+        <div class="eqa-zgrid">
+          <div class="eqa-f"><label for="cdZ3">CD3+</label><input id="cdZ3" class="cdzin" inputmode="decimal" placeholder="เช่น -0.04"></div>
+          <div class="eqa-f"><label for="cdZ4">CD3+/CD4+</label><input id="cdZ4" class="cdzin" inputmode="decimal" placeholder="เช่น 0.30"></div>
+        </div>
+        <div class="eqa-zstat" id="cdStatus"></div>
+      </fieldset>
       <div class="eqa-f"><label for="fNote">หมายเหตุ</label><textarea id="fNote"></textarea></div>
       <div class="eqa-f" id="fPdfWrap"><label for="fPdf">ไฟล์ PDF</label><input id="fPdf" type="file" accept="application/pdf,.pdf"><span class="pck-muted" id="fPdfName" style="font-size:12px"></span></div>
       <div class="eqa-f eqa-files" id="fFilesWrap" hidden>
@@ -217,7 +225,7 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
     <div class="eqa-prev" id="eqaPrev"></div>
   </form>
 </dialog>
-<datalist id="providerList"><option value="สวส."><option value="QCMD"><option value="อื่นๆ"></datalist>
+<datalist id="providerList"><option value="สวส."><option value="QCMD"><option value="COE CD4"><option value="อื่นๆ"></datalist>
 <datalist id="sampleList"><option value="Pool saliva"><option value="Pool swab"></datalist>
 
 <dialog class="eqa-dlg eqa-dlg-sm" id="docDlg" aria-labelledby="docDlgTitle">
@@ -300,7 +308,7 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 const fmtDate = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? `${+m[3]} ${TH_MON[m[2]-1]} ${+m[1] > 2400 ? +m[1] : +m[1]+543}` : ''; };
 const toCE = iso => { const m = /^(\d{4})(-\d{2}-\d{2})$/.exec(iso || ''); return m ? (+m[1] > 2400 ? (+m[1] - 543) + m[2] : iso) : null; };
 const fmtNum = v => v == null ? '' : (Number.isInteger(v) ? String(v) : String(+v.toFixed(2)));
-const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round;
+const roundLabel = r => (/^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round) + (r.details && r.details.trialNo ? ` · Trial ${r.details.trialNo}` : '');
 // HIV-1 VL ของ สวส. ประเมินด้วย z-score (ทุกตัวอย่าง + Between-lab + Within-lab):
 //   |z| < 2.0 ผ่าน · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (warning signal — ยังผ่าน ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน (ต้องทำ CAR)
 // QCMD (ทุกการทดสอบ) ใช้ Detection/Estimation Score 0–3 แบบเดียวกัน:
@@ -308,7 +316,17 @@ const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.ro
 const Z_PASS = 2.0;
 const Z_FAIL = 3.0;
 const Z_CRITERIA = '|z| < 2.0 ผ่าน · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (warning signal ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน ต้องทำ CAR — ใช้ทุกค่า (ทุกตัวอย่าง, Between-lab, Within-lab)';
-const isZRound = r => r.program === 'HIVVL' && r.provider !== 'QCMD';
+// CD4 (COE CD4 ศิริราช) ประเมินด้วย Lab's Z-score ของ CD3+ และ CD3+/CD4+ เกณฑ์เดียวกัน (Satisfactory / Questionable / Unsatisfied)
+const CD4_PROVIDER = 'COE CD4';
+const CD4_Z_POPS = ['CD3+', 'CD3+/CD4+'];
+const CD4_PER_YEAR = 6;
+const CD4_CRITERIA = 'Lab\'s Z-score ของ CD3+ และ CD3+/CD4+: |z| < 2.0 ผ่าน (Satisfactory) · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (Questionable ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน (Unsatisfactory ต้องทำ CAR)';
+const CD4_GRADE = { ok:'Satisfactory', warn:'Questionable', bad:'Unsatisfactory' };
+// ปีละ 6 ครั้ง: Trial 110 = ครั้งที่ 1 ปี 2564 (ก.พ. 2021) … Trial 116 = ครั้งที่ 1 ปี 2565
+const cd4YearRound = trial => ({ yearBE: 2564 + Math.floor((trial - 110) / CD4_PER_YEAR), round: String((((trial - 110) % CD4_PER_YEAR) + CD4_PER_YEAR) % CD4_PER_YEAR + 1) });
+const isCd4Z = r => r.program === 'CD4' && !!r.details && r.details.type === 'cd4z';
+const isZRound = r => (r.program === 'HIVVL' && r.provider !== 'QCMD') || isCd4Z(r);
+const zCriteria = r => isCd4Z(r) ? CD4_CRITERIA : Z_CRITERIA;
 const zNum = v => { const s = String(v == null ? '' : v).trim().replace('−', '-'); return /^[+-]?\d+(\.\d+)?$/.test(s) ? parseFloat(s) : null; };
 const zBad = v => { const s = String(v == null ? '' : v).trim(); return s !== '' && zNum(s) == null && !/^(ND|NA|N\/A|-|—)$/i.test(s); };
 const zValues = d => d ? [...Object.values(d.z || {}), d.betweenZ, d.withinZ].map(zNum).filter(v => v != null) : [];
@@ -475,7 +493,7 @@ function renderProgram(pid) {
     const yk = counts(yl);
     h += `<div class="pck-card eqa-year" id="year-${pid}-${y}">
       <div class="eqa-year-h"><h3>ปี พ.ศ. ${y}</h3>
-        <div class="pck-tags">${yl.length ? `<span class="pck-tag navy">${yk.n} รอบ</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}${carMissing(yl).length ? `<span class="pck-tag fail">⚠️ ขาดใบ CAR/NC ${carMissing(yl).length}</span>` : ''}` : '<span class="pck-tag navy">ยังไม่มีผลรายรอบ</span>'}</div></div>
+        <div class="pck-tags">${yl.length ? `<span class="pck-tag navy">${pid === 'CD4' ? `${yk.n}/${CD4_PER_YEAR} ครั้ง` : `${yk.n} รอบ`}</span><span class="pck-tag pass">ผ่าน ${yk.PASS}</span>${yk.FAIL ? `<span class="pck-tag fail">ไม่ผ่าน ${yk.FAIL}</span>` : ''}${yk.PENDING ? `<span class="pck-tag warn">รอผล ${yk.PENDING}</span>` : ''}${carMissing(yl).length ? `<span class="pck-tag fail">⚠️ ขาดใบ CAR/NC ${carMissing(yl).length}</span>` : ''}` : '<span class="pck-tag navy">ยังไม่มีผลรายรอบ</span>'}</div></div>
       ${renderYearDocs(pid, y)}`;
     if (!yl.length) { h += '</div>'; return; }
     h += `
@@ -545,12 +563,23 @@ function renderDetails(r) {
   const kv = [
     ['หมายเลขรายงาน', d.reportNo], ['Ref Code', d.refCode], ['EQA Group', d.eqaGroup], ['วิธี/น้ำยา', d.method],
     ['Sensitivity', d.sensitivity], ['Specificity', d.specificity], ['Between-lab z', d.betweenZ], ['Within-lab z', d.withinZ],
-    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', isZRound(r) ? Z_CRITERIA : isQcmd(r) ? Q_CRITERIA : d.criteria], ['ไฟล์', r.pdfName],
+    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', isZRound(r) ? zCriteria(r) : isQcmd(r) ? Q_CRITERIA : d.criteria], ['ไฟล์', r.pdfName],
     ['หมายเหตุ', r.note],
   ].filter(([, v]) => v != null && v !== '');
   let h = '<div class="eqa-det">';
   if (kv.length) h += `<div class="eqa-kv">${kv.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join('')}</div>`;
-  if (d.z) {
+  if (isCd4Z(r)) {
+    const zc = v => { const n = zNum(v); return n == null ? '' : Math.abs(n) >= Z_FAIL ? 'eqa-z-bad' : Math.abs(n) >= Z_PASS ? 'eqa-z-warn' : ''; };
+    const pops = Array.isArray(d.pops) && d.pops.length ? d.pops : CD4_Z_POPS.map(pop => ({ pop }));
+    const cell = v => v == null || v === '' ? '—' : esc(v);
+    const calc = pops.some(p => p.zFrom === 'calc');
+    h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr><th>Population</th><th>Lab's Result (%)</th><th>Group's Mean</th><th>SD</th><th>N</th>${pops.some(p => p.low != null) ? '<th>Acceptable interval</th>' : ''}<th>Lab's Z${calc ? ' (คำนวณ)' : ''}</th><th>Performance</th></tr></thead><tbody>
+      ${pops.map(p => { const zv = d.z && d.z[p.pop] != null ? d.z[p.pop] : p.z; const used = CD4_Z_POPS.includes(p.pop);
+        return `<tr${used ? '' : ' class="pck-muted"'}><td>${used ? '<b>' + esc(p.pop) + '</b>' : esc(p.pop)}</td><td>${cell(p.result)}</td><td>${cell(p.mean)}</td><td>${cell(p.sd)}</td><td>${cell(p.n)}</td>${pops.some(x => x.low != null) ? `<td>${p.low != null ? `${p.low} – ${p.high}` : '—'}</td>` : ''}<td class="${used ? zc(zv) : ''}">${cell(zv)}</td><td>${cell(p.perf || (used && zNum(zv) != null ? CD4_GRADE[zLevel(Math.abs(zNum(zv)))] : null))}</td></tr>`; }).join('')}
+      </tbody></table></div>`;
+    if (calc) h += '<div class="pck-muted" style="font-size:12px">รายงานแบบใหม่ไม่พิมพ์ Z-score — คำนวณ Lab\'s Z = (ค่าของแล็บ − Overall mean) / Std. Dev. · ประเมินจาก CD3+ และ CD3+/CD4+</div>';
+  }
+  else if (d.z) {
     const zc = v => { const n = zNum(v); return n == null ? '' : isZRound(r) ? (Math.abs(n) >= Z_FAIL ? 'eqa-z-bad' : Math.abs(n) >= Z_PASS ? 'eqa-z-warn' : '') : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
     const keys = Object.keys(d.z);
     h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${keys.map(k => `<th>${esc(k)}</th>`).join('')}${d.betweenZ != null ? '<th>Between-lab z</th>' : ''}${d.withinZ != null ? '<th>Within-lab z</th>' : ''}</tr></thead>
@@ -565,7 +594,7 @@ function renderDetails(r) {
   const files = filesFor(r);
   if (files.length) h += `<div class="eqa-doc-slot"><span class="lbl">📎 ไฟล์แยกตามตัวอย่าง</span>${files.map(fileChip).join('')}</div>`;
   if (needsCar(r) || carsFor(r).length) h += renderCarBox(r);
-  else if (!kv.length && !d.z && !d.samples && !files.length) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
+  else if (!kv.length && !d.z && !d.samples && !files.length && !isCd4Z(r)) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
   return h + '</div>';
 }
 
@@ -627,9 +656,14 @@ function renderQueue() {
     <span class="pck-muted">${esc(q.msg)}</span><span>${label[q.state]}</span></div>`).join('');
 }
 let busy = false;
+let autoSaved = null;   // รอบที่บันทึกอัตโนมัติในชุดนี้ — โหลดใหม่จาก Cloud ครั้งเดียวเมื่อคิวหมด
 async function nextInQueue() {
   if (busy) return;
-  const q = queue.find(x => x.state === 'wait'); if (!q) return;
+  const q = queue.find(x => x.state === 'wait');
+  if (!q) {
+    if (autoSaved) { const t = autoSaved; autoSaved = null; await load(); go(t.program, t.year); }
+    return;
+  }
   busy = true; q.state = 'read'; renderQueue();
   // รูปภาพ = ใบประกาศนียบัตร (ผลรายรอบต้องเป็น PDF)
   if (/^image\//.test(q.file.type) || /\.(png|jpe?g)$/i.test(q.file.name)) {
@@ -640,6 +674,11 @@ async function nextInQueue() {
   let parsed;
   try { parsed = await readEqaPdf(q.file); }
   catch (e) { parsed = { guess:{}, found:[], warn:['อ่านไฟล์ไม่ได้: ' + (e.message || e)], text:'' }; }
+  // CD4 COE ที่อ่านครบ: กรอก + แนบไฟล์ให้เองแล้วไปไฟล์ถัดไป (ไม่ต้องกดบันทึกทีละไฟล์)
+  if (parsed.auto && await autoSaveCd4(q, parsed)) {
+    renderQueue(); busy = false; setTimeout(nextInQueue, 50);
+    return;
+  }
   q.state = 'review'; renderQueue();
   if (parsed.docType === 'cert') {
     openDocDialog({ type:'cert', program: parsed.guess.program, yearBE: parsed.guess.yearBE, provider: parsed.guess.provider,
@@ -647,6 +686,34 @@ async function nextInQueue() {
     return;
   }
   openEditor({ file: q.file, parsed, queueItem: q });
+}
+
+// คืน false = ให้เปิดฟอร์มตรวจสอบแทน (รอบเดียวกันเป็นคนละ Trial, ไฟล์ใหญ่เกิน)
+async function autoSaveCd4(q, parsed) {
+  const G = parsed.guess, trial = parsed.details.trialNo;
+  const body = { program:'CD4', provider: G.provider, yearBE: G.yearBE, round: G.round, reportDate: G.reportDate || null,
+    labId: G.labId || null, score: null, maxScore: null, grade: G.grade || null, result: G.result, note: null, details: parsed.details };
+  const dup = rounds.find(x => x.program === body.program && x.provider === body.provider && x.yearBE === body.yearBE && String(x.round) === body.round);
+  if (dup && !(dup.details && dup.details.trialNo === trial)) return false;
+  if (q.file.size > 20 * 1024 * 1024) return false;
+  if (dup) { body.id = dup.id; body.note = dup.note || null; }   // Trial เดิมอัพโหลดซ้ำ = อัพเดตค่าเดิม
+  q.msg = 'กำลังบันทึก...'; renderQueue();
+  let saved = null;
+  try {
+    saved = await api('', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+    const r = { ...body, id: saved.id, pdfName: dup ? dup.pdfName : null };
+    rounds = [...rounds.filter(x => x.id !== saved.id), r];
+    autoSaved = { program: body.program, year: body.yearBE };
+    await api(`/pdf?id=${saved.id}&name=${encodeURIComponent(q.file.name)}`, { method:'PUT', headers:{ 'Content-Type':'application/pdf' }, body: q.file });
+    r.pdfName = q.file.name;
+    q.state = 'saved';
+    q.msg = `Trial ${trial} → ปี ${body.yearBE} ครั้งที่ ${body.round} · ${scoreText(r)} · ${RESULT[body.result].label}${roundLevel(r) === 'warn' ? ' (เฝ้าระวัง)' : ''}${needsCar(r) ? ' · ต้องทำ CAR' : ''}${dup ? ' · อัพเดตรอบเดิม' : ''}`;
+    render();
+  } catch (x) {
+    q.state = 'error';
+    q.msg = (saved ? `บันทึกผล Trial ${trial} แล้ว แต่แนบไฟล์ไม่สำเร็จ — อัพโหลดไฟล์นี้อีกครั้ง: ` : 'บันทึกไม่สำเร็จ: ') + (x.message || x);
+  }
+  return true;
 }
 
 /* ── editor dialog ───────────────────────────────────────────────────────── */
@@ -667,6 +734,7 @@ function openEditor({ round, file, parsed, queueItem, guess }) {
   set('fScore', 'score', g.score); set('fMax', 'maxScore', g.maxScore); set('fGrade', 'grade', g.grade);
   set('fResult', 'result', g.result); set('fNote', 'note', g.note);
   fillZ(round ? round.details : parsed && parsed.details);
+  fillCd4(round ? round.details : parsed && parsed.details);
   updateZMode(!round || round.result !== 'PENDING');
   $('fPdf').value = '';
   $('fPdfWrap').hidden = !!file;
@@ -779,14 +847,41 @@ function updateZMode(autoResult) {
   const on = zModeOn();
   $('zSet').hidden = !on;
   const q = !on && $('fProvider').value.trim() === 'QCMD';
-  $('fScore').closest('.eqa-f').hidden = on;
-  $('fMax').closest('.eqa-f').hidden = on || q;
+  const cd = cd4ModeOn();
+  $('cdSet').hidden = !cd;
+  $('fScore').closest('.eqa-f').hidden = on || cd;
+  $('fMax').closest('.eqa-f').hidden = on || q || cd;
   $('fScore').previousElementSibling.textContent = q ? 'Detection Score (0–3)' : 'คะแนนที่ได้';
   Object.assign($('fScore'), q ? { min: 0, max: 3, step: 1 } : { min: '', max: '', step: 'any' });
   $('qStatus').hidden = !q;
   if (on) updateZStatus(autoResult);
   if (q) updateQStatus(autoResult);
+  if (cd) updateCd4Status(autoResult);
 }
+/* CD4: Lab's Z-score ของ CD3+ และ CD3+/CD4+ — ช่องว่าง = ไม่ได้ตรวจ */
+const CD4_INPUTS = [['cdZ3', 'CD3+'], ['cdZ4', 'CD3+/CD4+']];
+const cd4ModeOn = () => $('fProgram').value === 'CD4';
+function fillCd4(d) { CD4_INPUTS.forEach(([id, k]) => { $(id).value = d && d.type === 'cd4z' && d.z && d.z[k] != null ? d.z[k] : ''; }); }
+function readCd4Z() {
+  const z = {};
+  CD4_INPUTS.forEach(([id, k]) => { const s = $(id).value.trim().replace('−', '-'); if (s !== '') z[k] = s; });
+  return z;
+}
+function updateCd4Status(autoResult) {
+  const st = $('cdStatus'), z = readCd4Z();
+  document.querySelectorAll('#cdSet .cdzin').forEach(el => { const n = zNum(el.value); el.classList.toggle('bad', zBad(el.value) || (n != null && Math.abs(n) >= Z_FAIL)); el.classList.toggle('warn', n != null && Math.abs(n) >= Z_PASS && Math.abs(n) < Z_FAIL); });
+  const invalid = CD4_INPUTS.filter(([id]) => zBad($(id).value)).map(([, k]) => k);
+  if (invalid.length) { st.className = 'eqa-zstat bad'; st.textContent = `⚠️ ค่าไม่ถูกต้องที่ ${invalid.join(', ')} — ใส่ตัวเลข เช่น -0.04`; return; }
+  const m = zMax({ z });
+  if (m == null) { st.className = 'eqa-zstat'; st.textContent = 'กรอก Lab\'s Z-score ของ CD3+ และ CD3+/CD4+ (ดูจากตาราง Current Trial ในรายงาน)'; return; }
+  const lv = zLevel(m), list = Object.entries(z).filter(([, v]) => zNum(v) != null).map(([k, v]) => `${k} ${v}`).join(', ');
+  st.className = 'eqa-zstat ' + lv;
+  st.textContent = lv === 'bad' ? `❌ ไม่ผ่าน (Unsatisfactory) — |z| ≥ 3.0: ${list} → ต้องทำใบ CAR/NC`
+    : lv === 'warn' ? `⚠️ ผ่าน แต่เฝ้าระวัง (Questionable) — 2.0 ≤ |z| < 3.0: ${list} · ยังไม่ต้องทำ CAR`
+    : `✅ ผ่าน (Satisfactory) — ${list} · |z| สูงสุด ${m.toFixed(2)}`;
+  if (autoResult) { $('fResult').value = lv === 'bad' ? 'FAIL' : 'PASS'; $('fGrade').value = CD4_GRADE[lv]; }
+}
+document.querySelectorAll('#cdSet .cdzin').forEach(el => el.addEventListener('input', () => updateCd4Status(true)));
 /* QCMD: Detection Score 0 = highly satisfactory … 3 = highly unsatisfactory — แปลผลแบบเดียวกับ z-score */
 function updateQStatus(autoResult) {
   const v = $('fScore').value, s = v === '' ? null : Number(v), st = $('qStatus');
@@ -882,6 +977,11 @@ $('eqaForm').addEventListener('submit', async e => {
     if ([...document.querySelectorAll('#zSet .zin')].some(el => zBad(el.value))) { $('eqaErr').textContent = 'มีค่า z ที่ไม่ใช่ตัวเลข — แก้ช่องที่เป็นสีแดงก่อนบันทึก'; return; }
     if (zMax(zd) == null && body.result !== 'PENDING') { $('eqaErr').textContent = 'HIV-1 VL (สวส.) ประเมินด้วย z-score — กรุณากรอก z อย่างน้อย 1 ค่า หรือเลือก "รอผล"'; return; }
     body.details = { ...(body.details || {}), ...zd };
+    body.score = null; body.maxScore = null;
+  } else if (cd4ModeOn() && Object.keys(readCd4Z()).length) {
+    if (CD4_INPUTS.some(([id]) => zBad($(id).value))) { err.textContent = 'มีค่า Lab\'s Z ที่ไม่ใช่ตัวเลข — แก้ช่องที่เป็นสีแดงก่อนบันทึก'; return; }
+    const prev = body.details && body.details.type === 'cd4z' ? body.details : {};
+    body.details = { ...prev, type:'cd4z', z: readCd4Z(), criteria: CD4_CRITERIA };
     body.score = null; body.maxScore = null;
   } else if (body.provider === 'QCMD') {
     if (body.score != null && !(Number.isInteger(body.score) && body.score >= 0 && body.score <= 3)) { err.textContent = 'QCMD Detection Score ต้องเป็น 0, 1, 2 หรือ 3'; return; }
@@ -1227,6 +1327,7 @@ async function readEqaPdf(file) {
     if (qy) { G.yearBE = +qy[1] + 543; out.found.push(`ปี ${G.yearBE} (QCMD ${qy[1]})`); }
     G.program = programFromText(flat); if (G.program) out.found.push(`การทดสอบ ${PROG[G.program].name}`);
   }
+  else if (/Lymphocyte Immunophenotyping Summary Report/i.test(flat) && /EQA Trial no/i.test(flat)) parseCd4(flat, out);
   else if (/Individual Report/i.test(flat) && /QCMD/.test(flat) && /Ref Code:/i.test(flat)) parseQcmdIndividual(flat, out);
   else if (/Results Review - Dataset/i.test(flat) && /QCMD/.test(flat)) parseQcmdReceipt(flat, out);
   else if (/ปริมาณเชื้อเอชไอวี/.test(flat) && /HIVL\s*\d{3}-1/.test(flat)) parseDmscVL(flat, out);
@@ -1402,6 +1503,66 @@ function parseDmsc(t, out) {
     G.note = 'รายงานเบื้องต้นของ สวส. — ยังไม่มีคะแนน เมื่อได้รายงานฉบับสมบูรณ์ให้อัพโหลดทับรอบนี้';
     out.warn.push('รายงานเบื้องต้นมีแค่ค่ากำหนด ยังไม่มีคะแนน — บันทึกเป็น "รอผล" ไว้ก่อน');
   } else out.kind = out.kind || 'รายงาน สวส.';
+}
+
+/* COE CD4 (ศิริราช) "Lymphocyte Immunophenotyping Summary Report" — มี 2 แบบ
+   แบบเดิม (Trial ≤ 124): ตาราง Current Trial = Populations · Lab's Result · Group's Mean · SD · Count · Z-score · performance
+   แบบใหม่ (Trial ≥ 125): ไม่มี Z-score ในไฟล์ มีแต่ Overall mean · Std. Dev. · N · Acceptable (%) + Acceptable interval
+     + Your Values ของ CD3 / CD4 / CD8 → คำนวณ Lab's Z = (ค่าของแล็บ − mean) / SD
+   ปี/ครั้ง ได้จากเลข Trial: ปีละ 6 ครั้ง นับจาก Trial 110 = ครั้งที่ 1 ปี 2564 */
+function parseCd4(t, out) {
+  const G = out.guess;
+  out.kind = 'COE CD4 (ศิริราช) Lymphocyte Immunophenotyping — ประเมินด้วย Lab\'s Z-score';
+  G.program = 'CD4'; G.provider = CD4_PROVIDER; out.found.push('การทดสอบ', 'ผู้จัด');
+  const tr = /EQA Trial no\.?\s*(\d+)/i.exec(t);
+  const trial = tr ? +tr[1] : null;
+  if (trial) {
+    Object.assign(G, cd4YearRound(trial));
+    out.found.push(`ปี ${G.yearBE} ครั้งที่ ${G.round} (จาก Trial ${trial} · ปีละ ${CD4_PER_YEAR} ครั้ง)`);
+    const st = /EQA Trial no\.?\s*\d+\s+\d{1,2}-([A-Za-z]+)-(\d{4})\s+to\b/i.exec(t);
+    if (st && +st[2] + 543 !== G.yearBE) out.warn.push(`Trial ${trial} เริ่ม ${st[1]} ${st[2]} (พ.ศ. ${+st[2] + 543}) แต่นับตามลำดับ Trial ได้ปี ${G.yearBE} — ตรวจสอบปี/ครั้งอีกครั้ง`);
+  } else out.warn.push('หาเลข EQA Trial ไม่เจอ — กรุณากรอกปีและครั้งเอง');
+  const lab = /Lab no\.?\s*(\d+)/i.exec(t); if (lab) { G.labId = lab[1]; out.found.push('Lab no.'); }
+  const dt = /(?:Report Issue Date|Reporting date):\s*(\d{1,2})-([A-Za-z]+)-(\d{4})/i.exec(t);
+  if (dt && EN_MON[dt[2].slice(0, 3).toLowerCase()]) { G.reportDate = `${dt[3]}-${pad(EN_MON[dt[2].slice(0, 3).toLowerCase()])}-${pad(+dt[1])}`; out.found.push('วันที่ออกรายงาน'); }
+
+  const num = s => /^-?\d+(\.\d+)?$/.test(s) ? +s : null;
+  const pops = [];
+  // เริ่มอ่านหลังหัวตาราง — ก่อนหน้านั้นมีชื่อกราฟ "CD3+ Lymphocytes (%)" ที่ขึ้นต้นเหมือนแถว CD3+
+  const cur = /Current Trial.*?Laboratory performance(.*?)Report Issue Date/i.exec(t);
+  if (cur) {                                                                     // แบบเดิม: ใช้ Z-score ที่รายงานพิมพ์มา
+    const re = /(CD3\+\/CD4\+|CD3\+\/CD8\+|CD3\+|CD19\+|CD16\/56\+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/g;
+    for (const m of cur[1].matchAll(re))
+      pops.push({ pop: m[1], result: num(m[2]), mean: num(m[3]), sd: num(m[4]), n: num(m[5]), z: num(m[6]), perf: m[7] === '-' ? null : m[7], zFrom: 'report' });
+  } else {                                                                       // แบบใหม่: คำนวณ z จาก mean/SD
+    const p1 = t.split(/Lymphocyte Immunophenotyping Summary Report/i).slice(0, 2).join(' ');
+    const blocks = [...p1.matchAll(/Overall mean Std\. Dev\. N Acceptable \(%\)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+([\d.]+)/gi)].map(m => ({ mean: +m[1], sd: +m[2], n: +m[3], acc: +m[4] }));
+    const ivs = [...p1.matchAll(/Acceptable interval:\s*([\d.]+)\s*[–-]\s*([\d.]+)/gi)].slice(0, 3).map(m => [+m[1], +m[2]]);
+    const vals = [...p1.matchAll(/Your Values:\s*(-|[\d.]+)/gi)].slice(0, 3).map(m => num(m[1]));
+    if (ivs.length === 3 && blocks.length >= 3 && vals.length === 3) {
+      // ช่วง Acceptable เรียง CD3, CD4, CD8 · จับคู่ mean/SD กับช่วงด้วยจุดกึ่งกลาง
+      const stat = ivs.map(([a, b]) => blocks.reduce((best, x) => Math.abs(x.mean - (a + b) / 2) < Math.abs(best.mean - (a + b) / 2) ? x : best));
+      // Your Values มักเรียงกลับ (CD8, CD4, CD3) — เลือกลำดับที่ค่าของแล็บใกล้ mean มากกว่า
+      const fit = order => order.reduce((s, v, i) => s + (v == null ? 0 : Math.abs(v - stat[i].mean) / (stat[i].sd || 1)), 0);
+      const vv = fit([...vals].reverse()) <= fit(vals) ? [...vals].reverse() : vals;
+      ['CD3+', 'CD3+/CD4+', 'CD3+/CD8+'].forEach((pop, i) => {
+        const s = stat[i], v = vv[i];
+        pops.push({ pop, result: v, mean: s.mean, sd: s.sd, n: s.n, low: ivs[i][0], high: ivs[i][1],
+          z: v == null || !s.sd ? null : Math.round((v - s.mean) / s.sd * 100) / 100, perf: null, zFrom: 'calc' });
+      });
+    }
+  }
+  const z = {};
+  CD4_Z_POPS.forEach(p => { const r = pops.find(x => x.pop === p); if (r && r.z != null) z[p] = String(r.z); });
+  out.details = { type:'cd4z', trialNo: trial, pops, z, criteria: CD4_CRITERIA };
+  if (!Object.keys(z).length) { out.warn.push('อ่าน Lab\'s Z-score ของ CD3+ และ CD3+/CD4+ ไม่ได้ — กรุณากรอกเอง'); return; }
+  const missing = CD4_Z_POPS.filter(p => z[p] == null);
+  if (missing.length) out.warn.push(`ไม่มีค่า ${missing.join(', ')} ในรายงาน — ประเมินจากค่าที่มี`);
+  out.found.push(`Lab's Z ${Object.entries(z).map(([k, v]) => `${k} ${v}`).join(' · ')}${pops.some(p => p.zFrom === 'calc') ? ' (คำนวณจาก mean/SD)' : ''}`);
+  const m = zMax(out.details);
+  G.result = zResult(out.details);
+  G.grade = CD4_GRADE[zLevel(m)];
+  out.auto = !!(trial && G.labId && G.result && !missing.length);
 }
 
 /* ── start ───────────────────────────────────────────────────────────────── */
