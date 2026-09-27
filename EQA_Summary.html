@@ -104,6 +104,11 @@ dialog.car-dlg[open]{display:flex;flex-direction:column}
 .eqa-doc-none{font-size:12px}
 .eqa-doc-add{padding:3px 10px!important;font-size:11.5px}
 .eqa-cell.docs{background:var(--surface-3);color:var(--text2)}
+.eqa-files{padding:10px 12px;border:1px dashed var(--border2);border-radius:var(--radius-sm);background:var(--surface-2)}
+.eqa-files-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.eqa-files-add #fFileLabel{flex:0 1 190px}
+.eqa-files-add #fFiles{flex:1 1 220px;min-width:0}
+.eqa-doc.pending{border-style:dashed;background:var(--surface-3)}
 .eqa-cert-mark{font-size:11px}
 dialog.eqa-dlg-sm{width:min(560px,calc(100vw - 24px))}
 @media(max-width:600px){.eqa-doc-slot .lbl{min-width:0;width:100%}.eqa-doc a{max-width:200px}}
@@ -192,6 +197,15 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
       </fieldset>
       <div class="eqa-f"><label for="fNote">หมายเหตุ</label><textarea id="fNote"></textarea></div>
       <div class="eqa-f" id="fPdfWrap"><label for="fPdf">ไฟล์ PDF</label><input id="fPdf" type="file" accept="application/pdf,.pdf"><span class="pck-muted" id="fPdfName" style="font-size:12px"></span></div>
+      <div class="eqa-f eqa-files" id="fFilesWrap" hidden>
+        <label for="fFiles">📎 ไฟล์แนบเพิ่มเติม — แยกตามชนิดตัวอย่าง (Pool saliva / Pool swab)</label>
+        <div class="eqa-doc-slot" id="fFilesList"></div>
+        <div class="eqa-files-add">
+          <input id="fFileLabel" list="sampleList" placeholder="ชนิดตัวอย่าง เช่น Pool saliva" aria-label="ชนิดตัวอย่างของไฟล์ที่จะแนบ">
+          <input id="fFiles" type="file" accept="application/pdf,.pdf,image/png,image/jpeg" multiple>
+        </div>
+        <span class="pck-muted" style="font-size:12px">เลือกชนิดตัวอย่างก่อน แล้วเลือกไฟล์ (เลือกได้หลายไฟล์) · PDF/PNG/JPG ไม่เกิน 20 MB · ไฟล์จะถูกแนบเมื่อกด "บันทึก"</span>
+      </div>
       <div class="eqa-err" id="eqaErr" role="alert"></div>
       <div class="eqa-btns">
         <button class="pck-btn primary" id="eqaSave" type="submit" value="save">💾 บันทึก</button>
@@ -204,6 +218,7 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
   </form>
 </dialog>
 <datalist id="providerList"><option value="สวส."><option value="QCMD"><option value="อื่นๆ"></datalist>
+<datalist id="sampleList"><option value="Pool saliva"><option value="Pool swab"></datalist>
 
 <dialog class="eqa-dlg eqa-dlg-sm" id="docDlg" aria-labelledby="docDlgTitle">
   <form class="eqa-form" id="docForm" method="dialog" novalidate>
@@ -321,6 +336,14 @@ const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)
 const docUrl = d => `${EQA_API}/doc?id=${d.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docsFor = (pid, y, type) => docs.filter(d => d.program === pid && d.yearBE === y && (!type || d.type === type));
 const carsFor = r => docs.filter(d => d.type === 'car' && d.roundId === r.id);
+// ไฟล์แนบเพิ่มของรอบ แยกตามชนิดตัวอย่าง — เปิดเฉพาะ COVID ปี 2566 (สวส. ส่งทั้ง pool saliva และ pool swab)
+const filesFor = r => docs.filter(d => d.type === 'file' && d.roundId === r.id);
+const multiFileRound = (program, yearBE) => program === 'COVID' && yearBE === 2566;
+const fileLabel = d => { const f = parseJSON(d.form); return (f && f.label) || ''; };
+const fileChip = d => `<span class="eqa-doc">
+    <a href="${docUrl(d)}" target="_blank" rel="noopener" title="${esc(d.name)}">${/^image\//.test(d.contentType) ? '🖼️' : '📄'} ${fileLabel(d) ? `<b>${esc(fileLabel(d))}</b> · ` : ''}${esc(d.name)}</a>
+    <button type="button" data-deldoc="${d.id}" aria-label="ลบ ${esc(d.name)}" title="ลบไฟล์นี้">✕</button>
+  </span>`;
 // ต้องมีใบ CAR/NC: ไม่ผ่าน, HIV VL สวส. มี |z| ≥ 3.0, QCMD Score 3, หรือคะแนนไม่เต็ม (|z| 2.0–3.0 และ QCMD Score 2 เป็นแค่ warning signal)
 const needsCar = r => r.result === 'FAIL'
   || (isZRound(r) ? (zMax(r.details) != null && zMax(r.details) >= Z_FAIL) : false)
@@ -347,7 +370,7 @@ async function load() {
     const years = rounds.map(r => r.yearBE);
     el.textContent = rounds.length
       ? `☁️ ข้อมูล EQA บน Cloud: ${rounds.length} รอบ · ปี ${Math.min(...years)}–${Math.max(...years)}`
-        + (docs.some(d => d.type !== 'car') ? ` · เอกสารประจำปี ${docs.filter(d => d.type !== 'car').length} ไฟล์` : '') + ' · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน'
+        + (docs.some(d => !d.roundId) ? ` · เอกสารประจำปี ${docs.filter(d => !d.roundId).length} ไฟล์` : '') + ' · ทุกเครื่องเห็นข้อมูลชุดเดียวกัน'
       : '☁️ ยังไม่มีข้อมูล EQA — อัพโหลดไฟล์ PDF ด้านล่างเพื่อเริ่ม';
   } catch (e) {
     el.className = 'eqa-cloud err';
@@ -470,7 +493,7 @@ function renderProgram(pid) {
         <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${r.result !== 'FAIL' && roundLevel(r) === 'warn' ? ` <span class="pck-tag warn" title="${isQcmd(r) ? 'QCMD Score 2' : '2.0 ≤ |z| < 3.0'} — warning signal ยังไม่ต้องทำ CAR">⚠️ เฝ้าระวัง</span>` : ''}${needsCar(r)
           ? (carsFor(r).length ? ' <span class="pck-tag pass" title="มีใบ CAR/NC แล้ว">CAR ✓</span>' : ' <span class="pck-tag fail" title="คะแนนไม่เต็ม/ไม่ผ่าน — กดแถวเพื่อกรอก F-CP-631 หรือแนบใบ CAR/NC">ต้องทำ CAR</span>')
           : ''}</td>
-        <td>${r.pdfName ? `<a href="${pdfUrl(r)}" target="_blank" rel="noopener" title="${esc(r.pdfName)}">📄 เปิด</a>` : '<span class="pck-muted">—</span>'}</td>
+        <td>${r.pdfName ? `<a href="${pdfUrl(r)}" target="_blank" rel="noopener" title="${esc(r.pdfName)}">📄 เปิด</a>` : filesFor(r).length ? '' : '<span class="pck-muted">—</span>'}${filesFor(r).length ? ` <span class="pck-tag navy" title="${esc(filesFor(r).map(d => fileLabel(d) || d.name).join(', '))} — กดแถวเพื่อดูไฟล์">📎 ${r.pdfName ? '+' : ''}${filesFor(r).length}</span>` : ''}</td>
         <td><div class="eqa-actions"><button class="pck-btn" data-edit="${r.id}" title="แก้ไข / แนบไฟล์">✏️</button></div></td>
       </tr>`;
       if (open) h += `<tr class="det"><td colspan="8">${renderDetails(r)}</td></tr>`;
@@ -539,8 +562,10 @@ function renderDetails(r) {
     h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr>${cols.map(c => `<th>${LABEL[c]}</th>`).join('')}</tr></thead><tbody>
       ${d.samples.map(s => `<tr>${cols.map(c => `<td>${esc(s[c] ?? '')}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
+  const files = filesFor(r);
+  if (files.length) h += `<div class="eqa-doc-slot"><span class="lbl">📎 ไฟล์แยกตามตัวอย่าง</span>${files.map(fileChip).join('')}</div>`;
   if (needsCar(r) || carsFor(r).length) h += renderCarBox(r);
-  else if (!kv.length && !d.z && !d.samples) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
+  else if (!kv.length && !d.z && !d.samples && !files.length) h += '<span class="pck-muted">ไม่มีรายละเอียดเพิ่มเติม</span>';
   return h + '</div>';
 }
 
@@ -630,7 +655,7 @@ let editing = null;
 $('fProgram').innerHTML = '<option value="">— เลือก —</option>' + PROGRAMS.map(p => `<option value="${p.id}">${p.icon} ${esc(p.name)}</option>`).join('');
 
 function openEditor({ round, file, parsed, queueItem, guess }) {
-  editing = { round: round || null, file: file || null, queueItem: queueItem || null, parsed: parsed || null };
+  editing = { round: round || null, file: file || null, queueItem: queueItem || null, parsed: parsed || null, pending: [] };
   const g = round ? {
       program: round.program, provider: round.provider, yearBE: round.yearBE, round: round.round, reportDate: round.reportDate,
       labId: round.labId, score: round.score, maxScore: round.maxScore, grade: round.grade, result: round.result, note: round.note,
@@ -646,6 +671,8 @@ function openEditor({ round, file, parsed, queueItem, guess }) {
   $('fPdf').value = '';
   $('fPdfWrap').hidden = !!file;
   $('fPdfName').textContent = round && round.pdfName ? `ไฟล์ปัจจุบัน: ${round.pdfName} (เลือกไฟล์ใหม่เพื่อแทนที่)` : '';
+  $('fFiles').value = ''; $('fFileLabel').value = '';
+  updateFilesMode();
   $('eqaDlgTitle').textContent = round ? `แก้ไขผล EQA — ${PROG[round.program].name} ${round.provider} ${roundLabel(round)}/${round.yearBE}` : 'ตรวจสอบผล EQA ก่อนบันทึก';
   $('eqaDelete').hidden = !round; $('eqaDelete').dataset.confirm = ''; $('eqaDelete').textContent = '🗑️ ลบรอบนี้';
   $('eqaErr').textContent = '';
@@ -691,6 +718,49 @@ function closeEditor(state) {
   editing = null;
   if (dlg.open) dlg.close();
 }
+/* ── ไฟล์แนบเพิ่มแยกตามตัวอย่าง (COVID 2566) ──────────────────────────────── */
+const filesModeOn = () => multiFileRound($('fProgram').value, parseInt($('fYear').value, 10));
+function updateFilesMode() {
+  $('fFilesWrap').hidden = !filesModeOn();
+  renderFormFiles();
+}
+function renderFormFiles() {
+  if (!editing) return;
+  const saved = editing.round && editing.round.id ? filesFor(editing.round) : [];
+  $('fFilesList').innerHTML = saved.map(fileChip).join('')
+    + editing.pending.map((p, i) => `<span class="eqa-doc pending" title="ยังไม่ได้แนบ — จะแนบเมื่อกดบันทึก">
+        <span>⏳ ${p.label ? `<b>${esc(p.label)}</b> · ` : ''}${esc(p.file.name)}</span>
+        <button type="button" data-unpend="${i}" aria-label="เอา ${esc(p.file.name)} ออก" title="เอาออก">✕</button>
+      </span>`).join('')
+    || '<span class="pck-muted eqa-doc-none">ยังไม่มีไฟล์แนบเพิ่ม</span>';
+}
+$('fProgram').addEventListener('change', updateFilesMode);
+$('fYear').addEventListener('input', updateFilesMode);
+$('fFiles').addEventListener('change', e => {
+  const label = $('fFileLabel').value.trim();
+  for (const file of e.target.files) editing.pending.push({ file, label });
+  e.target.value = '';
+  $('eqaErr').textContent = '';
+  renderFormFiles();
+});
+$('fFilesList').addEventListener('click', async e => {
+  const up = e.target.closest('[data-unpend]');
+  if (up) { editing.pending.splice(+up.dataset.unpend, 1); renderFormFiles(); return; }
+  const dd = e.target.closest('[data-deldoc]');
+  if (!dd) return;
+  if (!dd.dataset.confirm) {
+    dd.dataset.confirm = '1'; dd.textContent = 'ลบ?'; dd.title = 'กดอีกครั้งเพื่อยืนยันการลบ';
+    setTimeout(() => { if (dd.isConnected) { delete dd.dataset.confirm; dd.textContent = '✕'; dd.title = 'ลบไฟล์นี้'; } }, 4000);
+    return;
+  }
+  dd.disabled = true;
+  try {
+    await api(`/doc?id=${dd.dataset.deldoc}`, { method:'DELETE' });
+    docs = docs.filter(d => d.id !== +dd.dataset.deldoc);
+    renderFormFiles(); render();
+  } catch (x) { dd.disabled = false; dd.textContent = '⚠️'; dd.title = 'ลบไม่สำเร็จ: ' + (x.message || x); }
+});
+
 /* ── z-score ในฟอร์ม (HIV-1 VL · สวส.) ─────────────────────────────────── */
 const Z_INPUTS = [['zS1', 'z-1'], ['zS2', 'z-2'], ['zS3', 'z-3'], ['zS4', 'z-4']];
 const zModeOn = () => $('fProgram').value === 'HIVVL' && $('fProvider').value.trim() !== 'QCMD';
@@ -781,6 +851,9 @@ $('eqaForm').addEventListener('submit', async e => {
 
   const r = editing.round;
   const file = editing.file || $('fPdf').files[0] || null;
+  const extra = multiFileRound(body.program, body.yearBE) ? editing.pending : [];
+  const big = extra.find(p => p.file.size > 20 * 1024 * 1024);
+  if (big) { err.textContent = `ไฟล์ ${big.file.name} ใหญ่เกิน 20 MB`; return; }
 
   // รอบเดียวกันมีอยู่แล้ว (การทดสอบ/ผู้จัด/ปี/รอบ ตรงกัน) — ถามก่อนบันทึกทับ
   const dup = rounds.find(x => x.program === body.program && x.provider === body.provider && x.yearBE === body.yearBE
@@ -824,6 +897,19 @@ $('eqaForm').addEventListener('submit', async e => {
     if (file) {
       if (file.size > 20 * 1024 * 1024) throw new Error('บันทึกข้อมูลแล้ว แต่ไฟล์ PDF ใหญ่เกิน 20 MB จึงไม่ได้แนบ');
       await api(`/pdf?id=${saved.id}&name=${encodeURIComponent(file.name)}`, { method:'PUT', headers:{ 'Content-Type':'application/pdf' }, body: file });
+    }
+    while (extra.length) {
+      const p = extra[0];
+      try {
+        await api(`/doc?${new URLSearchParams({ type:'file', roundId: saved.id, provider: body.provider, label: p.label, name: p.file.name })}`,
+          { method:'POST', headers:{ 'Content-Type': p.file.type || 'application/octet-stream' }, body: p.file });
+      } catch (x) {
+        // บันทึกผลแล้ว — กดบันทึกอีกครั้งจะอัพเดตรอบเดิมและแนบเฉพาะไฟล์ที่เหลือ
+        if (!editing.round) { editing.round = { ...body, id: saved.id }; editing.file = null; editing.attachOnly = null; }
+        renderFormFiles();
+        throw new Error(`บันทึกผลแล้ว แต่แนบไฟล์ ${p.file.name} ไม่สำเร็จ (${x.message || x}) — กดบันทึกอีกครั้งเพื่อแนบไฟล์ที่เหลือ`);
+      }
+      extra.shift();
     }
     const target = { program: body.program, year: body.yearBE };
     closeEditor('saved');
