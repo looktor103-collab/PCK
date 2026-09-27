@@ -177,6 +177,7 @@ dialog.eqa-dlg::backdrop{background:rgba(30,15,22,.45)}
             <option value="PENDING">รอผล / รายงานเบื้องต้น</option>
           </select></div>
       </div>
+      <div class="eqa-zstat" id="qStatus" hidden></div>
       <fieldset class="eqa-zset" id="zSet" hidden>
         <legend>Z-score (HIV-1 Viral Load · สวส.) — |z| &lt; 2.0 ผ่าน · 2.0–3.0 เฝ้าระวัง · ≥ 3.0 ไม่ผ่าน (ต้องทำ CAR)</legend>
         <div class="eqa-zgrid">
@@ -287,7 +288,8 @@ const fmtNum = v => v == null ? '' : (Number.isInteger(v) ? String(v) : String(+
 const roundLabel = r => /^\d+$/.test(r.round) ? `ครั้งที่ ${r.round}` : r.round;
 // HIV-1 VL ของ สวส. ประเมินด้วย z-score (ทุกตัวอย่าง + Between-lab + Within-lab):
 //   |z| < 2.0 ผ่าน · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (warning signal — ยังผ่าน ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน (ต้องทำ CAR)
-// QCMD ยังใช้ Score 0–3 ตามเดิม
+// QCMD (ทุกการทดสอบ) ใช้ Detection/Estimation Score 0–3 แบบเดียวกัน:
+//   0 highly satisfactory · 1 satisfactory → ผ่าน · 2 → ผ่าน แต่เฝ้าระวัง (warning signal ไม่ต้องทำ CAR) · 3 highly unsatisfactory → ไม่ผ่าน (ต้องทำ CAR)
 const Z_PASS = 2.0;
 const Z_FAIL = 3.0;
 const Z_CRITERIA = '|z| < 2.0 ผ่าน · 2.0 ≤ |z| < 3.0 เฝ้าระวัง (warning signal ไม่ต้องทำ CAR) · |z| ≥ 3.0 ไม่ผ่าน ต้องทำ CAR — ใช้ทุกค่า (ทุกตัวอย่าง, Between-lab, Within-lab)';
@@ -298,18 +300,32 @@ const zValues = d => d ? [...Object.values(d.z || {}), d.betweenZ, d.withinZ].ma
 const zMax = d => { const v = zValues(d); return v.length ? Math.max(...v.map(Math.abs)) : null; };
 const zResult = d => { const m = zMax(d); return m == null ? null : m < Z_FAIL ? 'PASS' : 'FAIL'; };
 const zLevel = m => m == null ? '' : m >= Z_FAIL ? 'bad' : m >= Z_PASS ? 'warn' : 'ok';
+const isQcmd = r => r.provider === 'QCMD';
+const Q_GRADE = ['ดีเยี่ยม (highly satisfactory)', 'ยอมรับ (satisfactory)', 'เฝ้าระวัง (warning signal)', 'ไม่ผ่าน (highly unsatisfactory)'];
+const Q_CRITERIA = 'Detection/Estimation Score: 0 ดีเยี่ยม (highly satisfactory) · 1 ยอมรับ (satisfactory) · 2 เฝ้าระวัง (warning signal ไม่ต้องทำ CAR) · 3 ไม่ผ่าน (highly unsatisfactory ต้องทำ CAR)';
+const qLevel = s => s == null ? '' : s >= 3 ? 'bad' : s >= 2 ? 'warn' : 'ok';
+// ระดับของรอบ: bad = ไม่ผ่าน/ต้องทำ CAR · warn = ผ่านแต่เฝ้าระวัง · ok
+const roundLevel = r => isZRound(r) ? zLevel(zMax(r.details)) : isQcmd(r) ? qLevel(r.score) : '';
+const qcmdScoreText = r => {
+  const d = r.details || {}, n = v => /^\d+$/.test(String(v == null ? '' : v)) ? v : null;
+  const det = n(d.detectionScore), est = n(d.estimationScore);
+  if (det != null && est != null) return `Detection ${det} · Estimation ${est}`;
+  if (r.score == null) return '—';
+  return `${est != null || /Estimation/i.test(d.scoreLabel || '') ? 'Estimation' : 'Detection'} Score ${fmtNum(r.score)}`;
+};
 const scoreText = r => isZRound(r)
   ? (zMax(r.details) == null ? '—' : `|z| สูงสุด ${zMax(r.details).toFixed(2)}`)
+  : isQcmd(r) ? qcmdScoreText(r)
   : r.score == null ? '—' : (r.maxScore != null ? `${fmtNum(r.score)}/${fmtNum(r.maxScore)}` : `Score ${fmtNum(r.score)}`);
 const pdfUrl = r => `${EQA_API}/pdf?id=${r.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docUrl = d => `${EQA_API}/doc?id=${d.id}&key=${encodeURIComponent(EQA_KEY)}`;
 const docsFor = (pid, y, type) => docs.filter(d => d.program === pid && d.yearBE === y && (!type || d.type === type));
 const carsFor = r => docs.filter(d => d.type === 'car' && d.roundId === r.id);
-// ต้องมีใบ CAR/NC: ไม่ผ่าน, HIV VL สวส. มี |z| ≥ 3.0 (2.0–3.0 เป็นแค่ warning signal), คะแนนไม่เต็ม, หรือ QCMD score ≥ 2
+// ต้องมีใบ CAR/NC: ไม่ผ่าน, HIV VL สวส. มี |z| ≥ 3.0, QCMD Score 3, หรือคะแนนไม่เต็ม (|z| 2.0–3.0 และ QCMD Score 2 เป็นแค่ warning signal)
 const needsCar = r => r.result === 'FAIL'
   || (isZRound(r) ? (zMax(r.details) != null && zMax(r.details) >= Z_FAIL) : false)
-  || (!isZRound(r) && r.score != null && r.maxScore != null && r.score < r.maxScore)
-  || (r.score != null && r.maxScore == null && r.provider === 'QCMD' && r.score >= 2);
+  || (!isZRound(r) && !isQcmd(r) && r.score != null && r.maxScore != null && r.score < r.maxScore)
+  || (isQcmd(r) && r.score != null && r.score >= 3);
 const carMissing = list => list.filter(r => needsCar(r) && !carsFor(r).length);
 function api(path, opts = {}) {
   return fetch(EQA_API + path, { ...opts, headers: { 'X-API-Key': EQA_KEY, ...(opts.headers || {}) } })
@@ -449,9 +465,9 @@ function renderProgram(pid) {
         <td><b style="color:var(--text)">${esc(r.provider)}</b> · ${esc(roundLabel(r))}</td>
         <td>${esc(fmtDate(r.reportDate) || (r.details && r.details.dateText) || '—')}</td>
         <td>${esc(r.labId || '—')}</td>
-        <td class="num"${isZRound(r) && zLevel(zMax(r.details)) === 'bad' ? ' style="color:var(--fail);font-weight:700"' : isZRound(r) && zLevel(zMax(r.details)) === 'warn' ? ' style="color:var(--warn);font-weight:700"' : ''}>${esc(scoreText(r))}</td>
+        <td class="num"${roundLevel(r) === 'bad' ? ' style="color:var(--fail);font-weight:700"' : roundLevel(r) === 'warn' ? ' style="color:var(--warn);font-weight:700"' : ''}>${esc(scoreText(r))}</td>
         <td>${esc(r.grade || '—')}</td>
-        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${isZRound(r) && r.result !== 'FAIL' && zLevel(zMax(r.details)) === 'warn' ? ' <span class="pck-tag warn" title="2.0 ≤ |z| < 3.0 — warning signal ยังไม่ต้องทำ CAR">⚠️ เฝ้าระวัง</span>' : ''}${needsCar(r)
+        <td><span class="pck-tag ${RESULT[r.result].tag}">${RESULT[r.result].label}</span>${r.result !== 'FAIL' && roundLevel(r) === 'warn' ? ` <span class="pck-tag warn" title="${isQcmd(r) ? 'QCMD Score 2' : '2.0 ≤ |z| < 3.0'} — warning signal ยังไม่ต้องทำ CAR">⚠️ เฝ้าระวัง</span>` : ''}${needsCar(r)
           ? (carsFor(r).length ? ' <span class="pck-tag pass" title="มีใบ CAR/NC แล้ว">CAR ✓</span>' : ' <span class="pck-tag fail" title="คะแนนไม่เต็ม/ไม่ผ่าน — กดแถวเพื่อกรอก F-CP-631 หรือแนบใบ CAR/NC">ต้องทำ CAR</span>')
           : ''}</td>
         <td>${r.pdfName ? `<a href="${pdfUrl(r)}" target="_blank" rel="noopener" title="${esc(r.pdfName)}">📄 เปิด</a>` : '<span class="pck-muted">—</span>'}</td>
@@ -467,7 +483,9 @@ function renderProgram(pid) {
 function renderCarBox(r) {
   const cars = carsFor(r);
   const why = r.result === 'FAIL' ? 'ผลประเมินไม่ผ่าน'
-    : r.maxScore != null ? `คะแนน ${fmtNum(r.score)}/${fmtNum(r.maxScore)} ไม่เต็ม` : `QCMD Score ${fmtNum(r.score)} (เฝ้าระวัง/ไม่ผ่าน)`;
+    : isZRound(r) ? `|z| สูงสุด ${zMax(r.details).toFixed(2)} (≥ 3.0)`
+    : isQcmd(r) ? `QCMD ${scoreText(r)} (highly unsatisfactory)`
+    : `คะแนน ${fmtNum(r.score)}/${fmtNum(r.maxScore)} ไม่เต็ม`;
   return `<div class="eqa-car ${cars.length ? 'ok' : 'miss'}">
     <div><b>${cars.length ? '✅ มีใบ CAR/NC แล้ว' : '⚠️ ต้องมีใบ CAR/NC'}</b> <span class="pck-muted">${needsCar(r) ? '· ' + esc(why) : ''}</span></div>
     ${cars.length ? `<div class="eqa-doc-slot">${cars.map(c => `<span class="eqa-doc">
@@ -504,7 +522,7 @@ function renderDetails(r) {
   const kv = [
     ['หมายเลขรายงาน', d.reportNo], ['Ref Code', d.refCode], ['EQA Group', d.eqaGroup], ['วิธี/น้ำยา', d.method],
     ['Sensitivity', d.sensitivity], ['Specificity', d.specificity], ['Between-lab z', d.betweenZ], ['Within-lab z', d.withinZ],
-    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', isZRound(r) ? Z_CRITERIA : d.criteria], ['ไฟล์', r.pdfName],
+    ['ช่วงเวลา', d.dateText && !r.reportDate ? d.dateText : null], ['เกณฑ์', isZRound(r) ? Z_CRITERIA : isQcmd(r) ? Q_CRITERIA : d.criteria], ['ไฟล์', r.pdfName],
     ['หมายเหตุ', r.note],
   ].filter(([, v]) => v != null && v !== '');
   let h = '<div class="eqa-det">';
@@ -690,10 +708,28 @@ function readZ() {
 function updateZMode(autoResult) {
   const on = zModeOn();
   $('zSet').hidden = !on;
+  const q = !on && $('fProvider').value.trim() === 'QCMD';
   $('fScore').closest('.eqa-f').hidden = on;
-  $('fMax').closest('.eqa-f').hidden = on;
+  $('fMax').closest('.eqa-f').hidden = on || q;
+  $('fScore').previousElementSibling.textContent = q ? 'Detection Score (0–3)' : 'คะแนนที่ได้';
+  Object.assign($('fScore'), q ? { min: 0, max: 3, step: 1 } : { min: '', max: '', step: 'any' });
+  $('qStatus').hidden = !q;
   if (on) updateZStatus(autoResult);
+  if (q) updateQStatus(autoResult);
 }
+/* QCMD: Detection Score 0 = highly satisfactory … 3 = highly unsatisfactory — แปลผลแบบเดียวกับ z-score */
+function updateQStatus(autoResult) {
+  const v = $('fScore').value, s = v === '' ? null : Number(v), st = $('qStatus');
+  if (s == null) { st.className = 'eqa-zstat'; st.textContent = 'กรอก Detection Score 0–3 (0 = highly satisfactory · 3 = highly unsatisfactory)'; return; }
+  if (!Number.isInteger(s) || s < 0 || s > 3) { st.className = 'eqa-zstat bad'; st.textContent = '⚠️ Detection Score ต้องเป็น 0, 1, 2 หรือ 3'; return; }
+  const lv = qLevel(s);
+  st.className = 'eqa-zstat ' + lv;
+  st.textContent = lv === 'bad' ? '❌ ไม่ผ่าน — Score 3 (highly unsatisfactory) → ต้องทำใบ CAR/NC'
+    : lv === 'warn' ? '⚠️ ผ่าน แต่เฝ้าระวัง (warning signal) — Score 2 · ยังไม่ต้องทำ CAR'
+    : `✅ ผ่าน — Score ${s} (${s === 0 ? 'highly satisfactory' : 'satisfactory'})`;
+  if (autoResult) { $('fResult').value = s >= 3 ? 'FAIL' : 'PASS'; $('fGrade').value = Q_GRADE[s]; }
+}
+$('fScore').addEventListener('input', () => { if (!$('qStatus').hidden) updateQStatus(true); });
 function updateZStatus(autoResult) {
   const d = readZ();
   document.querySelectorAll('#zSet .zin').forEach(el => { const n = zNum(el.value); el.classList.toggle('bad', zBad(el.value) || (n != null && Math.abs(n) >= Z_FAIL)); el.classList.toggle('warn', n != null && Math.abs(n) >= Z_PASS && Math.abs(n) < Z_FAIL); });
@@ -774,6 +810,10 @@ $('eqaForm').addEventListener('submit', async e => {
     if (zMax(zd) == null && body.result !== 'PENDING') { $('eqaErr').textContent = 'HIV-1 VL (สวส.) ประเมินด้วย z-score — กรุณากรอก z อย่างน้อย 1 ค่า หรือเลือก "รอผล"'; return; }
     body.details = { ...(body.details || {}), ...zd };
     body.score = null; body.maxScore = null;
+  } else if (body.provider === 'QCMD') {
+    if (body.score != null && !(Number.isInteger(body.score) && body.score >= 0 && body.score <= 3)) { err.textContent = 'QCMD Detection Score ต้องเป็น 0, 1, 2 หรือ 3'; return; }
+    body.maxScore = null;
+    if (body.details && typeof body.details === 'object') body.details = { ...body.details, criteria: Q_CRITERIA };
   }
 
   $('eqaSave').disabled = true; $('eqaSave').textContent = '⏳ กำลังบันทึก...';
@@ -1145,10 +1185,10 @@ function parseQcmdIndividual(t, out) {
   const scores = [det, est].filter(m => m && m[1] !== 'N/A').map(m => +m[1]);
   out.details = { type:'qcmd', refCode: ref ? ref[1] : null, eqaGroup: grp ? grp[1] : null,
     detectionScore: det ? det[1] : null, estimationScore: est ? est[1] : null,
-    criteria:'0 ดีเยี่ยม · 1 ยอมรับ · 2 เฝ้าระวัง · 3 ไม่ผ่าน' };
+    criteria: Q_CRITERIA };
   if (scores.length) {
     const s = Math.max(...scores);
-    G.score = s; G.grade = ['ดีเยี่ยม','ยอมรับ','เฝ้าระวัง','ไม่ผ่าน'][Math.min(s, 3)];
+    G.score = s; G.grade = Q_GRADE[Math.min(s, 3)];
     G.result = s >= 3 ? 'FAIL' : 'PASS';
     G.note = [det && `Detection Score ${det[1]}`, est && `Estimation Score ${est[1]}`].filter(Boolean).join(' · ');
     out.found.push(`คะแนน (${G.note})`);
