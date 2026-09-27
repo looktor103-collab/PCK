@@ -572,12 +572,12 @@ function renderDetails(r) {
     const zc = v => { const n = zNum(v); return n == null ? '' : Math.abs(n) >= Z_FAIL ? 'eqa-z-bad' : Math.abs(n) >= Z_PASS ? 'eqa-z-warn' : ''; };
     const pops = Array.isArray(d.pops) && d.pops.length ? d.pops : CD4_Z_POPS.map(pop => ({ pop }));
     const cell = v => v == null || v === '' ? '—' : esc(v);
-    const calc = pops.some(p => p.zFrom === 'calc');
-    h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr><th>Population</th><th>Lab's Result (%)</th><th>Group's Mean</th><th>SD</th><th>N</th>${pops.some(p => p.low != null) ? '<th>Acceptable interval</th>' : ''}<th>Lab's Z${calc ? ' (คำนวณ)' : ''}</th><th>Performance</th></tr></thead><tbody>
+    const hasIv = pops.some(p => p.low != null), hasRep = pops.some(p => p.zReport != null || p.perfReport);
+    h += `<div style="overflow-x:auto"><table class="eqa-sub"><thead><tr><th>Population</th><th>Lab's Result (%)</th><th>Group's Mean</th><th>SD</th><th>N</th>${hasIv ? '<th>Acceptable interval</th>' : ''}<th>Lab's Z (x−mean)/SD</th><th>Performance</th>${hasRep ? '<th>ในรายงาน (อ้างอิง)</th>' : ''}</tr></thead><tbody>
       ${pops.map(p => { const zv = d.z && d.z[p.pop] != null ? d.z[p.pop] : p.z; const used = CD4_Z_POPS.includes(p.pop);
-        return `<tr${used ? '' : ' class="pck-muted"'}><td>${used ? '<b>' + esc(p.pop) + '</b>' : esc(p.pop)}</td><td>${cell(p.result)}</td><td>${cell(p.mean)}</td><td>${cell(p.sd)}</td><td>${cell(p.n)}</td>${pops.some(x => x.low != null) ? `<td>${p.low != null ? `${p.low} – ${p.high}` : '—'}</td>` : ''}<td class="${used ? zc(zv) : ''}">${cell(zv)}</td><td>${cell(p.perf || (used && zNum(zv) != null ? CD4_GRADE[zLevel(Math.abs(zNum(zv)))] : null))}</td></tr>`; }).join('')}
+        return `<tr${used ? '' : ' class="pck-muted"'}><td>${used ? '<b>' + esc(p.pop) + '</b>' : esc(p.pop)}</td><td>${cell(p.result)}</td><td>${cell(p.mean)}</td><td>${cell(p.sd)}</td><td>${cell(p.n)}</td>${hasIv ? `<td>${p.low != null ? `${p.low} – ${p.high}` : '—'}</td>` : ''}<td class="${used ? zc(zv) : ''}">${cell(zv)}</td><td>${cell(zNum(zv) != null ? CD4_GRADE[zLevel(Math.abs(zNum(zv)))] : null)}</td>${hasRep ? `<td>${p.zReport != null || p.perfReport ? esc([p.zReport != null ? 'Z ' + p.zReport : '', p.perfReport || ''].filter(Boolean).join(' · ')) : '—'}</td>` : ''}</tr>`; }).join('')}
       </tbody></table></div>`;
-    if (calc) h += '<div class="pck-muted" style="font-size:12px">รายงานแบบใหม่ไม่พิมพ์ Z-score — คำนวณ Lab\'s Z = (ค่าของแล็บ − Overall mean) / Std. Dev. · ประเมินจาก CD3+ และ CD3+/CD4+</div>';
+    h += `<div class="pck-muted" style="font-size:12px">Lab's Z = (ค่าของแล็บ − Group's/Overall mean) ÷ SD · ประเมินจาก CD3+ และ CD3+/CD4+ ของ Current Trial${hasRep ? ' · "Z-score" ที่รายงานแบบเดิมพิมพ์มาคือ (ค่า − mean) ÷ mean จึงแสดงไว้อ้างอิงเท่านั้น ไม่ใช้ตัดสินผล' : ''}</div>`;
   }
   else if (d.z) {
     const zc = v => { const n = zNum(v); return n == null ? '' : isZRound(r) ? (Math.abs(n) >= Z_FAIL ? 'eqa-z-bad' : Math.abs(n) >= Z_PASS ? 'eqa-z-warn' : '') : Math.abs(n) >= 3 ? 'eqa-z-bad' : Math.abs(n) > 2 ? 'eqa-z-warn' : ''; };
@@ -707,7 +707,7 @@ async function autoSaveCd4(q, parsed) {
     await api(`/pdf?id=${saved.id}&name=${encodeURIComponent(q.file.name)}`, { method:'PUT', headers:{ 'Content-Type':'application/pdf' }, body: q.file });
     r.pdfName = q.file.name;
     q.state = 'saved';
-    q.msg = `Trial ${trial} → ปี ${body.yearBE} ครั้งที่ ${body.round} · ${scoreText(r)} · ${RESULT[body.result].label}${roundLevel(r) === 'warn' ? ' (เฝ้าระวัง)' : ''}${needsCar(r) ? ' · ต้องทำ CAR' : ''}${dup ? ' · อัพเดตรอบเดิม' : ''}`;
+    q.msg = `Trial ${trial} → ปี ${body.yearBE} ครั้งที่ ${body.round} · ${scoreText(r)} · ${RESULT[body.result].label}${roundLevel(r) === 'warn' ? ' (เฝ้าระวัง)' : ''}${needsCar(r) ? ' · ต้องทำ CAR' : ''}${dup ? ' · อัพเดตรอบเดิม' : ''}${parsed.warn.length ? ' · ⚠️ ' + parsed.warn.join(' · ') : ''}`;
     render();
   } catch (x) {
     q.state = 'error';
@@ -1530,11 +1530,17 @@ function parseCd4(t, out) {
   const pops = [];
   // เริ่มอ่านหลังหัวตาราง — ก่อนหน้านั้นมีชื่อกราฟ "CD3+ Lymphocytes (%)" ที่ขึ้นต้นเหมือนแถว CD3+
   const cur = /Current Trial.*?Laboratory performance(.*?)Report Issue Date/i.exec(t);
-  if (cur) {                                                                     // แบบเดิม: ใช้ Z-score ที่รายงานพิมพ์มา
+  const zOf = (v, mean, sd) => v == null || mean == null || !sd ? null : Math.round((v - mean) / sd * 100) / 100;
+  if (cur) {
+    // แบบเดิม: ใช้ค่าจากตาราง Current Trial เท่านั้น (ตาราง Series คือ Trial ก่อนหน้า)
+    // "Z-score" ที่พิมพ์มาคือ (ค่า − mean) / mean ไม่ใช่ z จริง — เก็บไว้อ้างอิง แล้วคำนวณ z ใหม่ด้วย SD
     const re = /(CD3\+\/CD4\+|CD3\+\/CD8\+|CD3\+|CD19\+|CD16\/56\+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/g;
-    for (const m of cur[1].matchAll(re))
-      pops.push({ pop: m[1], result: num(m[2]), mean: num(m[3]), sd: num(m[4]), n: num(m[5]), z: num(m[6]), perf: m[7] === '-' ? null : m[7], zFrom: 'report' });
-  } else {                                                                       // แบบใหม่: คำนวณ z จาก mean/SD
+    for (const m of cur[1].matchAll(re)) {
+      const result = num(m[2]), mean = num(m[3]), sd = num(m[4]);
+      pops.push({ pop: m[1], result, mean, sd, n: num(m[5]), z: zOf(result, mean, sd),
+        zReport: num(m[6]), perfReport: m[7] === '-' ? null : m[7], zFrom: 'calc' });
+    }
+  } else {                                                                       // แบบใหม่: ไม่มี z ในไฟล์ — คำนวณจาก mean/SD
     const p1 = t.split(/Lymphocyte Immunophenotyping Summary Report/i).slice(0, 2).join(' ');
     const blocks = [...p1.matchAll(/Overall mean Std\. Dev\. N Acceptable \(%\)\s+([\d.]+)\s+([\d.]+)\s+(\d+)\s+([\d.]+)/gi)].map(m => ({ mean: +m[1], sd: +m[2], n: +m[3], acc: +m[4] }));
     const ivs = [...p1.matchAll(/Acceptable interval:\s*([\d.]+)\s*[–-]\s*([\d.]+)/gi)].slice(0, 3).map(m => [+m[1], +m[2]]);
@@ -1547,8 +1553,7 @@ function parseCd4(t, out) {
       const vv = fit([...vals].reverse()) <= fit(vals) ? [...vals].reverse() : vals;
       ['CD3+', 'CD3+/CD4+', 'CD3+/CD8+'].forEach((pop, i) => {
         const s = stat[i], v = vv[i];
-        pops.push({ pop, result: v, mean: s.mean, sd: s.sd, n: s.n, low: ivs[i][0], high: ivs[i][1],
-          z: v == null || !s.sd ? null : Math.round((v - s.mean) / s.sd * 100) / 100, perf: null, zFrom: 'calc' });
+        pops.push({ pop, result: v, mean: s.mean, sd: s.sd, n: s.n, low: ivs[i][0], high: ivs[i][1], z: zOf(v, s.mean, s.sd), zFrom: 'calc' });
       });
     }
   }
@@ -1558,7 +1563,9 @@ function parseCd4(t, out) {
   if (!Object.keys(z).length) { out.warn.push('อ่าน Lab\'s Z-score ของ CD3+ และ CD3+/CD4+ ไม่ได้ — กรุณากรอกเอง'); return; }
   const missing = CD4_Z_POPS.filter(p => z[p] == null);
   if (missing.length) out.warn.push(`ไม่มีค่า ${missing.join(', ')} ในรายงาน — ประเมินจากค่าที่มี`);
-  out.found.push(`Lab's Z ${Object.entries(z).map(([k, v]) => `${k} ${v}`).join(' · ')}${pops.some(p => p.zFrom === 'calc') ? ' (คำนวณจาก mean/SD)' : ''}`);
+  out.found.push(`Lab's Z = (ค่า − mean) / SD: ${Object.entries(z).map(([k, v]) => `${k} ${v}`).join(' · ')}`);
+  const differ = pops.filter(p => CD4_Z_POPS.includes(p.pop) && p.perfReport && p.z != null && CD4_GRADE[zLevel(Math.abs(p.z))] !== p.perfReport);
+  if (differ.length) out.warn.push(`ผลตาม z ที่คำนวณด้วย SD ต่างจากที่รายงานเขียนไว้: ${differ.map(p => `${p.pop} z ${p.z} → ${CD4_GRADE[zLevel(Math.abs(p.z))]} (รายงาน: ${p.perfReport})`).join(' · ')}`);
   const m = zMax(out.details);
   G.result = zResult(out.details);
   G.grade = CD4_GRADE[zLevel(m)];
