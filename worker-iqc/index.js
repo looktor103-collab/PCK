@@ -24,6 +24,12 @@
             (a round with several samples, e.g. COVID สวส. 2566 pool saliva / pool swab)
    (GET /api/eqa also returns the document list as `docs`)
 
+   Inventory (Inventory/inventory.html) — one JSON row per sheet tab + row id:
+     GET  /api/inv[?tab=TXN]                              → { ok, initialized, data: { TAB: [rows] } }
+     POST /api/inv  { tab, upsert:[rows], delete:[ids] }  → row-level changes (safe with several users)
+     POST /api/inv/import { data: { TAB: [rows] } }       → one-time copy from Google Sheets; marks the store initialized
+   Google Sheets / Drive stay as backup only (written from the page through Apps Script).
+
    The API key is embedded in the public page source so every computer works
    without typing it, so it is not a real secret. The Origin allow-list only stops
    other websites' scripts; a non-browser client can still send any Origin.
@@ -68,11 +74,14 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/inv', '/api/inv/import', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
       const m = request.method;
+      if (route === '/api/inv' && m === 'GET') return await invGet(url, env.DB);
+      if (route === '/api/inv' && m === 'POST') return await invSave(request, env.DB);
+      if (route === '/api/inv/import' && m === 'POST') return await invImport(request, env.DB);
       if (route === '/api/iqc' && m === 'GET') return await handleGet(url, env.DB);
       if (route === '/api/iqc' && m === 'POST') return await handlePost(request, env.DB);
       if (route === '/api/eqa' && m === 'GET') return await eqaList(env.DB);
@@ -90,6 +99,82 @@ export default {
     }
   },
 };
+
+/* ── Inventory ─────────────────────────────────────────────────────────────
+   The page keeps its sheet-shaped data model (tabs of row objects with an id), so each
+   row is stored as JSON. Saves send only the rows that changed, so two people saving at
+   the same time no longer overwrite each other's rows (Google Sheets rewrote whole tabs). */
+const INV_TABS = ['overview', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+  'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS'];
+const INV_MAX_IMPORT_BYTES = 10_000_000;
+const INV_MAX_ROW_BYTES = 50_000;
+const INV_UPSERT = `INSERT INTO inv_rows (tab, id, data, updated_at) VALUES (?, ?, ?, ?)
+  ON CONFLICT (tab, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at`;
+
+function invRow(row) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) throw new Error('row must be an object');
+  const id = str(row.id, 120);
+  if (!id) throw new Error('row without id');
+  const data = JSON.stringify(row);
+  if (data.length > INV_MAX_ROW_BYTES) throw new Error(`row ${id} is too large`);
+  return { id, data };
+}
+
+async function invBatch(db, stmts) {
+  for (let i = 0; i < stmts.length; i += 100) await db.batch(stmts.slice(i, i + 100));
+}
+
+async function readJson(request, maxBytes) {
+  const text = await request.text();
+  if (text.length > maxBytes) throw new Error('request too large');
+  return JSON.parse(text);
+}
+
+async function invGet(url, db) {
+  const tab = url.searchParams.get('tab');
+  if (tab && !INV_TABS.includes(tab)) return json({ ok: false, error: 'unknown tab' }, 400);
+  const meta = await db.prepare(`SELECT value FROM inv_meta WHERE key = 'migrated_at'`).first();
+  const q = tab
+    ? db.prepare('SELECT tab, data FROM inv_rows WHERE tab = ? ORDER BY rowid').bind(tab)
+    : db.prepare('SELECT tab, data FROM inv_rows ORDER BY rowid');
+  const { results } = await q.all();
+  const data = {};
+  (tab ? [tab] : INV_TABS).forEach(t => { data[t] = []; });
+  results.forEach(r => { if (data[r.tab]) data[r.tab].push(JSON.parse(r.data)); });
+  return json({ ok: true, initialized: !!meta, migratedAt: meta ? meta.value : null, data });
+}
+
+async function invSave(request, db) {
+  const body = await readJson(request, MAX_BODY_BYTES);
+  if (!INV_TABS.includes(body.tab)) return json({ ok: false, error: 'unknown tab' }, 400);
+  const now = new Date().toISOString();
+  const up = (Array.isArray(body.upsert) ? body.upsert : []).map(invRow);
+  const del = (Array.isArray(body.delete) ? body.delete : []).map(id => str(id, 120)).filter(Boolean);
+  const stmts = [
+    ...up.map(r => db.prepare(INV_UPSERT).bind(body.tab, r.id, r.data, now)),
+    ...del.map(id => db.prepare('DELETE FROM inv_rows WHERE tab = ? AND id = ?').bind(body.tab, id)),
+  ];
+  if (stmts.length) await invBatch(db, stmts);
+  return json({ ok: true, upserted: up.length, deleted: del.length });
+}
+
+async function invImport(request, db) {
+  const body = await readJson(request, INV_MAX_IMPORT_BYTES);
+  if (!body.data || typeof body.data !== 'object') return json({ ok: false, error: 'data required' }, 400);
+  const now = new Date().toISOString();
+  const counts = {};
+  const stmts = [];
+  for (const tab of INV_TABS) {
+    const rows = (Array.isArray(body.data[tab]) ? body.data[tab] : []).map(invRow);
+    counts[tab] = rows.length;
+    rows.forEach(r => stmts.push(db.prepare(INV_UPSERT).bind(tab, r.id, r.data, now)));
+  }
+  stmts.push(db.prepare(
+    `INSERT INTO inv_meta (key, value) VALUES ('migrated_at', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`
+  ).bind(now));
+  await invBatch(db, stmts);
+  return json({ ok: true, counts });
+}
 
 /* ── EQA ─────────────────────────────────────────────────────────────────── */
 const EQA_PROGRAMS = ['CD4', 'HIVVL', 'HPV', 'COVID'];

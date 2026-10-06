@@ -415,6 +415,11 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
   background:#fdf8f9;transition:border .2s;
 }
 .url-input-wrap input:focus{outline:none;border-color:var(--gold-mid);background:white}
+/* CLOUD BOX (setup modal) */
+.cloud-box{border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:1rem 1.1rem;margin-bottom:6px;background:var(--blush)}
+.cloud-box h4{font-size:14px;font-weight:700;color:var(--rose-dark);margin-bottom:4px}
+.cloud-box p{font-size:12.5px;color:var(--text2);margin-bottom:8px;line-height:1.6}
+.cloud-box .cloud-acts{display:flex;gap:8px;flex-wrap:wrap}
 /* TOAST */
 .toast-wrap{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{
@@ -588,8 +593,9 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       <span class="meta-chip">⏰ <span id="live-time">—</span></span>
       <span class="meta-chip">📊 ปีงบประมาณ 2569</span>
       <span class="meta-chip" id="userChip" style="display:none">👤 <span id="userEmail">—</span></span>
-      <span class="sync-chip sync-nourl" id="syncChip" onclick="openSetup()" title="คลิกเพื่อตั้งค่า">☁️ ยังไม่ได้เชื่อมต่อ Google Sheets</span>
+      <span class="sync-chip sync-idle" id="syncChip" onclick="openSetup()" title="คลิกเพื่อดูการเชื่อมต่อ">☁️ กำลังเชื่อมต่อ...</span>
       <button class="btn btn-outline btn-sm" id="setupBtn" onclick="openSetup()" style="padding:3px 10px;font-size:11px">⚙️ ตั้งค่า</button>
+      <button class="btn btn-outline btn-sm" id="driveBtn" onclick="backupExcelToDrive()" title="บันทึกข้อมูลทั้งหมดเป็นไฟล์ Excel ลงโฟลเดอร์ Inventory Backup ใน Google Drive" style="padding:3px 10px;font-size:11px">📁 สำรอง Excel ลง Drive</button>
     </div>
   </div>
 </div>
@@ -1199,10 +1205,12 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
 <div class="overlay" id="setupOverlay">
   <div class="modal-box modal-box-wide">
     <div class="modal-head">
-      <span class="modal-title">⚙️ ตั้งค่าเชื่อมต่อ Google Sheets</span>
+      <span class="modal-title">⚙️ การเชื่อมต่อข้อมูล</span>
       <button class="modal-close" onclick="closeSetup()">✕</button>
     </div>
     <div class="modal-body">
+      <div class="cloud-box" id="cloudBox"></div>
+      <div class="sec-div">Google Sheets / Google Drive — ใช้ย้ายข้อมูลครั้งแรก และเป็นที่สำรองข้อมูล</div>
       <div class="setup-step">
         <div class="step-num">1</div>
         <div class="step-body">
@@ -1442,6 +1450,7 @@ function doPost(e) {
     const ss = ss_();
     if (body.action === 'save')    { writeTab(ss, body.tab, body.rows); return jsonOut({ ok: true }); }
     if (body.action === 'saveAll') { saveAll(body.data);                return jsonOut({ ok: true }); }
+    if (body.action === 'backupFile') { return jsonOut(backupFile_(body)); }
     return jsonOut({ ok: false, error: 'unknown action' });
   } catch (err) {
     return jsonOut({ ok: false, error: err.toString() });
@@ -1451,6 +1460,19 @@ function doPost(e) {
 function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/** สำรองไฟล์ (Excel / PDF) ที่หน้าเว็บส่งมา ลงโฟลเดอร์ "Inventory Backup" ใน Google Drive */
+const BACKUP_FOLDER = 'Inventory Backup';
+function backupFile_(b) {
+  if (!b.base64 || !b.name) return { ok: false, error: 'file required' };
+  const blob = Utilities.newBlob(Utilities.base64Decode(b.base64), b.mime || 'application/octet-stream', b.name);
+  const file = backupFolder_().createFile(blob);
+  return { ok: true, name: file.getName(), url: file.getUrl() };
+}
+function backupFolder_() {
+  const it = DriveApp.getFoldersByName(BACKUP_FOLDER);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(BACKUP_FOLDER);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -1573,7 +1595,8 @@ function healthCheck() {
           <p>
             คลิก <strong>Deploy</strong> → <strong>New deployment</strong> → เลือกประเภท <strong>Web app</strong><br>
             ตั้งค่า: <strong>Execute as: Me</strong> | <strong>Who has access: Anyone</strong> ← ถ้าไม่ตั้งข้อนี้ URL จะตอบ 404<br>
-            กด <strong>Deploy</strong> → คัดลอก <strong>Web app URL</strong><br><br>
+            กด <strong>Deploy</strong> → คัดลอก <strong>Web app URL</strong><br>
+            <strong>เคย Deploy แล้ว</strong> (อัปเดตโค้ดเพื่อใช้ปุ่ม 📁 สำรอง Excel ลง Drive): <strong>Deploy</strong> → <strong>Manage deployments</strong> → ✏️ → Version: <strong>New version</strong> → <strong>Deploy</strong> — URL เดิมใช้ต่อได้ และครั้งแรกจะขออนุญาตเข้าถึง Google Drive ให้กด Allow<br><br>
             <strong>ใช้ได้ 2 แบบ</strong><br>
             • <strong>เปิดจาก Apps Script เลย</strong> — เพิ่มไฟล์ HTML ชื่อ <code>index</code> ในโปรเจกต์ แล้ววางไฟล์นี้ทั้งไฟล์ลงไป จากนั้นเปิด Web app URL ได้เลย ไม่ต้องตั้งค่า URL ด้านล่าง<br>
             • <strong>โฮสต์ไฟล์เองที่อื่น</strong> (Cloudflare / GitHub) — เอา Web app URL มาวางในช่องขั้นที่ 4
@@ -1583,7 +1606,7 @@ function healthCheck() {
       <div class="setup-step">
         <div class="step-num">4</div>
         <div class="step-body">
-          <h4>วาง Web App URL ด้านล่าง</h4>
+          <h4>วาง Web App URL ด้านล่าง (ใช้ย้ายข้อมูลครั้งแรก · สำรองลง Google Sheets / Drive)</h4>
           <div class="url-input-wrap">
             <input type="url" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/XXXXXX/exec">
             <button class="btn btn-gold" onclick="saveScriptUrl()">💾 บันทึก URL</button>
@@ -2001,7 +2024,139 @@ async function loadFromGoogle(){
     setSyncStatus('offline'); showToast('⚡ ออฟไลน์ — ใช้ข้อมูล cache','info');
   } finally { hideLoading(); renderAll(); }
 }
+/* ─────────── CLOUDFLARE — ฐานข้อมูลหลัก ───────────
+   เก็บข้อมูลที่ Cloudflare D1 (Worker splab-iqc-api) แทน Google Sheets เพื่อให้อ่าน/บันทึกได้เร็ว
+   - บันทึกเฉพาะแถวที่เพิ่ม/แก้/ลบ (เทียบกับสำเนาล่าสุดที่ตรงกับ Cloud) หลายคนบันทึกพร้อมกันได้ ไม่ทับกัน
+   - ออฟไลน์ก็บันทึกได้ ระบบจะส่งขึ้น Cloud ให้เองเมื่อเปิดหน้าครั้งถัดไป
+   - Google Sheets / Drive เหลือหน้าที่สำรองข้อมูล (ส่งให้ Apps Script ทีหลัง ไม่ต้องรอ)
+   - ก่อนย้ายข้อมูลครั้งแรก (Cloud ยังว่าง) หน้าเว็บยังใช้ Google Sheets แบบเดิม
+   API key ฝังในหน้าเว็บแบบเดียวกับหน้า EQA — Worker รับเฉพาะเว็บของเราเท่านั้น */
+const INV_API = 'https://splab-iqc-api.looktor103.workers.dev/api/inv';
+const INV_KEY = 'YWKvNwzgKfHgT2Z8DjuCCKlQ2XNa2wzm';
+const SNAP_PRE = 'inv2026_snap_';        // สำเนาที่ตรงกับ Cloud ล่าสุด (ไว้หาแถวที่เปลี่ยน)
+const CLOUD_READY = 'inv2026_cloud_ready';
+let cloudMode = false;                    // true = ใช้ Cloudflare เป็นฐานข้อมูลหลักแล้ว
+let cloudInfo = { initialized:null, migratedAt:null, rows:0 };
+
+async function cloudFetch(path, opts){
+  opts = opts || {};
+  const res = await fetch(INV_API + (path||''), Object.assign({}, opts, {
+    headers: Object.assign({ 'X-API-Key':INV_KEY }, opts.body ? { 'Content-Type':'application/json' } : {}),
+  }));
+  let j = null;
+  try{ j = await res.json(); }catch(e){}
+  if(!j || !j.ok) throw new Error((j && j.error) || ('HTTP '+res.status));
+  return j;
+}
+function getSnap(tab){ try{ return JSON.parse(localStorage.getItem(SNAP_PRE+tab)||'{}'); }catch(e){ return {}; } }
+function setSnap(tab, rows){
+  const m = {}; (rows||[]).forEach(r=>{ m[r.id] = JSON.stringify(r); });
+  try{ localStorage.setItem(SNAP_PRE+tab, JSON.stringify(m)); }catch(e){}
+}
+/** ทุกแถวต้องมี id ก่อนส่งขึ้น Cloud */
+function ensureIds(tab){
+  const rows = getData(tab);
+  let changed = false;
+  rows.forEach(r=>{ if(!r.id){ r.id = genId(tab.toLowerCase()); changed = true; } });
+  if(changed) saveLocal(tab, rows);
+  return rows;
+}
+/** แปลงข้อมูลจาก Cloud ให้อยู่ในรูปที่แอปใช้ แล้วเก็บลงเครื่อง + จำเป็นสำเนาล่าสุด */
+function applyCloudTab(tab, rows){
+  const clean = normalizeDates(tab, tab==='BILLS' ? normalizeBills(rows||[]) : (rows||[]));
+  saveLocal(tab, clean);
+  setSnap(tab, clean);
+}
+/** ส่งเฉพาะแถวที่เปลี่ยนจากสำเนาล่าสุดขึ้น Cloud — คืนจำนวนแถวที่ส่ง */
+async function pushTab(tab){
+  const rows = ensureIds(tab);
+  const snap = getSnap(tab);
+  const cur = {};
+  rows.forEach(r=>{ cur[r.id] = JSON.stringify(r); });
+  const upsert = rows.filter(r=>snap[r.id] !== cur[r.id]);
+  const del = Object.keys(snap).filter(id=>!(id in cur));
+  if(!upsert.length && !del.length) return { n:0, sent:cur };
+  await cloudFetch('', { method:'POST', body: JSON.stringify({ tab:tab, upsert:upsert, delete:del }) });
+  try{ localStorage.setItem(SNAP_PRE+tab, JSON.stringify(cur)); }catch(e){}
+  return { n: upsert.length + del.length, sent:cur };
+}
+/** โหลดข้อมูลล่าสุดของชีตเดียว (ได้รายการที่คนอื่นเพิ่งบันทึกด้วย) — ไม่ทับถ้าระหว่างนั้นมีการแก้ในเครื่อง */
+async function pullTab(tab, sent){
+  const j = await cloudFetch('?tab='+encodeURIComponent(tab));
+  const now = {}; getData(tab).forEach(r=>{ now[r.id] = JSON.stringify(r); });
+  if(sent && JSON.stringify(now) !== JSON.stringify(sent)) return false;
+  const before = JSON.stringify(getData(tab));
+  applyCloudTab(tab, j.data[tab]);
+  return JSON.stringify(getData(tab)) !== before;
+}
+/** เปิดหน้า / กด Sync: ส่งงานที่ค้าง (ตอนออฟไลน์) ก่อน แล้วโหลดทุกชีตจาก Cloud
+    คืน true = ใช้ Cloud ได้ · false = Cloud ยังไม่มีข้อมูล (ยังไม่ย้าย) · null = ติดต่อไม่ได้ */
+async function loadFromCloud(){
+  setSyncStatus('ing', '🔄 กำลังโหลดจาก Cloudflare...');
+  const ready = !!localStorage.getItem(CLOUD_READY);
+  try{
+    let pending = 0;
+    if(ready) for(const t of ALL_TABS){ const n = (await pushTab(t)).n; if(n){ pending += n; mirrorLater(t); } }
+    const j = await cloudFetch('');
+    cloudInfo = { initialized:j.initialized, migratedAt:j.migratedAt,
+                  rows:Object.values(j.data).reduce((a,r)=>a+r.length,0) };
+    if(!j.initialized){ cloudMode = false; return false; }
+    ALL_TABS.forEach(t=>applyCloudTab(t, j.data[t]));
+    localStorage.setItem(CLOUD_READY, '1');
+    cloudMode = true;
+    setSyncStatus('ok', '✅ Cloudflare · ข้อมูลล่าสุด');
+    if(pending) showToast(`☁️ ส่งรายการที่บันทึกไว้ตอนออฟไลน์ ${pending} แถวขึ้น Cloud แล้ว`,'success');
+    return true;
+  }catch(e){
+    cloudMode = ready;            // เคยใช้ Cloud แล้ว → ทำงานต่อด้วยข้อมูลในเครื่อง ส่งขึ้นทีหลัง
+    setSyncStatus('offline', ready ? '⚡ ออฟไลน์ — บันทึกไว้ในเครื่อง จะส่งขึ้น Cloud ให้เอง' : '⚡ ติดต่อ Cloudflare ไม่ได้');
+    return null;
+  }
+}
+
+/* สำรองลง Google Sheets แบบไม่ต้องรอ — รวบหลายครั้งที่บันทึกติดกันเป็นครั้งเดียว
+   คิวเก็บไว้ในเครื่อง ถ้าปิด/รีเฟรชหน้าก่อนส่ง จะส่งให้ตอนเปิดหน้าครั้งถัดไป */
+const MIRROR_KEY = 'inv2026_mirror_queue';
+let mirrorTimer = null;
+function mirrorQueue(){ try{ return JSON.parse(localStorage.getItem(MIRROR_KEY)||'[]'); }catch(e){ return []; } }
+function mirrorLater(tab){
+  if(!getScriptUrl()) return;
+  const q = mirrorQueue();
+  if(tab && q.indexOf(tab) < 0) q.push(tab);
+  try{ localStorage.setItem(MIRROR_KEY, JSON.stringify(q)); }catch(e){}
+  if(!q.length) return;
+  clearTimeout(mirrorTimer);
+  mirrorTimer = setTimeout(async ()=>{
+    const tabs = mirrorQueue();
+    try{ localStorage.removeItem(MIRROR_KEY); }catch(e){}
+    for(const t of tabs){
+      let rows = getData(t);
+      if(t === 'BILLS') rows = billsForSheet(rows);
+      try{ await fetch(getScriptUrl(), { method:'POST', body: JSON.stringify({ action:'save', tab:t, rows:rows }), redirect:'follow' }); }
+      catch(e){ /* สำรองไม่สำเร็จไม่กระทบข้อมูลหลัก — ครั้งหน้าจะส่งทั้งชีตใหม่อีกที */ }
+    }
+  }, 8000);
+}
+
 async function syncTab(tab){
+  if(cloudMode && !IS_GAS){
+    setSyncStatus('ing', '🔄 กำลังบันทึก...');
+    try{
+      const r = await pushTab(tab);
+      const changed = await pullTab(tab, r.sent);
+      setSyncStatus('ok', '✅ Cloudflare · บันทึกแล้ว');
+      if(r.n) showToast('☁️ บันทึกแล้ว','success');
+      if(changed) renderAll();
+      mirrorLater(tab);
+    }catch(e){
+      setSyncStatus('offline', '⚡ ออฟไลน์ — บันทึกไว้ในเครื่อง จะส่งขึ้น Cloud ให้เอง');
+      showToast('⚡ บันทึกในเครื่องแล้ว — จะส่งขึ้น Cloud เมื่อออนไลน์','info');
+    }
+    return;
+  }
+  return syncTabGoogle(tab);
+}
+async function syncTabGoogle(tab){
   setSyncStatus('ing');
   let rows = getData(tab);
   if(tab === 'BILLS') rows = billsForSheet(rows);
@@ -2020,6 +2175,11 @@ async function syncTab(tab){
   } catch(e){ setSyncStatus('offline'); showToast('⚡ บันทึกใน cache — ออฟไลน์','info'); }
 }
 async function syncAll(){
+  if(cloudMode && !IS_GAS){
+    showLoading('กำลังดึงข้อมูลล่าสุดจาก Cloudflare...');
+    try{ await loadFromCloud(); } finally { hideLoading(); renderAll(); }
+    return;
+  }
   if(!IS_GAS && !getScriptUrl()){ openSetup(); return; }
   showLoading('กำลังดึงข้อมูลล่าสุดจาก Google Sheets...');
   await loadFromGoogle();
@@ -3690,6 +3850,18 @@ async function saveItem(){
 
 /* ═══════════════ SETUP ═══════════════ */
 function renderSetupBanner(show){
+  if(show === 'migrate'){
+    document.getElementById('setupBanner').innerHTML = `
+    <div class="setup-banner">
+      <div class="setup-banner-icon">🚀</div>
+      <div class="setup-banner-body">
+        <div class="setup-banner-title">ย้ายฐานข้อมูลไป Cloudflare — โหลดและบันทึกเร็วขึ้นมาก</div>
+        <div class="setup-banner-sub">ทำครั้งเดียวจากเครื่องใดก็ได้ ระบบจะคัดลอกข้อมูลทั้งหมดจาก Google Sheets และนับจำนวนแถวเทียบให้ · ข้อมูลใน Google Sheets ยังอยู่ครบ ใช้เป็นที่สำรอง</div>
+      </div>
+      <button class="btn btn-gold btn-sm" onclick="${getScriptUrl()?'migrateFromGoogle()':'openSetup()'}" style="flex-shrink:0">${getScriptUrl()?'🚀 ย้ายข้อมูลเลย':'⚙️ ใส่ URL Google Sheets ก่อน'}</button>
+    </div>`;
+    return;
+  }
   document.getElementById('setupBanner').innerHTML = show ? `
     <div class="setup-banner">
       <div class="setup-banner-icon">☁️</div>
@@ -3700,7 +3872,30 @@ function renderSetupBanner(show){
       <button class="btn btn-gold btn-sm" onclick="openSetup()" style="flex-shrink:0">⚙️ ตั้งค่าเลย</button>
     </div>` : '';
 }
+function renderCloudBox(){
+  const box = document.getElementById('cloudBox'); if(!box) return;
+  if(IS_GAS){ box.style.display='none'; return; }
+  const when = cloudInfo.migratedAt ? new Date(cloudInfo.migratedAt).toLocaleString('th-TH') : '';
+  const hasUrl = !!getScriptUrl();
+  box.innerHTML = cloudMode ? `
+    <h4>☁️ ฐานข้อมูลหลัก: Cloudflare — ใช้งานอยู่</h4>
+    <p>ข้อมูลทั้งหมด ${fmt(cloudInfo.rows)} แถว${when?` · ย้ายจาก Google Sheets เมื่อ ${esc(when)}`:''}<br>
+    ทุกการบันทึกจะเก็บที่ Cloudflare ทันที และสำรองลง Google Sheets ให้อัตโนมัติ${hasUrl?'':' (เมื่อใส่ Web App URL ด้านล่าง)'}</p>
+    <div class="cloud-acts">
+      <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 โหลดข้อมูลล่าสุด</button>
+      <button class="btn btn-outline btn-sm" onclick="backupAllToSheets()" ${hasUrl?'':'disabled'}>📊 สำรองทุกชีตลง Google Sheets ตอนนี้</button>
+      <button class="btn btn-outline btn-sm" onclick="backupExcelToDrive()" ${hasUrl?'':'disabled'}>📁 สำรอง Excel ลง Google Drive</button>
+    </div>` : `
+    <h4>☁️ ฐานข้อมูลหลัก: ยังใช้ Google Sheets (ยังไม่ได้ย้ายไป Cloudflare)</h4>
+    <p>กดย้ายครั้งเดียว ระบบจะคัดลอกข้อมูลทั้งหมดจาก Google Sheets ไป Cloudflare แล้วนับจำนวนแถวเทียบให้ — ข้อมูลใน Google Sheets ยังอยู่ครบ</p>
+    <div class="cloud-acts">
+      <button class="btn btn-gold btn-sm" onclick="migrateFromGoogle()" ${hasUrl?'':'disabled'}>🚀 ย้ายข้อมูลจาก Google Sheets → Cloudflare</button>
+      <button class="btn btn-outline btn-sm" onclick="migrateFromLocal()" title="ใช้เมื่อเปิด Google Sheets ไม่ได้">💻 ใช้ข้อมูลในเครื่องนี้แทน</button>
+    </div>
+    ${hasUrl?'':'<p style="margin:8px 0 0">⬇️ ใส่ Web App URL ในขั้นที่ 4 ก่อน แล้วปุ่มย้ายข้อมูลจะกดได้</p>'}`;
+}
 function openSetup(){
+  renderCloudBox();
   document.getElementById('scriptUrlInput').value = getScriptUrl();
   document.getElementById('testResult').textContent='';
   document.getElementById('setupOverlay').classList.add('open');
@@ -3709,7 +3904,101 @@ function closeSetup(){ document.getElementById('setupOverlay').classList.remove(
 function saveScriptUrl(){
   const url=(document.getElementById('scriptUrlInput').value||'').trim();
   if(!/^https:\/\//.test(url)){ showToast('URL ไม่ถูกต้อง — ต้องขึ้นต้นด้วย https://','error'); return; }
-  setScriptUrl(url); showToast('✅ บันทึก URL แล้ว','success'); closeSetup(); loadFromGoogle();
+  setScriptUrl(url); showToast('✅ บันทึก URL แล้ว','success');
+  if(cloudMode){ renderCloudBox(); return; }
+  closeSetup(); loadFromGoogle().then(()=>renderSetupBanner('migrate'));
+}
+
+/* ─────────── ย้ายข้อมูลไป Cloudflare (ครั้งเดียว) ─────────── */
+/** เตรียมข้อมูลทุกชีต: แปลงวันที่, แตก lines ของบิล, เติม id ให้แถวที่ไม่มี (id คงที่ กดซ้ำก็ไม่เกิดแถวซ้ำ) */
+function prepareForCloud(src){
+  const data = {}, counts = {};
+  ALL_TABS.forEach(tab=>{
+    let rows = Array.isArray(src[tab]) ? src[tab] : [];
+    rows = normalizeDates(tab, tab==='BILLS' ? normalizeBills(rows) : rows);
+    const seen = {};
+    rows = rows.map((r,i)=>{
+      let id = String(r.id||'').trim() || `${tab.toLowerCase()}_mig_${i+1}`;
+      if(seen[id]){ seen[id]++; id = `${id}_dup${seen[id]}`; } else seen[id] = 1;
+      return Object.assign({}, r, { id:id });
+    });
+    data[tab] = rows; counts[tab] = rows.length;
+  });
+  return { data, counts };
+}
+async function uploadToCloud(prep, sourceLabel){
+  const total = Object.values(prep.counts).reduce((a,b)=>a+b,0);
+  const lines = ALL_TABS.filter(t=>prep.counts[t]).map(t=>`• ${t}: ${prep.counts[t]} แถว`).join('\n');
+  if(!total){ showToast('ไม่พบข้อมูลที่จะย้าย','error'); return; }
+  if(!confirm(`ย้ายข้อมูลจาก${sourceLabel}ไป Cloudflare ทั้งหมด ${total} แถว\n\n${lines}\n\nข้อมูลเดิมใน Google Sheets ยังอยู่ครบ — ยืนยันหรือไม่?`)) return;
+  showLoading('กำลังบันทึกลง Cloudflare...');
+  try{
+    await cloudFetch('/import', { method:'POST', body: JSON.stringify({ data: prep.data }) });
+    const j = await cloudFetch('');
+    const bad = ALL_TABS.filter(t=>(j.data[t]||[]).length !== prep.counts[t]);
+    ALL_TABS.forEach(t=>applyCloudTab(t, j.data[t]));
+    localStorage.setItem(CLOUD_READY, '1');
+    cloudMode = true;
+    cloudInfo = { initialized:true, migratedAt:j.migratedAt, rows:Object.values(j.data).reduce((a,r)=>a+r.length,0) };
+    renderSetupBanner(false); renderCloudBox(); renderAll();
+    setSyncStatus('ok', '✅ Cloudflare · ข้อมูลล่าสุด');
+    if(bad.length) alert('⚠️ ย้ายแล้ว แต่จำนวนแถวไม่ตรงกันที่: '+bad.map(t=>`${t} (ต้นทาง ${prep.counts[t]} / Cloud ${(j.data[t]||[]).length})`).join(', '));
+    else alert(`✅ ย้ายข้อมูลไป Cloudflare สำเร็จ ${cloudInfo.rows} แถว — จำนวนตรงกันทุกชีต\n\nต่อจากนี้ทุกเครื่องจะโหลด/บันทึกที่ Cloudflare และสำรองลง Google Sheets ให้อัตโนมัติ`);
+  }catch(e){ showToast('❌ ย้ายข้อมูลไม่สำเร็จ: '+esc(e.message),'error'); }
+  finally{ hideLoading(); }
+}
+async function migrateFromGoogle(){
+  const url = getScriptUrl();
+  if(!url){ openSetup(); showToast('ใส่ Web App URL ของ Google Sheets ก่อน','error'); return; }
+  showLoading('กำลังดึงข้อมูลทั้งหมดจาก Google Sheets...');
+  let src;
+  try{
+    const res = await fetch(url + (url.indexOf('?')>=0?'&':'?') + 'api=1', { redirect:'follow' });
+    const d = await res.json();
+    if(!d.ok) throw new Error(d.error || 'Sheets ตอบกลับผิดปกติ');
+    src = d.data;
+  }catch(e){ hideLoading(); showToast('❌ ดึงข้อมูลจาก Google Sheets ไม่ได้: '+esc(e.message),'error'); return; }
+  hideLoading();
+  await uploadToCloud(prepareForCloud(src), ' Google Sheets ');
+}
+async function migrateFromLocal(){
+  if(!confirm('ใช้ข้อมูลที่เก็บในเบราว์เซอร์เครื่องนี้ (โหลดจาก Google Sheets ครั้งล่าสุด) เป็นข้อมูลตั้งต้นบน Cloudflare\nแนะนำให้ใช้ปุ่ม "ย้ายข้อมูลจาก Google Sheets" มากกว่า เพราะได้ข้อมูลล่าสุดแน่นอน — ทำต่อหรือไม่?')) return;
+  const src = {}; ALL_TABS.forEach(t=>{ src[t] = getData(t); });
+  await uploadToCloud(prepareForCloud(src), 'เครื่องนี้ ');
+}
+
+/* ─────────── สำรองลง Google Sheets / Drive ─────────── */
+async function backupAllToSheets(){
+  const url = getScriptUrl(); if(!url){ openSetup(); return; }
+  const data = {};
+  ALL_TABS.forEach(t=>{ data[t] = t==='BILLS' ? billsForSheet(getData(t)) : getData(t); });
+  showLoading('กำลังสำรองทุกชีตลง Google Sheets...');
+  try{
+    const res = await fetch(url, { method:'POST', body: JSON.stringify({ action:'saveAll', data:data }), redirect:'follow' });
+    const r = await res.json();
+    if(r.ok) showToast('📊 สำรองทุกชีตลง Google Sheets แล้ว','success');
+    else showToast('⚠️ สำรองไม่สำเร็จ: '+esc(r.error),'error');
+  }catch(e){ showToast('❌ ติดต่อ Google Sheets ไม่ได้: '+esc(e.message),'error'); }
+  finally{ hideLoading(); }
+}
+async function backupExcelToDrive(){
+  const url = getScriptUrl();
+  if(!url){ openSetup(); showToast('ใส่ Web App URL ของ Apps Script ก่อน (ขั้นที่ 4)','error'); return; }
+  if(typeof XLSX==='undefined'){ showToast('❌ ไม่สามารถโหลด SheetJS','error'); return; }
+  const d = new Date(), p = n=>String(n).padStart(2,'0');
+  const name = `Inventory_backup_${today()}_${p(d.getHours())}${p(d.getMinutes())}.xlsx`;
+  const base64 = XLSX.write(buildWorkbook(), { bookType:'xlsx', type:'base64' });
+  showLoading('กำลังบันทึกไฟล์ Excel ลง Google Drive...');
+  try{
+    const res = await fetch(url, { method:'POST', redirect:'follow', body: JSON.stringify({ action:'backupFile', name:name,
+      mime:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', base64:base64 }) });
+    const r = await res.json();
+    if(r.ok) showToast(`📁 บันทึก ${esc(r.name||name)} ลงโฟลเดอร์ Inventory Backup แล้ว${r.url?` — <a href="${esc(r.url)}" target="_blank" rel="noopener">เปิดไฟล์</a>`:''}`,'success');
+    else if(/unknown action/i.test(r.error||'')){
+      showToast('⚠️ ต้องอัปเดตโค้ด Apps Script ก่อน — ทำตามขั้นที่ 2 และ 3 ในหน้าตั้งค่า','error'); openSetup();
+    } else showToast('⚠️ บันทึกลง Drive ไม่สำเร็จ: '+esc(r.error),'error');
+  }catch(e){ showToast('❌ ติดต่อ Apps Script ไม่ได้: '+esc(e.message),'error'); }
+  finally{ hideLoading(); }
 }
 async function testConnection(){
   const url=(document.getElementById('scriptUrlInput').value||'').trim();
@@ -3836,8 +4125,7 @@ function parseExcelDate(v){
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return '';
 }
-function exportExcel(){
-  if(typeof XLSX==='undefined'){ showToast('❌ ไม่สามารถโหลด SheetJS','error'); return; }
+function buildWorkbook(){
   const wb=XLSX.utils.book_new();
   const add=(name,aoa)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(aoa),name);
 
@@ -3898,7 +4186,11 @@ function exportExcel(){
     add(mn[m.key]||m.key,[['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','EXP.','ถึงภายในวันที่','ผู้ติดต่อ','โน้ต','RD'],
       ...getData(m.key).map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.qty,r.exp,r.dueDate,r.contact,r.note,r.rd])]);
   });
-  XLSX.writeFile(wb,'INVENTORY_2026_v3_export.xlsx');
+  return wb;
+}
+function exportExcel(){
+  if(typeof XLSX==='undefined'){ showToast('❌ ไม่สามารถโหลด SheetJS','error'); return; }
+  XLSX.writeFile(buildWorkbook(),'INVENTORY_2026_v3_export.xlsx');
   showToast('📤 Export Excel สำเร็จ','success');
 }
 
@@ -4595,10 +4887,22 @@ updateClock(); setInterval(updateClock,1000);
     document.getElementById('userChip').style.display='';
     renderSetupBanner(false);
     try{ const info=await gsRun('getUserInfo'); if(info&&info.email) document.getElementById('userEmail').textContent=info.email; }catch(e){}
+    document.getElementById('driveBtn').style.display='none';
     await loadFromGoogle(); loadItemList();
   } else {
-    if(getScriptUrl()){ await loadFromGoogle(); loadItemList(); }
-    else{ setSyncStatus('nourl'); renderSetupBanner(true); renderAll(); }
+    const cloud = await loadFromCloud();
+    if(cloud === false){
+      // Cloudflare ยังไม่มีข้อมูล → ใช้ Google Sheets แบบเดิมไปก่อน และชวนให้ย้าย
+      if(getScriptUrl()){ await loadFromGoogle(); loadItemList(); }
+      else{ setSyncStatus('nourl'); renderAll(); }
+      renderSetupBanner('migrate');
+    } else {
+      renderSetupBanner(false);
+      if(cloud === true) mirrorLater();      // สำรองที่ค้างจากครั้งก่อน
+      if(cloud === null && !cloudMode && getScriptUrl()){ await loadFromGoogle(); }
+      if(getScriptUrl()) loadItemList();
+      renderAll();
+    }
   }
   switchModule('dash');
 })();

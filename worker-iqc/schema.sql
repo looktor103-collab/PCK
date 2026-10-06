@@ -89,3 +89,18 @@ CREATE INDEX IF NOT EXISTS idx_eqa_docs_year ON eqa_docs (program, year_be);
 -- round_id; form_data holds { "label": "<sample>" }.
 ALTER TABLE eqa_docs ADD COLUMN round_id INTEGER;
 ALTER TABLE eqa_docs ADD COLUMN form_data TEXT;
+
+-- Inventory (Inventory/inventory.html): one JSON row per sheet tab + row id.
+-- inv_meta.migrated_at is set when the data was first copied in from Google Sheets; until then
+-- the page keeps using Google Sheets so an old browser cache is never pushed up by mistake.
+CREATE TABLE IF NOT EXISTS inv_rows (
+  tab        TEXT NOT NULL,
+  id         TEXT NOT NULL,
+  data       TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (tab, id)
+);
+CREATE TABLE IF NOT EXISTS inv_meta (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);
