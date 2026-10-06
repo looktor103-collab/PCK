@@ -228,6 +228,7 @@ tr.lot-row td:first-child{padding-left:32px}
 .cc-hpv{background:var(--rose-light);color:var(--rose-dark)}
 .cc-consum{background:var(--peach);color:var(--peach-dark)}
 .cc-qc{background:var(--purple-light);color:var(--purple-dark)}
+.cc-c6800{background:var(--gold-light);color:var(--gold-dark);border:1px solid var(--gold-mid)}
 .cc-other{background:#f0eded;color:#7a7a8a}
 .pbadge{display:inline-flex;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
 .pb-p0{background:#fff3cd;color:#856404;border:1px solid #ffd166}
@@ -1776,9 +1777,9 @@ const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','P
 const ALL_TABS   = MONTH_TABS.concat(DATA_TABS);
 const PO_STATUS  = ['ร่าง','สั่งซื้อแล้ว','รับบางส่วน','รับครบแล้ว','ยกเลิก'];
 
-const CATEGORIES = ['HIV VL','CD4','HPV','วัสดุสิ้นเปลือง','สารควบคุมคุณภาพ','อื่นๆ'];
+const CATEGORIES = ['HIV VL','CD4','HPV','Reagent for cobas 6800','วัสดุสิ้นเปลือง','สารควบคุมคุณภาพ','อื่นๆ'];
 const CAT_MAP = {
-  'HIV VL':'cc-hivvl','CD4':'cc-cd4','HPV':'cc-hpv',
+  'HIV VL':'cc-hivvl','CD4':'cc-cd4','HPV':'cc-hpv','Reagent for cobas 6800':'cc-c6800',
   'วัสดุสิ้นเปลือง':'cc-consum','สารควบคุมคุณภาพ':'cc-qc'
 };
 const STATUS_MAP = {
