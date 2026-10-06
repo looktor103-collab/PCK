@@ -286,7 +286,13 @@ function initMonths() {
   const s = localStorage.getItem('fcp_months');
   months = s ? JSON.parse(s) : [{year:2026, month:8}];
   saveMList();
+  // จำเดือนที่เปิดอยู่ล่าสุด; ถ้าไม่มีให้ใช้เดือนปัจจุบัน; ถ้าไม่มีอีกใช้เดือนล่าสุดในรายการ
+  let i = -1;
+  try { const c = JSON.parse(localStorage.getItem('fcp_cur') || 'null'); if (c) i = months.findIndex(x=>x.year===c.year&&x.month===c.month); } catch(e){}
+  if (i < 0) { const n = new Date(); i = months.findIndex(x=>x.year===n.getFullYear()&&x.month===n.getMonth()+1); }
+  curIdx = i >= 0 ? i : months.length-1;
 }
+function saveCur() { try { localStorage.setItem('fcp_cur', JSON.stringify(months[curIdx])); } catch(e){} }
 function saveMList() { localStorage.setItem('fcp_months', JSON.stringify(months)); }
 
 function addNextMonth() {
@@ -298,6 +304,7 @@ function addNextMonth() {
     saveMList();
   }
   curIdx = months.length-1;
+  saveCur();
   renderTabs(); renderForm();
 }
 
@@ -308,7 +315,7 @@ function renderTabs() {
     const b = document.createElement('button');
     b.className = 'month-tab' + (i===curIdx ? ' active' : '');
     b.textContent = thaiShort(year, month);
-    b.onclick = ()=>{ curIdx=i; renderTabs(); renderForm(); };
+    b.onclick = ()=>{ curIdx=i; saveCur(); renderTabs(); renderForm(); };
     c.appendChild(b);
   });
 }
