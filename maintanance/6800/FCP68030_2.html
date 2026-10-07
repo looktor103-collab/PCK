@@ -206,6 +206,7 @@ pre.gs-code{display:none}
 <div class="status-bar">
   <span id="sbDone"><span class="dot dot-green"></span>ทำแล้ว: <b id="cntDone">0</b></span>
   <span id="sbPending"><span class="dot dot-gold"></span>ยังไม่ทำ: <b id="cntPending">0</b></span>
+  <span id="sbCloud" style="font-size:11px"></span>
   <span id="sbSync" style="margin-left:auto;font-size:11px"></span>
   <span style="font-size:11px" id="sbSaved"></span>
 </div>
@@ -284,11 +285,28 @@ function setD(k, d){ localStorage.setItem(k, JSON.stringify(d)); }
 // ── MONTHS ───────────────────────────────────────────────
 function initMonths() {
   const s = localStorage.getItem('fcp_months');
-  months = s ? JSON.parse(s) : [{year:2026, month:8}];
+  try { months = s ? JSON.parse(s) : [{year:2026, month:8}]; }
+  catch(e) { months = [{year:2026, month:8}]; }
+  if (!Array.isArray(months)) months = [];
+  months = months.filter(x => x && Number.isInteger(x.year) && Number.isInteger(x.month) && x.month >= 1 && x.month <= 12);
+  months = [...new Map(months.map(x => [x.year * 12 + x.month, x])).values()]
+    .sort((a,b) => a.year - b.year || a.month - b.month);
+  if (!months.length) months = [{year:2026, month:8}];
+  const now = new Date();
+  const currentMonth = {year:now.getFullYear(), month:now.getMonth()+1};
+  const hadCurrentMonth = months.some(x => x.year === currentMonth.year && x.month === currentMonth.month);
+  const currentValue = now.getFullYear() * 12 + now.getMonth() + 1;
+  let last = months[months.length - 1];
+  let lastValue = last.year * 12 + last.month;
+  while (lastValue < currentValue && months.length < 240) {
+    lastValue++;
+    months.push({year:Math.floor((lastValue - 1) / 12), month:(lastValue - 1) % 12 + 1});
+  }
   saveMList();
   // จำเดือนที่เปิดอยู่ล่าสุด; ถ้าไม่มีให้ใช้เดือนปัจจุบัน; ถ้าไม่มีอีกใช้เดือนล่าสุดในรายการ
   let i = -1;
-  try { const c = JSON.parse(localStorage.getItem('fcp_cur') || 'null'); if (c) i = months.findIndex(x=>x.year===c.year&&x.month===c.month); } catch(e){}
+  if (!hadCurrentMonth) i = months.findIndex(x => x.year === currentMonth.year && x.month === currentMonth.month);
+  try { if (i < 0) { const c = JSON.parse(localStorage.getItem('fcp_cur') || 'null'); if (c) i = months.findIndex(x=>x.year===c.year&&x.month===c.month); } } catch(e){}
   if (i < 0) { const n = new Date(); i = months.findIndex(x=>x.year===n.getFullYear()&&x.month===n.getMonth()+1); }
   curIdx = i >= 0 ? i : months.length-1;
 }
@@ -303,6 +321,7 @@ function addNextMonth() {
     months.push({year:ny, month:nm});
     saveMList();
   }
+  markCloudDirty('fcp_months');
   curIdx = months.length-1;
   saveCur();
   renderTabs(); renderForm();
@@ -452,7 +471,7 @@ function addNote() {
   const d=getD(key);
   if (!d.notes) d.notes=[];
   d.notes.push({no:d.notes.length+1,text:''});
-  setD(key,d); renderNotes(key);
+  setD(key,d); renderNotes(key); markDirty(key);
 }
 function escH(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
 
@@ -526,6 +545,8 @@ function exportJSON() {
 
 // ── APPS SCRIPT URL (ฝังตรงนี้ — ไม่แสดงในหน้าเว็บ) ──────
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyFohCFFtnL332UYH2tq_La8ZSL3-R3Vg_VT7hVOVaVjDa-DWI71OnrbY6nGPALJghPfw/exec';
+const MAINTENANCE_API = 'https://splab-iqc-api.looktor103.workers.dev/api/maintenance';
+const MAINTENANCE_API_KEY = 'YWKvNwzgKfHgT2Z8DjuCCKlQ2XNa2wzm';
 
 // ── AUTO-SYNC ENGINE ───────────────────────────────────────
 // ป้องกันข้อมูลหาย: ทุกการแก้ไขจะถูก debounce แล้วส่งขึ้น Google Sheets
@@ -540,7 +561,175 @@ function unmk(key) { const m = key.match(/^fcp_(\d+)_(\d+)$/); return { year:+m[
 
 function markDirty(key) {
   dirtyKeys.add(key); persistDirty(); updateSyncIndicator();
+  markCloudDirty(key);
   scheduleSync(key, 4000);
+}
+
+let cloudDirtyKeys = new Set();
+try { cloudDirtyKeys = new Set(JSON.parse(localStorage.getItem('fcp_cloud_dirty') || '[]')); } catch(e){}
+let cloudUpdatedAt = {};
+try { cloudUpdatedAt = JSON.parse(localStorage.getItem('fcp_cloud_updated_at') || '{}') || {}; } catch(e){}
+const cloudTimers = {}, cloudRetryDelay = {}, cloudSyncing = {};
+let cloudReady = false;
+let cloudLoading = false;
+let cloudLoadTimer = null;
+
+function persistCloudDirty() {
+  localStorage.setItem('fcp_cloud_dirty', JSON.stringify([...cloudDirtyKeys]));
+}
+
+function updateCloudIndicator(message) {
+  const el = document.getElementById('sbCloud');
+  if (!el) return;
+  if (message) el.textContent = message;
+  else if (!cloudReady) el.textContent = 'Cloudflare: กำลังโหลด…';
+  else if (Object.values(cloudSyncing).some(Boolean)) el.textContent = 'Cloudflare: กำลังบันทึก…';
+  else if (cloudDirtyKeys.size) el.textContent = 'Cloudflare: รอซิงก์ ' + cloudDirtyKeys.size + ' รายการ';
+  else el.textContent = 'Cloudflare: บันทึกล่าสุดแล้ว';
+}
+
+function scheduleCloudSync(key, delay) {
+  if (!cloudReady) return;
+  clearTimeout(cloudTimers[key]);
+  cloudTimers[key] = setTimeout(() => syncCloudRecord(key), delay);
+}
+
+function markCloudDirty(key) {
+  cloudDirtyKeys.add(key);
+  cloudUpdatedAt[key] = new Date().toISOString();
+  persistCloudDirty();
+  localStorage.setItem('fcp_cloud_updated_at', JSON.stringify(cloudUpdatedAt));
+  updateCloudIndicator();
+  scheduleCloudSync(key, 1000);
+}
+
+function cloudHeaders() {
+  return { 'Content-Type':'application/json', 'X-API-Key':MAINTENANCE_API_KEY };
+}
+
+async function syncCloudRecord(key) {
+  if (!cloudReady || cloudSyncing[key] || !cloudDirtyKeys.has(key)) return;
+  cloudSyncing[key] = true;
+  const updatedAt = cloudUpdatedAt[key] || (cloudUpdatedAt[key] = new Date().toISOString());
+  localStorage.setItem('fcp_cloud_updated_at', JSON.stringify(cloudUpdatedAt));
+  updateCloudIndicator();
+  try {
+    const data = key === 'fcp_months' ? months : getD(key);
+    const response = await fetch(MAINTENANCE_API, {
+      method:'POST',
+      headers:cloudHeaders(),
+      body:JSON.stringify({form:'FCP68030_2', key, data, updatedAt}),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) throw new Error(result.error || 'Cloudflare save failed');
+    if (!result.saved) {
+      if (!result.current) throw new Error('Cloudflare record is missing');
+      if (cloudUpdatedAt[key] !== updatedAt) {
+        scheduleCloudSync(key, 100);
+        return;
+      }
+      if (key === 'fcp_months') {
+        const merged = mergeMonthLists(months, result.current.data);
+        const changed = JSON.stringify(merged) !== JSON.stringify(months);
+        months = merged;
+        localStorage.setItem('fcp_months', JSON.stringify(months));
+        curIdx = Math.max(0, months.findIndex(x => x.year === months[curIdx].year && x.month === months[curIdx].month));
+        renderTabs();
+        renderForm();
+        if (changed) {
+          markCloudDirty(key);
+          return;
+        }
+      } else {
+        localStorage.setItem(key, JSON.stringify(result.current.data));
+        if (months[curIdx] && mk(months[curIdx].year, months[curIdx].month) === key) renderForm();
+      }
+      cloudDirtyKeys.delete(key);
+      delete cloudUpdatedAt[key];
+      persistCloudDirty();
+      localStorage.setItem('fcp_cloud_updated_at', JSON.stringify(cloudUpdatedAt));
+      return;
+    }
+    if (cloudUpdatedAt[key] === updatedAt) {
+      cloudDirtyKeys.delete(key);
+      delete cloudUpdatedAt[key];
+      persistCloudDirty();
+      localStorage.setItem('fcp_cloud_updated_at', JSON.stringify(cloudUpdatedAt));
+      cloudRetryDelay[key] = 0;
+    } else {
+      scheduleCloudSync(key, 100);
+    }
+  } catch(e) {
+    cloudDirtyKeys.add(key);
+    persistCloudDirty();
+    cloudRetryDelay[key] = Math.min((cloudRetryDelay[key] || 5000) * 2, 120000);
+    scheduleCloudSync(key, cloudRetryDelay[key]);
+  } finally {
+    cloudSyncing[key] = false;
+    updateCloudIndicator();
+  }
+}
+
+function mergeMonthLists(...lists) {
+  const unique = new Map();
+  lists.flatMap(list => Array.isArray(list) ? list : []).forEach(item => {
+    if (item && Number.isInteger(item.year) && Number.isInteger(item.month) && item.month >= 1 && item.month <= 12)
+      unique.set(item.year * 12 + item.month, {year:item.year, month:item.month});
+  });
+  return [...unique.values()].sort((a,b) => a.year - b.year || a.month - b.month);
+}
+
+async function loadCloudRecords() {
+  if (cloudLoading) return;
+  cloudLoading = true;
+  updateCloudIndicator();
+  try {
+    const response = await fetch(MAINTENANCE_API + '?form=FCP68030_2', {headers:{'X-API-Key':MAINTENANCE_API_KEY}});
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok || !Array.isArray(result.records)) throw new Error(result.error || 'Cloudflare load failed');
+
+    const selectedMonth = months[curIdx];
+    const remoteRecords = new Map(result.records.filter(record => record && typeof record.key === 'string').map(record => [record.key, record]));
+    const dirty = new Set([...cloudDirtyKeys, ...dirtyKeys]);
+    const localMonths = months;
+    const remoteMonths = remoteRecords.get('fcp_months')?.data || [];
+    months = mergeMonthLists(localMonths, remoteMonths);
+    localStorage.setItem('fcp_months', JSON.stringify(months));
+
+    for (const [key, record] of remoteRecords) {
+      if (key === 'fcp_months' || dirty.has(key) || !/^fcp_\d{4}_(0[1-9]|1[0-2])$/.test(key)) continue;
+      localStorage.setItem(key, JSON.stringify(record.data));
+    }
+
+    let selectedIndex = selectedMonth ? months.findIndex(x => x.year === selectedMonth.year && x.month === selectedMonth.month) : -1;
+    if (selectedIndex < 0) {
+      try {
+        const saved = JSON.parse(localStorage.getItem('fcp_cur') || 'null');
+        if (saved) selectedIndex = months.findIndex(x => x.year === saved.year && x.month === saved.month);
+      } catch(e){}
+    }
+    curIdx = selectedIndex >= 0 ? selectedIndex : months.length - 1;
+    saveCur();
+
+    cloudReady = true;
+    const remoteMonthJson = JSON.stringify(remoteMonths);
+    const mergedMonthJson = JSON.stringify(months);
+    if (remoteMonthJson !== mergedMonthJson) cloudDirtyKeys.add('fcp_months');
+
+    for (const key of Object.keys(localStorage)) {
+      if (/^fcp_\d{4}_(0[1-9]|1[0-2])$/.test(key) && (!remoteRecords.has(key) || dirty.has(key))) cloudDirtyKeys.add(key);
+    }
+    persistCloudDirty();
+    renderTabs();
+    renderForm();
+    [...cloudDirtyKeys].forEach((key, index) => scheduleCloudSync(key, 300 + index * 300));
+  } catch(e) {
+    updateCloudIndicator('Cloudflare: ยังเชื่อมไม่ได้; ข้อมูลใน browser ยังอยู่');
+    clearTimeout(cloudLoadTimer);
+    cloudLoadTimer = setTimeout(loadCloudRecords, 20000);
+  } finally {
+    cloudLoading = false;
+  }
 }
 
 function scheduleSync(key, delay) {
@@ -831,6 +1020,7 @@ renderForm();
 let staggerI = 0;
 dirtyKeys.forEach(key => { scheduleSync(key, 1500 + (staggerI++) * 800); });
 updateSyncIndicator();
+loadCloudRecords();
 
 document.getElementById('sigModalBg').addEventListener('click', function(e){
   if(e.target===this) closeSig();

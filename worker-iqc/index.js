@@ -43,6 +43,8 @@ const ALLOWED_ORIGINS = [
 const MAX_BODY_BYTES = 2_000_000;
 const MAX_RUNS = 5000;
 const MAX_BENCHMARK_ROWS = 5000;
+const MAX_MAINTENANCE_BYTES = 5_000_000;
+const MAINTENANCE_FORM = 'FCP68030_2';
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const CORS = {
@@ -74,7 +76,7 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/inv', '/api/inv/import', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/inv', '/api/inv/import', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
@@ -84,6 +86,8 @@ export default {
       if (route === '/api/inv/import' && m === 'POST') return await invImport(request, env.DB);
       if (route === '/api/iqc' && m === 'GET') return await handleGet(url, env.DB);
       if (route === '/api/iqc' && m === 'POST') return await handlePost(request, env.DB);
+      if (route === '/api/maintenance' && m === 'GET') return await maintenanceGet(url, env.DB);
+      if (route === '/api/maintenance' && m === 'POST') return await maintenanceSave(request, env.DB);
       if (route === '/api/eqa' && m === 'GET') return await eqaList(env.DB);
       if (route === '/api/eqa' && m === 'POST') return await eqaSave(request, env.DB);
       if (route === '/api/eqa' && m === 'DELETE') return await eqaDelete(url, env);
@@ -99,6 +103,69 @@ export default {
     }
   },
 };
+
+function validMaintenanceKey(key) {
+  return key === 'fcp_months' || /^fcp_\d{4}_(0[1-9]|1[0-2])$/.test(key);
+}
+
+async function maintenanceGet(url, db) {
+  const form = str(url.searchParams.get('form'), 32);
+  if (form !== MAINTENANCE_FORM) return json({ ok: false, error: 'unknown form' }, 400);
+
+  const { results } = await db.prepare(
+    `SELECT record_key AS key, data_json AS data, updated_at AS updatedAt
+       FROM maintenance_records WHERE form_id = ? ORDER BY record_key`
+  ).bind(form).all();
+
+  return json({
+    ok: true,
+    records: results.flatMap(record => {
+      if (!validMaintenanceKey(record.key)) return [];
+      try { return [{ ...record, data: JSON.parse(record.data) }]; }
+      catch { return []; }
+    }),
+  });
+}
+
+async function maintenanceSave(request, db) {
+  const text = await request.text();
+  if (text.length > MAX_MAINTENANCE_BYTES) return json({ ok: false, error: 'payload too large' }, 413);
+
+  let body;
+  try { body = JSON.parse(text); }
+  catch { return json({ ok: false, error: 'invalid JSON' }, 400); }
+
+  const form = str(body.form, 32);
+  const key = str(body.key, 40);
+  if (form !== MAINTENANCE_FORM) return json({ ok: false, error: 'unknown form' }, 400);
+  if (!validMaintenanceKey(key)) return json({ ok: false, error: 'invalid record key' }, 400);
+  if (!body.data || typeof body.data !== 'object') return json({ ok: false, error: 'data must be an object or array' }, 400);
+  if (key === 'fcp_months' && !Array.isArray(body.data)) return json({ ok: false, error: 'month list must be an array' }, 400);
+  if (key !== 'fcp_months' && Array.isArray(body.data)) return json({ ok: false, error: 'month data must be an object' }, 400);
+
+  const updatedAt = new Date(body.updatedAt || Date.now());
+  if (!Number.isFinite(updatedAt.getTime())) return json({ ok: false, error: 'invalid updatedAt' }, 400);
+  const updatedAtIso = updatedAt.toISOString();
+
+  const result = await db.prepare(
+    `INSERT INTO maintenance_records (form_id, record_key, data_json, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT (form_id, record_key) DO UPDATE SET
+       data_json = excluded.data_json, updated_at = excluded.updated_at
+     WHERE excluded.updated_at >= maintenance_records.updated_at`
+  ).bind(form, key, JSON.stringify(body.data), updatedAtIso).run();
+
+  if (!result.meta.changes) {
+    const current = await db.prepare(
+      'SELECT data_json AS data, updated_at AS updatedAt FROM maintenance_records WHERE form_id = ? AND record_key = ?'
+    ).bind(form, key).first();
+    let currentData = null;
+    try { currentData = current ? JSON.parse(current.data) : null; }
+    catch(e) {}
+    return json({ ok: true, saved: false, key, current: currentData === null ? null : {data:currentData, updatedAt:current.updatedAt} });
+  }
+  return json({ ok: true, saved: true, key, updatedAt: updatedAtIso });
+}
 
 /* ── Inventory ─────────────────────────────────────────────────────────────
    The page keeps its sheet-shaped data model (tabs of row objects with an id), so each
