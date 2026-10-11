@@ -2571,9 +2571,12 @@ const CAT_COLORS = [
   ['สารควบคุมคุณภาพ',  '#5b3fa0'],
   ['CD4',              '#1e6b40'],
   ['HPV',              '#c9687e'],
+  ['Reagent for cobas 6800','#0e7c86'],
 ];
 const CAT_COLOR_MAP = CAT_COLORS.reduce((m,[k,v])=>{ m[k]=v; return m; },{});
 function catColor(c){ return CAT_COLOR_MAP[c] || CAT_COLOR_MAP['อื่นๆ']; }
+/** จุดสีตามหมวดหมู่ นำหน้าชื่อรายการ */
+function catDot(c){ return `<span title="${esc(c||'อื่นๆ')}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${catColor(c)};margin-right:6px;vertical-align:middle"></span>`; }
 
 /* ── tooltip ── */
 function vizTip(){
@@ -2767,7 +2770,7 @@ function renderDash(){
 
   const orderRows=need.slice(0,6).map(s=>`
     <div class="act-row"><div>
-      <div class="an"><span class="dot ${s.urgency==='critical'?'dot-crit':'dot-warn'}"></span>${esc(s.name)}${itemTag(s.name)}</div>
+      <div class="an"><span class="dot ${s.urgency==='critical'?'dot-crit':'dot-warn'}"></span>${catDot(s.category)}${esc(s.name)}${itemTag(s.name)}</div>
       <div class="am">${esc(s.category||'—')}${s.coverDays!==null?` · พอใช้อีก ${Math.floor(s.coverDays)} วัน · รอของ ${s.leadDays} วัน`:''}${s.onOrder?` · สั่งแล้ว ${fmt(s.onOrder)}`:''}</div>
     </div><div class="act-val ${s.urgency==='critical'?'stk-out':'stk-low'}">ควรสั่ง ${fmt(Math.ceil(s.needQty||s.suggest||0))}</div></div>`);
 
@@ -2806,7 +2809,7 @@ function renderDash(){
     <tr>
       <td style="white-space:nowrap">${formatDate(t.date)}</td>
       <td>${txnBadge(t.type)}</td>
-      <td><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)} ${catChip(t.category)}</td>
+      <td><span class="item-cell">${catDot(t.category)}${esc(t.item)}</span>${itemTag(t.item)} ${catChip(t.category)}</td>
       <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
       <td class="${txnDelta(t)>=0?'qty-in':'qty-out'}">${txnDelta(t)>=0?'+':''}${fmt(txnDelta(t))} ${esc(t.unit||'')}</td>
       <td>${esc(t.person||'—')}</td>
@@ -2928,7 +2931,7 @@ function renderStock(){
       const open = !!state.stock.open[s.name];
       const main = `<tr>
         <td class="col-num">${s.lots.length?`<button class="lot-toggle" onclick="toggleLots(${JSON.stringify(s.name).replace(/"/g,'&quot;')})">${open?'▼':'▶'}</button>`:''}</td>
-        <td><span class="item-cell">${esc(s.name)}</span>${itemTag(s.name)}${s.tests?`<div style="font-size:11px;color:var(--text3)">${fmt(s.tests)} เทสต์/${esc(s.unit||'หน่วย')} · คงเหลือ ≈ ${fmt(s.total*s.tests)} เทสต์</div>`:''}</td>
+        <td><span class="item-cell">${catDot(s.category)}${esc(s.name)}</span>${itemTag(s.name)}${s.tests?`<div style="font-size:11px;color:var(--text3)">${fmt(s.tests)} เทสต์/${esc(s.unit||'หน่วย')} · คงเหลือ ≈ ${fmt(s.total*s.tests)} เทสต์</div>`:''}</td>
         <td>${catChip(s.category)}</td>
         <td class="${stkCls}" style="text-align:right;white-space:nowrap">${fmt(s.total)} <span style="font-weight:400;color:var(--text3)">${esc(s.unit||'')}</span></td>
         <td style="text-align:right;white-space:nowrap">${s.onOrder?`<span class="qty-in" title="สั่งแล้วรอของ">+${fmt(s.onOrder)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
@@ -3013,7 +3016,7 @@ function renderTxn(type){
         return `<tr>
           <td class="col-num">${i+1}</td>
           <td style="white-space:nowrap">${formatDate(t.date)}</td>
-          <td><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)}</td>
+          <td><span class="item-cell">${catDot(t.category)}${esc(t.item)}</span>${itemTag(t.item)}</td>
           <td>${catChip(t.category)}</td>
           <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
           <td>${t.exp?`<span class="${expClass(t.exp)}">${formatDate(t.exp)}</span>`:'—'}</td>
@@ -3031,7 +3034,7 @@ function renderTxn(type){
         <td class="col-num">${i+1}</td>
         <td style="white-space:nowrap">${formatDate(t.date)}</td>
         <td>${txnBadge(t.type)}</td>
-        <td><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)}</td>
+        <td><span class="item-cell">${catDot(t.category)}${esc(t.item)}</span>${itemTag(t.item)}</td>
         <td>${catChip(t.category)}</td>
         <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
         <td class="${d>=0?'qty-in':'qty-out'}" style="text-align:right">${d>=0?'+':''}${fmt(d)} ${esc(t.unit||'')}</td>
@@ -3122,7 +3125,7 @@ function renderItems(){
       return `<tr>
         <td class="col-num">${i+1}</td>
         <td style="font-family:Consolas,monospace;font-size:12px">${esc(it.code||'—')}</td>
-        <td><span class="item-cell">${esc(it.name)}</span>${it.catNo?`<div style="font-size:11px;color:var(--text3)">Cat. ${esc(it.catNo)}</div>`:''}</td>
+        <td><span class="item-cell">${catDot(it.category)}${esc(it.name)}</span>${it.catNo?`<div style="font-size:11px;color:var(--text3)">Cat. ${esc(it.catNo)}</div>`:''}</td>
         <td>${catChip(it.category)}</td>
         <td style="color:var(--text2)">${esc(it.unit||'—')}</td>
         <td style="text-align:center">${it.testsPerUnit?fmt(it.testsPerUnit):'—'}</td>
@@ -4951,7 +4954,7 @@ function renderReport(){
       const need = Math.ceil(s.needQty||s.suggest||0);
       return `<tr>
         <td>${urgencyBadge(s.urgency)}</td>
-        <td><span class="item-cell">${esc(s.name)}</span>${itemTag(s.name)}</td>
+        <td><span class="item-cell">${catDot(s.category)}${esc(s.name)}</span>${itemTag(s.name)}</td>
         <td>${catChip(s.category)}</td>
         <td style="text-align:right;white-space:nowrap" class="${s.total<=0?'stk-out':''}">${fmt(s.total)} ${esc(s.unit||'')}</td>
         <td style="text-align:right">${s.onOrder?`<span class="qty-in">+${fmt(s.onOrder)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
@@ -5018,7 +5021,7 @@ function renderReport(){
       const pctTxt = s.pct===null ? '—'
         : `<span class="${s.pct>15?'stk-out':s.pct<-15?'stk-caution':'stk-ok'}">${s.pct>0?'+':''}${fmt(s.pct,0)}%</span>`;
       return `<tr>
-        <td><span class="item-cell">${esc(s.name)}</span>${itemTag(s.name)}</td>
+        <td><span class="item-cell">${catDot(s.category)}${esc(s.name)}</span>${itemTag(s.name)}</td>
         <td>${catChip(s.category)}</td>
         <td style="text-align:right">${s.planned>0?fmt(s.planned,1):'<span style="color:var(--text3)">—</span>'}</td>
         <td style="text-align:right;font-weight:600">${fmt(s.actualPerMonth,1)}</td>
