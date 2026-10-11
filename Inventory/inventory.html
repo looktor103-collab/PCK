@@ -126,6 +126,11 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .tab-item.active{color:var(--gold-dark);border-bottom-color:#d89010}
 .tab-badge{font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--gold-light);color:var(--gold-dark)}
 .tab-item.active .tab-badge{background:#d89010;color:white}
+.year-switcher{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:white;border-bottom:1px solid var(--border);padding:.4rem 1rem;
+}
+.year-switcher .year-label{font-size:13px;font-weight:700;color:var(--rose-dark);min-width:72px;text-align:center}
 /* CONTAINER */
 .container{max-width:1180px;margin:0 auto;padding:1.5rem 1.5rem 4rem}
 .mod-title{display:flex;align-items:center;gap:10px;margin-bottom:.2rem}
@@ -605,6 +610,7 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
 
 <!-- MONTH TAB BAR (plan module only) -->
 <div class="tab-bar" id="tabBar" style="display:none"></div>
+<div class="year-switcher" id="yearSwitcher" style="display:none"></div>
 
 <!-- MAIN -->
 <div class="container">
@@ -695,6 +701,7 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       <button class="btn btn-mint btn-sm" onclick="openMove('IN')">📥 รับเข้า</button>
       <button class="btn btn-rose btn-sm" onclick="openMove('OUT')">📤 เบิกออก</button>
       <button class="btn btn-purple btn-sm" onclick="openMove('ADJ')">⚖️ ปรับยอด/ตัดจำหน่าย</button>
+      <button class="btn btn-outline btn-sm" onclick="purgeOrphanStock()" title="ลบรายการคลังที่ไม่มีในทะเบียนสินค้าแล้ว">🧹 ล้างรายการที่ไม่มีในทะเบียน</button>
       <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>
     </div>
     <div class="stat-strip" id="stockStats"></div>
@@ -1630,6 +1637,13 @@ function healthCheck() {
       <button class="modal-close" onclick="closePO()">✕</button>
     </div>
     <div class="modal-body">
+      <div class="avail-box" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label class="btn btn-outline btn-sm" style="margin:0">
+          📷 สแกนจากภาพใบสั่งซื้อ
+          <input type="file" id="poScanFile" accept="image/*" style="display:none" onchange="scanPODoc(this.files[0])">
+        </label>
+        <span id="poScanStatus">ถ่ายรูป/แคปหน้าจอใบสั่งซื้อ หรืออัปโหลดภาพ แล้วให้ระบบอ่านข้อมูลมาเติมในฟอร์มด้านล่างให้ก่อน — ตรวจสอบและแก้ไขให้ถูกต้องก่อนกดบันทึกเสมอ</span>
+      </div>
       <div class="tab-indicator" id="poDocNo">เลขที่ —</div>
       <div class="fgrid g3">
         <div class="field"><label>วันที่สั่งซื้อ *</label><input type="date" id="p_date"></div>
@@ -1682,6 +1696,13 @@ function healthCheck() {
     </div>
     <div class="modal-body">
       <div class="tab-indicator" id="recvInfo">—</div>
+      <div class="avail-box" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label class="btn btn-outline btn-sm" style="margin:0">
+          📷 สแกนจากใบส่งของ/ใบรับสินค้า
+          <input type="file" id="recvScanFile" accept="image/*" style="display:none" onchange="scanRecvDoc(this.files[0])">
+        </label>
+        <span id="recvScanStatus">ถ่ายรูป/แคปใบส่งของจากบริษัท ระบบจะจับคู่รายการกับใบสั่งซื้อนี้ และเติมจำนวน/Lot/วันหมดอายุให้ — ตรวจสอบให้ถูกต้องก่อนกดยืนยัน</span>
+      </div>
       <div class="fgrid g3">
         <div class="field"><label>วันที่รับของ *</label><input type="date" id="rc_date"></div>
         <div class="field"><label>เลขที่บิล / ใบส่งของ</label><input type="text" id="rc_doc" placeholder="INV-xxxx"></div>
@@ -1782,23 +1803,55 @@ const MODULES = [
 ];
 const MONTHS = [
   { key:'overview', label:'ภาพรวม', icon:'📊' },
-  { key:'JAN', label:'ม.ค.',  full:'มกราคม 2026',    num:1  },
-  { key:'FEB', label:'ก.พ.',  full:'กุมภาพันธ์ 2026', num:2  },
-  { key:'MAR', label:'มี.ค.', full:'มีนาคม 2026',    num:3  },
-  { key:'APR', label:'เม.ย.', full:'เมษายน 2026',    num:4  },
-  { key:'MAY', label:'พ.ค.',  full:'พฤษภาคม 2026',   num:5  },
-  { key:'JUN', label:'มิ.ย.', full:'มิถุนายน 2026',  num:6  },
-  { key:'JUL', label:'ก.ค.',  full:'กรกฎาคม 2026',   num:7  },
-  { key:'AUG', label:'ส.ค.',  full:'สิงหาคม 2026',   num:8  },
-  { key:'SEP', label:'ก.ย.',  full:'กันยายน 2026',   num:9  },
-  { key:'OCT', label:'ต.ค.',  full:'ตุลาคม 2026',    num:10 },
-  { key:'NOV', label:'พ.ย.',  full:'พฤศจิกายน 2026', num:11 },
-  { key:'DEC', label:'ธ.ค.',  full:'ธันวาคม 2026',   num:12 },
+  { key:'JAN', label:'ม.ค.',  mname:'มกราคม',    num:1  },
+  { key:'FEB', label:'ก.พ.',  mname:'กุมภาพันธ์', num:2  },
+  { key:'MAR', label:'มี.ค.', mname:'มีนาคม',    num:3  },
+  { key:'APR', label:'เม.ย.', mname:'เมษายน',    num:4  },
+  { key:'MAY', label:'พ.ค.',  mname:'พฤษภาคม',   num:5  },
+  { key:'JUN', label:'มิ.ย.', mname:'มิถุนายน',  num:6  },
+  { key:'JUL', label:'ก.ค.',  mname:'กรกฎาคม',   num:7  },
+  { key:'AUG', label:'ส.ค.',  mname:'สิงหาคม',   num:8  },
+  { key:'SEP', label:'ก.ย.',  mname:'กันยายน',   num:9  },
+  { key:'OCT', label:'ต.ค.',  mname:'ตุลาคม',    num:10 },
+  { key:'NOV', label:'พ.ย.',  mname:'พฤศจิกายน', num:11 },
+  { key:'DEC', label:'ธ.ค.',  mname:'ธันวาคม',   num:12 },
 ];
-const MONTH_TABS = MONTHS.map(m => m.key);
+/* แผนสั่งซื้อรายเดือนเคยเก็บเป็น 12 ชีตไม่มีปี (JAN..DEC) ปีใหม่มาแล้วทับของเก่า —
+   ตอนนี้เก็บเป็น 1 ชีตต่อปี พ.ศ. (PLAN_2569, PLAN_2570, ...) แต่ละแถวมี field "month" (1-12) */
 const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS'];
-const ALL_TABS   = MONTH_TABS.concat(DATA_TABS);
+const ALL_TABS   = ['overview'].concat(DATA_TABS); // ใช้โดยโฟลว์ย้ายข้อมูลครั้งแรก (เสร็จไปแล้ว) เท่านั้น
 const PO_STATUS  = ['ร่าง','สั่งซื้อแล้ว','รับบางส่วน','รับครบแล้ว','ยกเลิก'];
+function planTab(year){ return 'PLAN_'+year; }
+function isMonthKey(key){ return key!=='overview' && MONTHS.some(m=>m.key===key); }
+function monthNum(key){ const m=MONTHS.find(x=>x.key===key); return m?m.num:null; }
+function monthFull(m){ return m.key==='overview' ? m.label : `${m.mname} ${state.year}`; }
+/** อ่าน/เขียนแถวของ key ('overview' หรือเดือน JAN..DEC) ในปี พ.ศ. ที่ระบุ — เขียนแล้วไม่แตะแถวเดือนอื่นในชีตปีเดียวกัน */
+function readMonthRows(year, key){
+  if(key==='overview') return getData('overview');
+  return getData(planTab(year)).filter(r=>Number(r.month)===monthNum(key));
+}
+function writeMonthRows(year, key, rows){
+  if(key==='overview'){ saveLocal('overview', rows); return; }
+  const mn = monthNum(key);
+  rows.forEach(r=>{ r.month = mn; });
+  const others = getData(planTab(year)).filter(r=>Number(r.month)!==mn);
+  saveLocal(planTab(year), others.concat(rows));
+}
+/** ชวเลขสำหรับปีที่กำลังดูอยู่ (state.year) — ใช้ในหน้าจอ "แผนสั่งซื้อรายเดือน" ปกติ */
+function planRows(key){ return readMonthRows(state.year, key); }
+function savePlanRows(key, rows){ writeMonthRows(state.year, key, rows); }
+function syncPlanTab(key){ return syncTab(key==='overview' ? 'overview' : planTab(state.year)); }
+/** ทุกชีต PLAN_<ปี> ที่เครื่องนี้เคยเปิดดู/แก้ไข (เผื่อมีของค้างซิงก์จากปีอื่น) + ปีที่กำลังดูอยู่เสมอ */
+function knownPlanTabs(){
+  const set = new Set([planTab(state.year)]);
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(k && k.indexOf(STORAGE_KEY_PRE+'PLAN_')===0) set.add(k.slice(STORAGE_KEY_PRE.length));
+  }
+  return Array.from(set);
+}
+/** รายชื่อ tab ทั้งหมดที่ต้องซิงก์ขึ้น Cloud — ของตายตัว + ทุกปีของแผนที่เครื่องนี้รู้จัก */
+function allLocalTabs(){ return ALL_TABS.concat(knownPlanTabs()); }
 
 const CATEGORIES = ['HIV VL','CD4','HPV','Reagent for cobas 6800','วัสดุสิ้นเปลือง','สารควบคุมคุณภาพ','อื่นๆ'];
 const CAT_MAP = {
@@ -1923,7 +1976,7 @@ const SEED_ITEMS = [
 /* ─────────── STATE ─────────── */
 let state = {
   module:'dash',
-  tab:'overview', search:'', catFilter:'', statusFilter:'', itemFilter:'',
+  tab:'overview', year:(new Date().getFullYear()+543), search:'', catFilter:'', statusFilter:'', itemFilter:'',
   sortCol:'', sortDir:1, editId:null, editTab:null,
   del:null,                       // {kind, id}
   stock:{ q:'', cat:'', stat:'', open:{} },
@@ -2096,12 +2149,13 @@ async function loadFromCloud(){
   const ready = !!localStorage.getItem(CLOUD_READY);
   try{
     let pending = 0;
-    if(ready) for(const t of ALL_TABS){ const n = (await pushTab(t)).n; if(n){ pending += n; mirrorLater(t); } }
+    if(ready) for(const t of allLocalTabs()){ const n = (await pushTab(t)).n; if(n){ pending += n; mirrorLater(t); } }
     const j = await cloudFetch('');
     cloudInfo = { initialized:j.initialized, migratedAt:j.migratedAt,
                   rows:Object.values(j.data).reduce((a,r)=>a+r.length,0) };
     if(!j.initialized){ cloudMode = false; return false; }
-    ALL_TABS.forEach(t=>applyCloudTab(t, j.data[t]));
+    // ดึงทุก tab ที่ Cloud ส่งมาจริง (ไม่ใช่แค่ที่เครื่องนี้รู้จักมาก่อน) กันทับข้อมูล PLAN_<ปี> ของปีอื่นที่เพิ่งมีคนบันทึกจากเครื่องอื่น
+    Object.keys(j.data).forEach(t=>applyCloudTab(t, j.data[t]));
     localStorage.setItem(CLOUD_READY, '1');
     cloudMode = true;
     setSyncStatus('ok', '✅ Cloudflare · ข้อมูลล่าสุด');
@@ -2221,7 +2275,7 @@ const DATE_FIELDS = {
 };
 /** ทำให้ฟิลด์วันที่ของข้อมูลที่โหลดมาจากชีตเป็น yyyy-MM-dd ก่อนเข้าแอป */
 function normalizeDates(tab, rows){
-  const fields = (MONTH_TABS.indexOf(tab)>=0) ? DATE_FIELDS._plan : DATE_FIELDS[tab];
+  const fields = (tab==='overview' || /^PLAN_\d{4}$/.test(tab)) ? DATE_FIELDS._plan : DATE_FIELDS[tab];
   if(!fields || !Array.isArray(rows)) return rows;
   return rows.map(r=>{
     const o=Object.assign({},r);
@@ -2280,9 +2334,10 @@ function emptyRow(cols,msg,sub){
 function head(cols){ return `<tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`; }
 
 /* ─────────── STOCK ENGINE ─────────── */
+function itemKey(v){ return String(v==null?'':v).replace(/\s+/g,' ').trim().toLowerCase(); }
 function itemMaster(name){
-  const key=(name||'').trim().toLowerCase();
-  return getData('ITEMS').find(i => (i.name||'').trim().toLowerCase()===key) || null;
+  const key=itemKey(name);
+  return getData('ITEMS').find(i => itemKey(i.name)===key) || null;
 }
 /** delta ของรายการเคลื่อนไหว 1 แถว (IN=+, OUT=−, ADJ=ค่าที่บันทึก) */
 function txnDelta(t){
@@ -2418,6 +2473,7 @@ function switchModule(key){
     if(el) el.style.display = (m.key===key) ? '' : 'none';
   });
   document.getElementById('tabBar').style.display = (key==='plan') ? '' : 'none';
+  document.getElementById('yearSwitcher').style.display = (key==='plan') ? '' : 'none';
   renderAll();
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -2539,10 +2595,11 @@ function renderUsageChart(){
   const host=document.getElementById('usageChart'); if(!host) return;
   const txn=getData('TXN');
   const nowM=new Date().getMonth()+1;
+  const ceYear=state.year-543;
   const data=MONTHS.slice(1).map(m=>{
-    const mm='2026-'+String(m.num).padStart(2,'0');
+    const mm=ceYear+'-'+String(m.num).padStart(2,'0');
     const rows=txn.filter(t=>t.type==='OUT' && toISODate(t.date).startsWith(mm));
-    return { label:m.label, full:m.full, num:m.num,
+    return { label:m.label, full:monthFull(m), num:m.num,
              value:rows.reduce((s,t)=>s+Math.abs(num(t.qty)),0), count:rows.length };
   });
   const peak=Math.max.apply(null,data.map(d=>d.value));
@@ -2559,7 +2616,7 @@ function renderUsageChart(){
   const maxIdx=data.reduce((b,d,i)=>d.value>data[b].value?i:b,0);
 
   let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="212" role="img"
-      aria-label="กราฟแท่งแสดงปริมาณการเบิกใช้รายเดือน ปี 2569">`;
+      aria-label="กราฟแท่งแสดงปริมาณการเบิกใช้รายเดือน ปี ${state.year}">`;
   ticks.forEach(t=>{
     svg+=`<line x1="${padL}" y1="${y(t).toFixed(1)}" x2="${W-padR}" y2="${y(t).toFixed(1)}"
       stroke="${t===0?'#d8cad1':'#ece3e7'}" stroke-width="1"/>`;
@@ -2798,7 +2855,7 @@ function consumptionMap(windowDays){
 function planQtyByItem(){
   const map = {};
   MONTHS.slice(1).forEach(m=>{
-    getData(m.key).forEach(r=>{
+    planRows(m.key).forEach(r=>{
       const n = normName(r.item); if(!n) return;
       map[n] = (map[n]||0) + num(r.qty);
     });
@@ -3089,15 +3146,14 @@ async function seedItems(){
     });
     added++;
   });
-  // เพิ่มรายการที่พบในแผนสั่งซื้อแต่ยังไม่มีในทะเบียน
-  MONTH_TABS.forEach(t=>{
-    getData(t).forEach(r=>{
-      const n=(r.item||'').trim(); if(!n) return;
-      if(have.has(n.toLowerCase()) || existing.some(i=>(i.name||'').trim().toLowerCase()===n.toLowerCase())) return;
-      existing.push({ id:genId('it'), code:'', name:n, category:r.category||'อื่นๆ', unit:'กล่อง',
-        testsPerUnit:'', minQty:'', maxQty:'', storage:'', location:'', vendor:'', catNo:'', price:'', active:'1', note:'' });
-      added++;
-    });
+  // เพิ่มรายการที่พบในแผนสั่งซื้อ (ทุกปีที่เครื่องนี้รู้จัก) แต่ยังไม่มีในทะเบียน
+  const planRowsAll = getData('overview').concat(knownPlanTabs().flatMap(t=>getData(t)));
+  planRowsAll.forEach(r=>{
+    const n=(r.item||'').trim(); if(!n) return;
+    if(have.has(n.toLowerCase()) || existing.some(i=>(i.name||'').trim().toLowerCase()===n.toLowerCase())) return;
+    existing.push({ id:genId('it'), code:'', name:n, category:r.category||'อื่นๆ', unit:'กล่อง',
+      testsPerUnit:'', minQty:'', maxQty:'', storage:'', location:'', vendor:'', catNo:'', price:'', active:'1', note:'' });
+    added++;
   });
   saveLocal('ITEMS', existing);
   renderAll();
@@ -3312,6 +3368,26 @@ function autoRegisterItem(name, row){
   syncTab('ITEMS');
 }
 
+/** ลบรายการคลัง (TXN) ที่ชื่อไม่มีในทะเบียนสินค้าแล้ว (เช่น ทะเบียนถูกลบไปก่อนหน้านี้) */
+async function purgeOrphanStock(){
+  const txn = getData('TXN');
+  const orphanNames = {};
+  txn.forEach(t=>{ const k=itemKey(t.item); if(k && !itemMaster(t.item)) orphanNames[k]=t.item; });
+  const names = Object.keys(orphanNames).map(k=>orphanNames[k]);
+  if(!names.length){ showToast('ไม่มีรายการค้างที่ต้องล้าง','info'); return; }
+  if(!confirm('รายการต่อไปนี้ไม่มีในทะเบียนสินค้าแล้ว จะลบประวัติรับเข้า/เบิกออกของรายการเหล่านี้ทั้งหมด:
+
+• '+names.join('
+• ')+'
+
+ยืนยันลบ?')) return;
+  const after = txn.filter(t=>!(itemKey(t.item) && !itemMaster(t.item)));
+  saveLocal('TXN', after);
+  renderAll();
+  showToast(`🧹 ลบรายการคลัง ${names.length} รายการ (${txn.length-after.length} แถว) แล้ว`,'info');
+  await syncTab('TXN');
+}
+
 /* ═══════════════ ITEM MASTER MODAL ═══════════════ */
 /** เปิดฟอร์มทะเบียนสินค้า
  *  openItem()                       → เพิ่มรายการใหม่เปล่า ๆ
@@ -3358,11 +3434,15 @@ async function saveItemMaster(){
   };
   const data = getData('ITEMS');
   const wasNew = !state.itemEditId;
+  // กันชื่อซ้ำ (ไม่สนช่องว่างซ้ำ/ตัวพิมพ์เล็กใหญ่) — รวมถึงตอนแก้ชื่อไปซ้ำกับรายการอื่น
+  if(state.itemEditId && data.some(x=>x.id!==state.itemEditId && itemKey(x.name)===itemKey(name))){
+    showToast(`ชื่อ "${esc(name)}" มีอยู่ในทะเบียนแล้ว — ไม่สามารถเพิ่มซ้ำได้`,'error'); return;
+  }
   if(state.itemEditId){ const i=data.findIndex(x=>x.id===state.itemEditId); i>=0?data[i]=Object.assign({},data[i],row):data.push(row); }
   else {
     // กันชื่อซ้ำ — ถ้ามีชื่อนี้ในทะเบียนอยู่แล้วให้อัปเดตทับแทนการสร้างซ้ำ
-    const dup = data.findIndex(x=>(x.name||'').trim().toLowerCase()===name.toLowerCase());
-    if(dup>=0){ row.id = data[dup].id; data[dup]=Object.assign({},data[dup],row); }
+    const dup = data.findIndex(x=>itemKey(x.name)===itemKey(name));
+    if(dup>=0){ showToast(`"${esc(name)}" มีอยู่ในทะเบียนแล้ว — ไม่เพิ่มซ้ำ`,'error'); return; }
     else data.push(row);
   }
   saveLocal('ITEMS', data);
@@ -3616,7 +3696,7 @@ function askDelete(kind,id,label){
   state.del = { kind, id };
   const map = { txn:['🗑️','ลบรายการเคลื่อนไหวนี้?','ยอดคงเหลือจะถูกคำนวณใหม่ทันที'],
                 bill:['🧾','ลบเอกสารนี้?','หากเอกสารยืนยันแล้ว ระบบจะคืนสต็อกที่ตัดไปให้ด้วย'],
-                item:['🏷️','ลบรายการในทะเบียน?','ประวัติการเคลื่อนไหวยังคงอยู่'],
+                item:['🏷️','ลบรายการในทะเบียน?','รายการรับเข้า/เบิกออก/ปรับยอดของสินค้านี้จะถูกลบออกจากคลังด้วย'],
                 po:['🛒','ลบใบสั่งซื้อนี้?','รายการที่รับเข้าคลังไปแล้วจะยังอยู่ ต้องไปลบที่เมนูรับเข้าเอง'],
                 sup:['🏢','ลบบริษัทนี้?','ใบสั่งซื้อเดิมยังเก็บชื่อบริษัทไว้'],
                 plan:['🗑️','ลบรายการนี้?','ลบออกจากแผนสั่งซื้อรายเดือน'] };
@@ -3660,17 +3740,42 @@ async function confirmDelete(){
     await syncTab('SUPPLIERS'); return;
   }
   if(d.kind==='item'){
+    const gone = getData('ITEMS').find(x=>x.id===d.id);
     saveLocal('ITEMS', getData('ITEMS').filter(x=>x.id!==d.id));
-    closeConfirm(); renderAll(); showToast('🗑️ ลบจากทะเบียนแล้ว','info'); await syncTab('ITEMS'); return;
+    // ลบข้อมูลคลัง (TXN) ของสินค้านี้ด้วย เพื่อไม่ให้ค้างอยู่ในหน้าคลังน้ำยา
+    let removed = 0;
+    if(gone){
+      const key = itemKey(gone.name);
+      const before = getData('TXN').length;
+      const after = getData('TXN').filter(t=>itemKey(t.item)!==key);
+      removed = before - after.length;
+      if(removed) saveLocal('TXN', after);
+    }
+    closeConfirm(); renderAll();
+    showToast('🗑️ ลบจากทะเบียนแล้ว'+(removed?` และลบรายการคลัง ${removed} แถว`:''),'info');
+    await syncTab('ITEMS'); if(removed) await syncTab('TXN'); return;
   }
   // plan
-  saveLocal(state.tab, getData(state.tab).filter(r=>r.id!==d.id));
-  closeConfirm(); renderAll(); showToast('🗑️ ลบแล้ว','info'); await syncTab(state.tab);
+  savePlanRows(state.tab, planRows(state.tab).filter(r=>r.id!==d.id));
+  closeConfirm(); renderAll(); showToast('🗑️ ลบแล้ว','info'); await syncPlanTab(state.tab);
 }
 /* ═══════════════ MONTHLY PLAN (โมดูลเดิม) ═══════════════ */
+function changeYear(delta){
+  state.year += delta;
+  renderTabs(); renderStats(); renderTable();
+}
+function renderYearSwitcher(){
+  const el = document.getElementById('yearSwitcher');
+  if(!el) return;
+  el.innerHTML = `
+    <button class="btn btn-outline btn-sm btn-icon" onclick="changeYear(-1)" title="ปีก่อนหน้า">◀</button>
+    <span class="year-label">ปี ${state.year}</span>
+    <button class="btn btn-outline btn-sm btn-icon" onclick="changeYear(1)" title="ปีถัดไป">▶</button>`;
+}
 function renderTabs(){
+  renderYearSwitcher();
   document.getElementById('tabBar').innerHTML = MONTHS.map(m => {
-    const data = getData(m.key);
+    const data = planRows(m.key);
     const cnt  = data.length;
     const warn = data.some(r => r.exp && expClass(r.exp) !== 'exp-ok');
     const badge = cnt > 0 ? `<span class="tab-badge">${cnt}</span>` : '';
@@ -3678,7 +3783,7 @@ function renderTabs(){
   }).join('');
 }
 function renderStats(){
-  const data = getData(state.tab);
+  const data = planRows(state.tab);
   const budget = data.reduce((s,r)=>s+num(r.cost),0);
   const cards = [
     { cls:'sc-gold',  icon:'📦', val:data.length, lbl:'รายการทั้งหมด' },
@@ -3705,7 +3810,7 @@ function renderTable(){
     const k=keys[i]; const si=state.sortCol===k?(state.sortDir===1?' ↑':' ↓'):'';
     return `<th onclick="sortBy('${k}')">${c}<span class="sort-icon">${si}</span></th>`;
   }).join('')}</tr>`;
-  let rows = getData(state.tab);
+  let rows = planRows(state.tab);
   if(state.search){ const q=state.search.toLowerCase();
     rows = rows.filter(r=>((r.item||'')+(r.category||'')+(r.status||'')+(r.priority||'')+(r.note||'')+(r.po||'')).toLowerCase().includes(q)); }
   if(state.catFilter)    rows=rows.filter(r=>r.category===state.catFilter);
@@ -3749,17 +3854,17 @@ function renderTable(){
       </tr>`;
     }).join('');
   }
-  const total=getData(state.tab).length;
+  const total=planRows(state.tab).length;
   const m=MONTHS.find(x=>x.key===state.tab);
   document.getElementById('tableFooter').innerHTML=`
-    <span>📋 ${esc(m&&(m.full||m.label)||'ภาพรวม')} — ทั้งหมด <strong>${total}</strong> ${rows.length!==total?`(แสดง ${rows.length})`:''} รายการ</span>
+    <span>📋 ${esc(m?monthFull(m):'ภาพรวม')} — ทั้งหมด <strong>${total}</strong> ${rows.length!==total?`(แสดง ${rows.length})`:''} รายการ</span>
     <div style="display:flex;gap:8px">
       <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 Sync</button>
       <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>
     </div>`;
 }
 function receiveFromPlan(id){
-  const r = getData(state.tab).find(x=>x.id===id); if(!r) return;
+  const r = planRows(state.tab).find(x=>x.id===id); if(!r) return;
   openMove('IN', r.item);
   setTimeout(()=>{
     if(r.qty) document.getElementById('m_qty').value = r.qty;
@@ -3789,17 +3894,17 @@ function openAddModal(){
   fillModal(null);
   document.getElementById('modalTitle').textContent='➕ เพิ่มรายการสั่งซื้อ';
   const m=MONTHS.find(x=>x.key===state.tab);
-  document.getElementById('modalTabLabel').textContent=`📦 เพิ่มใน: ${(m&&(m.full||m.label))||'ภาพรวม'}`;
+  document.getElementById('modalTabLabel').textContent=`📦 เพิ่มใน: ${m?monthFull(m):'ภาพรวม'}`;
   toggleOvFields(state.tab==='overview');
   document.getElementById('editOverlay').classList.add('open');
 }
 function openEditModal(id){
-  const row=getData(state.tab).find(r=>r.id===id); if(!row) return;
+  const row=planRows(state.tab).find(r=>r.id===id); if(!row) return;
   state.editId=id; state.editTab=state.tab;
   fillModal(row);
   document.getElementById('modalTitle').textContent='✏️ แก้ไขรายการ';
   const m=MONTHS.find(x=>x.key===state.tab);
-  document.getElementById('modalTabLabel').textContent=`📦 แก้ไขใน: ${(m&&(m.full||m.label))||'ภาพรวม'}`;
+  document.getElementById('modalTabLabel').textContent=`📦 แก้ไขใน: ${m?monthFull(m):'ภาพรวม'}`;
   toggleOvFields(state.tab==='overview');
   document.getElementById('editOverlay').classList.add('open');
 }
@@ -3838,14 +3943,14 @@ async function saveItem(){
     rd:        !isOv?(document.getElementById('f_rd').value||'').trim():'',
     note:      (document.getElementById('f_note').value||'').trim(),
   };
-  const data=getData(state.editTab);
+  const data=planRows(state.editTab);
   if(state.editId){ const i=data.findIndex(r=>r.id===state.editId); i>=0?data[i]=Object.assign({},data[i],row):data.push(row); }
   else data.push(row);
-  saveLocal(state.editTab, data);
+  savePlanRows(state.editTab, data);
   state.editId=null;
   closeModal(); renderAll();
   showToast('💾 บันทึกแล้ว — กำลัง Sync...','info');
-  await syncTab(state.editTab);
+  await syncPlanTab(state.editTab);
 }
 
 /* ═══════════════ SETUP ═══════════════ */
@@ -3971,7 +4076,7 @@ async function migrateFromLocal(){
 async function backupAllToSheets(){
   const url = getScriptUrl(); if(!url){ openSetup(); return; }
   const data = {};
-  ALL_TABS.forEach(t=>{ data[t] = t==='BILLS' ? billsForSheet(getData(t)) : getData(t); });
+  allLocalTabs().forEach(t=>{ data[t] = t==='BILLS' ? billsForSheet(getData(t)) : getData(t); });
   showLoading('กำลังสำรองทุกชีตลง Google Sheets...');
   try{
     const res = await fetch(url, { method:'POST', body: JSON.stringify({ action:'saveAll', data:data }), redirect:'follow' });
@@ -4044,10 +4149,18 @@ function handleImport(e){
   reader.onload=ev=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'binary'});
-      const sheetMap={'ชีต1':'overview','Sheet1':'overview','JAN2026':'JAN','FEB2026':'FEB','MARCH2026':'MAR','MAR2026':'MAR','APRIL2026':'APR','APR2026':'APR','MAY2026':'MAY','JUN2026':'JUN','JULY2026':'JUL','JUL2026':'JUL','AUG2026':'AUG','SEP2026':'SEP','OCT2026':'OCT','NOV2026':'NOV','DEC2026':'DEC'};
+      /** ชื่อชีตเก่า เช่น JAN2026/MARCH2026 → { key:'JAN', year:2569 } (แปลง ค.ศ.→พ.ศ. จากเลขท้ายชื่อ ถ้าไม่มีเลขใช้ปีที่กำลังดูอยู่) */
+      const MONTH_CODE = {JAN:'JAN',FEB:'FEB',MAR:'MAR',MARCH:'MAR',APR:'APR',APRIL:'APR',MAY:'MAY',JUN:'JUN',JUNE:'JUN',JUL:'JUL',JULY:'JUL',AUG:'AUG',SEP:'SEP',SEPT:'SEP',OCT:'OCT',NOV:'NOV',DEC:'DEC'};
+      function matchPlanSheet(name){
+        if(name==='ชีต1' || name.toUpperCase()==='SHEET1') return {key:'overview',year:null};
+        const m=name.toUpperCase().match(/^([A-Z]+)(\d{4})?$/); if(!m) return null;
+        const key=MONTH_CODE[m[1]]; if(!key) return null;
+        return {key, year: m[2] ? (Number(m[2])+543) : state.year};
+      }
       let cnt=0, skipped=0; const touched=[];
       wb.SheetNames.forEach(name=>{
-        const tab=sheetMap[name] || sheetMap[name.toUpperCase()]; if(!tab) return;
+        const match=matchPlanSheet(name); if(!match) return;
+        const {key, year}=match;
         const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,defval:''});
         if(rows.length<2) return;
         const idx=mapHeaders(rows[0]);
@@ -4059,7 +4172,7 @@ function handleImport(e){
           const item=g('item');
           if(!item){ if((r||[]).some(c=>normName(c))) skipped++; continue; }
           data.push({
-            id:genId(tab),
+            id:genId(key),
             priority:g('priority'),
             orderDate:parseExcelDate(idx.orderDate===undefined?'':r[idx.orderDate]),
             category:g('category'),
@@ -4076,7 +4189,8 @@ function handleImport(e){
           });
           cnt++;
         }
-        saveLocal(tab,data); touched.push(tab);
+        if(key==='overview'){ saveLocal('overview',data); touched.push('overview'); }
+        else { writeMonthRows(year, key, data); touched.push(planTab(year)); }
       });
       showToast(`📥 นำเข้า ${cnt} รายการแล้ว${skipped?` (ข้ามแถวว่าง ${skipped})`:''}`,'success');
       renderAll();
@@ -4090,14 +4204,14 @@ function handleImport(e){
 async function rdToStock(){
   const tab=state.tab;
   const m=MONTHS.find(x=>x.key===tab);
-  const rows=getData(tab).filter(r=>{ const n=parseFloat(String(r.rd||'').match(/[\d.]+/)); return r.item && !isNaN(n) && n>0; });
+  const rows=planRows(tab).filter(r=>{ const n=parseFloat(String(r.rd||'').match(/[\d.]+/)); return r.item && !isNaN(n) && n>0; });
   if(!rows.length){ showToast('เดือนนี้ไม่มีข้อมูลในคอลัมน์ RD ที่แปลงได้','info'); return; }
-  const docNo='RD-'+tab;
+  const docNo='RD-'+(tab==='overview'?'overview':state.year+tab);
   const already=new Set(getData('TXN').filter(t=>t.docNo===docNo).map(t=>t.item));
   const todo=rows.filter(r=>!already.has(normName(r.item)));
   if(!todo.length){ showToast('แปลงรายการของเดือนนี้ไปแล้ว','info'); return; }
   const preview=todo.map(r=>'• '+r.item+' = '+String(r.rd).match(/[\d.]+/)[0]).join('\n');
-  if(!confirm('สร้างรายการ “รับเข้าคลัง” จากคอลัมน์ RD ของ '+((m&&(m.full||m.label))||tab)+'\n\n'+preview+'\n\nหมายเหตุ: ยังไม่มี Lot/วันหมดอายุ — ต้องเข้าไปเติมภายหลังที่เมนูรับเข้า\nยืนยันหรือไม่?')) return;
+  if(!confirm('สร้างรายการ “รับเข้าคลัง” จากคอลัมน์ RD ของ '+(m?monthFull(m):tab)+'\n\n'+preview+'\n\nหมายเหตุ: ยังไม่มี Lot/วันหมดอายุ — ต้องเข้าไปเติมภายหลังที่เมนูรับเข้า\nยืนยันหรือไม่?')) return;
   if(getData('ITEMS').length===0) await seedItems();
   const txn=getData('TXN');
   todo.forEach(r=>{
@@ -4108,7 +4222,7 @@ async function rdToStock(){
       lot:'', exp:r.exp||'', qty:parseFloat(String(r.rd).match(/[\d.]+/)[0]),
       unit:(itemMaster(name)||{}).unit||'', docNo:docNo, po:r.po||'', vendor:'', price:'',
       person:'', purpose:'', reason:'', location:'', billId:'',
-      note:'ยอดยกมาจากคอลัมน์ RD ('+((m&&(m.full||m.label))||tab)+')'+(String(r.rd).match(/[^\d.]/)?' — เดิมบันทึกว่า "'+r.rd+'"':''),
+      note:'ยอดยกมาจากคอลัมน์ RD ('+(m?monthFull(m):tab)+')'+(String(r.rd).match(/[^\d.]/)?' — เดิมบันทึกว่า "'+r.rd+'"':''),
       ts:new Date().toISOString(),
     });
   });
@@ -4181,10 +4295,9 @@ function buildWorkbook(){
   // แผนสั่งซื้อ
   add('ชีต1',[['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','เลข PO','ค่าใช้จ่าย','จำนวน','ผู้ติดต่อ','โน้ต'],
     ...getData('overview').map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.po,r.cost,r.qty,r.contact,r.note])]);
-  const mn={JAN:'JAN2026',FEB:'FEB2026',MAR:'MARCH2026',APR:'APRIL2026',MAY:'MAY2026',JUN:'JUN2026',JUL:'JUL2026',AUG:'AUG2026',SEP:'SEP2026',OCT:'OCT2026',NOV:'NOV2026',DEC:'DEC2026'};
   MONTHS.slice(1).forEach(m=>{
-    add(mn[m.key]||m.key,[['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','EXP.','ถึงภายในวันที่','ผู้ติดต่อ','โน้ต','RD'],
-      ...getData(m.key).map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.qty,r.exp,r.dueDate,r.contact,r.note,r.rd])]);
+    add(m.key+state.year,[['รายการสำคัญ','วันที่สั่งซื้อ','หมวดหมู่','สถานะ','รายการ','จำนวน','EXP.','ถึงภายในวันที่','ผู้ติดต่อ','โน้ต','RD'],
+      ...planRows(m.key).map(r=>[r.priority,r.orderDate,r.category,r.status,r.item,r.qty,r.exp,r.dueDate,r.contact,r.note,r.rd])]);
   });
   return wb;
 }
@@ -4427,6 +4540,52 @@ function poSelectOptions(){
   return '<option value="">-- เลือกบริษัท --</option>' +
     sup.map(s=>`<option value="${esc(s.id)}">${esc(s.supplier_name)}</option>`).join('');
 }
+/** สแกนภาพใบสั่งซื้อ/ใบส่งของ → อ่านด้วย AI แล้วเติมลงฟอร์ม PO ที่เปิดอยู่ให้ ผู้ใช้ต้องตรวจสอบ/แก้ไขเองก่อนกด "บันทึกใบสั่งซื้อ" เสมอ — ฟังก์ชันนี้ไม่บันทึกอะไรเอง */
+async function scanPODoc(file){
+  if(!file) return;
+  const statusEl = document.getElementById('poScanStatus');
+  const prevText = statusEl.textContent;
+  statusEl.textContent = '⏳ กำลังอ่านข้อมูลจากภาพ... (อาจใช้เวลาสักครู่)';
+  try{
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await fetch(INV_API + '/extract', { method:'POST', headers:{ 'X-API-Key':INV_KEY }, body: fd });
+    const j = await res.json();
+    if(!j.ok) throw new Error(j.error || 'อ่านข้อมูลไม่สำเร็จ');
+    applyPOScan(j.data);
+    statusEl.textContent = `✅ อ่านได้ ${j.data.items.length} รายการ — ตรวจสอบและแก้ไขให้ถูกต้องก่อนกด "บันทึกใบสั่งซื้อ"`;
+    showToast(`📷 อ่านข้อมูลจากภาพได้ ${j.data.items.length} รายการ`,'success');
+  }catch(e){
+    statusEl.textContent = prevText;
+    showToast('อ่านภาพไม่สำเร็จ: '+e.message,'error');
+  } finally {
+    document.getElementById('poScanFile').value = '';
+  }
+}
+function applyPOScan(data){
+  if(data.doc_date) document.getElementById('p_date').value = data.doc_date;
+  if(data.doc_number) document.getElementById('p_number').value = data.doc_number;
+  if(data.note) document.getElementById('p_note').value = data.note;
+  if(data.supplier_name){
+    const sel = document.getElementById('p_supplier');
+    const target = normName(data.supplier_name).toLowerCase();
+    const opt = Array.from(sel.options).find(o=>{
+      const t = normName(o.textContent).toLowerCase();
+      return t && (t===target || t.includes(target) || target.includes(t));
+    });
+    if(opt) sel.value = opt.value;
+    else showToast(`ไม่พบบริษัท "${data.supplier_name}" ในทะเบียน — กรุณาเลือกเอง หรือเพิ่มบริษัทใหม่ก่อน`,'info');
+  }
+  const scanned = (data.items||[]).map(it=>({
+    id: genId('pi'), po_id:'', product_id:'', product_name: it.product_name||'',
+    category: it.category||'', quantity: it.quantity??'', unit: it.unit||'',
+    unit_price: it.unit_price??'', total_price:'', exp_date:'', due_date: it.due_date||'', rd:'', item_note:'',
+  }));
+  // เติมต่อท้ายบรรทัดที่ผู้ใช้กรอกไว้แล้ว ไม่ทับ — ลบแค่บรรทัดว่างเปล่าที่ยังไม่ได้กรอกอะไร
+  const existing = state.poEdit.lines.filter(l=>normName(l.product_name) || num(l.quantity)>0);
+  state.poEdit.lines = existing.concat(scanned);
+  if(!state.poEdit.lines.length) addPOLine(); else renderPOLines();
+}
 function openPO(id){
   const p = id ? getData('PO_HEADERS').find(x=>x.id===id) : null;
   state.poEdit = { id: p?p.id:null, lines: p ? JSON.parse(JSON.stringify(poLines(p.id))) : [] };
@@ -4435,7 +4594,7 @@ function openPO(id){
   document.getElementById('p_supplier').innerHTML = poSelectOptions();
   document.getElementById('p_status').innerHTML = PO_STATUS.map(s=>`<option>${esc(s)}</option>`).join('');
   document.getElementById('p_source').innerHTML = '<option value="">— ไม่อ้างอิง —</option>' +
-    MONTHS.slice(1).map(m=>`<option value="${m.key}">${esc(m.full)}</option>`).join('');
+    MONTHS.slice(1).map(m=>`<option value="${state.year}|${m.key}">${esc(monthFull(m))}</option>`).join('');
   const v=(k,val)=>{ document.getElementById(k).value = val==null?'':val; };
   v('p_date', p?p.po_date:today());
   v('p_number', p?p.po_number:nextPONumber());
@@ -4580,7 +4739,7 @@ function poFromPlan(){
   const idx = parseInt(pick,10)-1;
   if(isNaN(idx) || idx<0 || idx>11){ showToast('เลือกเดือนไม่ถูกต้อง','error'); return; }
   const key = keys[idx];
-  const rows = getData(key).filter(r=>normName(r.item) && num(r.qty)>0);
+  const rows = planRows(key).filter(r=>normName(r.item) && num(r.qty)>0);
   if(!rows.length){ showToast('เดือนนี้ไม่มีรายการในแผน','info'); return; }
   openPO();
   state.poEdit.lines = rows.map(r=>{
@@ -4590,10 +4749,10 @@ function poFromPlan(){
       unit_price:m.price||'', total_price:'', exp_date:r.exp||'', due_date:r.dueDate||'',
       rd:r.rd||'', item_note:r.note||'' };
   });
-  document.getElementById('p_source').value = key;
+  document.getElementById('p_source').value = state.year+'|'+key;
   document.getElementById('p_date').value = rows[0].orderDate || today();
   renderPOLines();
-  showToast(`📅 ดึง ${rows.length} รายการจากแผน ${MONTHS[idx+1].full} มาแล้ว`,'success');
+  showToast(`📅 ดึง ${rows.length} รายการจากแผน ${monthFull(MONTHS[idx+1])} มาแล้ว`,'success');
 }
 
 /* ─────────── RECEIVING ─────────── */
@@ -4623,6 +4782,50 @@ function openRecv(poId){
   document.getElementById('recvOverlay').classList.add('open');
 }
 function closeRecv(){ document.getElementById('recvOverlay').classList.remove('open'); }
+/** สแกนภาพใบส่งของ/ใบรับสินค้า → จับคู่รายการกับใบสั่งซื้อที่เปิดอยู่ด้วยชื่อสินค้า แล้วเติมจำนวน/Lot/วันหมดอายุให้
+    ผู้ใช้ต้องตรวจสอบ/แก้ไขเองก่อนกด "ยืนยัน + บันทึกรับของ" เสมอ — ฟังก์ชันนี้ไม่บันทึกอะไรเอง */
+async function scanRecvDoc(file){
+  if(!file) return;
+  const statusEl = document.getElementById('recvScanStatus');
+  const prevText = statusEl.textContent;
+  statusEl.textContent = '⏳ กำลังอ่านข้อมูลจากภาพ... (อาจใช้เวลาสักครู่)';
+  try{
+    const fd = new FormData();
+    fd.append('image', file);
+    const res = await fetch(INV_API + '/extract', { method:'POST', headers:{ 'X-API-Key':INV_KEY }, body: fd });
+    const j = await res.json();
+    if(!j.ok) throw new Error(j.error || 'อ่านข้อมูลไม่สำเร็จ');
+    const matched = applyRecvScan(j.data);
+    statusEl.textContent = `✅ จับคู่ได้ ${matched}/${j.data.items.length} รายการ — ตรวจสอบจำนวน/Lot/วันหมดอายุให้ถูกต้องก่อนกดยืนยัน`;
+    showToast(`📷 จับคู่รายการได้ ${matched}/${j.data.items.length} รายการ`, matched?'success':'info');
+  }catch(e){
+    statusEl.textContent = prevText;
+    showToast('อ่านภาพไม่สำเร็จ: '+e.message,'error');
+  } finally {
+    document.getElementById('recvScanFile').value = '';
+  }
+}
+function applyRecvScan(data){
+  if(data.doc_number) document.getElementById('rc_doc').value = data.doc_number;
+  if(data.doc_date) document.getElementById('rc_date').value = data.doc_date;
+  const ls = poLines(state.poRecv.id);
+  let matched = 0;
+  (data.items||[]).forEach(it=>{
+    const target = normName(it.product_name||'').toLowerCase();
+    if(!target) return;
+    const line = ls.find(l=>normName(l.product_name).toLowerCase()===target)
+      || ls.find(l=>{ const t=normName(l.product_name).toLowerCase(); return t && (t.includes(target) || target.includes(t)); });
+    if(!line) return;
+    const qtyEl = document.getElementById('rq_'+line.id);
+    if(!qtyEl || qtyEl.disabled) return;
+    if(it.quantity!=null) qtyEl.value = it.quantity;
+    if(it.lot) document.getElementById('rl_'+line.id).value = it.lot;
+    if(it.exp_date) document.getElementById('re_'+line.id).value = it.exp_date;
+    matched++;
+  });
+  if(!matched) showToast('ไม่พบรายการที่ตรงกับใบสั่งซื้อนี้เลย — กรุณากรอกเอง หรือตรวจชื่อสินค้าในภาพ','info');
+  return matched;
+}
 async function saveRecv(){
   const poId = state.poRecv.id;
   const p = getData('PO_HEADERS').find(x=>x.id===poId); if(!p) return;
@@ -4842,9 +5045,10 @@ function renderReport(){
   document.getElementById('repMonthHead').innerHTML =
     head(['เดือน','แผนสั่งซื้อ (Plan)','รับเข้าจริง (IN)','เบิกจริง (OUT)','รับ − แผน','คงเหลือปลายเดือน (สะสม)']);
   let running = 0;
+  const ceYearRep = state.year-543;
   document.getElementById('repMonthBody').innerHTML = MONTHS.slice(1).map(m=>{
-    const mm = '2026-'+String(m.num).padStart(2,'0');
-    const planQ = getData(m.key)
+    const mm = ceYearRep+'-'+String(m.num).padStart(2,'0');
+    const planQ = planRows(m.key)
       .filter(r=>!pick || normName(r.item)===pick)
       .reduce((x,r)=>x+num(r.qty),0);
     const inQ = txn.filter(t=>t.type==='IN'  && toISODate(t.date).startsWith(mm) && (!pick||normName(t.item)===pick))
@@ -4857,7 +5061,7 @@ function renderReport(){
     const gap = inQ - planQ;
     const any = planQ||inQ||outQ;
     return `<tr${any?'':' style="opacity:.45"'}>
-      <td><span class="item-cell">${esc(m.full)}</span></td>
+      <td><span class="item-cell">${esc(monthFull(m))}</span></td>
       <td style="text-align:right">${planQ?fmt(planQ):'—'}</td>
       <td style="text-align:right" class="${inQ?'qty-in':''}">${inQ?fmt(inQ):'—'}</td>
       <td style="text-align:right" class="${outQ?'qty-out':''}">${outQ?fmt(outQ):'—'}</td>
@@ -4879,7 +5083,7 @@ function updateClock(){
 updateClock(); setInterval(updateClock,1000);
 
 (async function init(){
-  ALL_TABS.forEach(t=>getData(t));                 // seed cache
+  allLocalTabs().forEach(t=>getData(t));            // seed cache
   saveLocal('BILLS', normalizeBills(getData('BILLS')));
   if(IS_GAS){
     document.getElementById('setupBtn').style.display='none';
