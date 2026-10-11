@@ -2575,6 +2575,14 @@ const CAT_COLORS = [
 ];
 const CAT_COLOR_MAP = CAT_COLORS.reduce((m,[k,v])=>{ m[k]=v; return m; },{});
 function catColor(c){ return CAT_COLOR_MAP[c] || CAT_COLOR_MAP['อื่นๆ']; }
+/** พื้นหลังสีอ่อนแยกตามชื่อรายการน้ำยาแต่ละตัว (สีคงที่ ตามลำดับในทะเบียน) */
+function itemCellStyle(name){
+  const key=itemKey(name);
+  let idx=getData('ITEMS').findIndex(i=>itemKey(i.name)===key);
+  if(idx<0){ idx=0; for(const ch of key) idx=(idx*31+ch.charCodeAt(0))%997; }
+  const h=Math.round((idx*137.508)%360);
+  return `background:hsl(${h} 70% 91%);box-shadow:inset 4px 0 0 hsl(${h} 55% 55%)`;
+}
 /** พื้นหลังสีอ่อน + แถบสีซ้าย ตามหมวดหมู่ สำหรับช่องชื่อรายการ */
 function catCellStyle(c){ const col=catColor(c); return `background:${col}1f;box-shadow:inset 4px 0 0 ${col}`; }
 
@@ -3016,7 +3024,7 @@ function renderTxn(type){
         return `<tr>
           <td class="col-num">${i+1}</td>
           <td style="white-space:nowrap">${formatDate(t.date)}</td>
-          <td style="${catCellStyle(t.category)}"><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)}</td>
+          <td style="${itemCellStyle(t.item)}"><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)}</td>
           <td>${catChip(t.category)}</td>
           <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
           <td>${t.exp?`<span class="${expClass(t.exp)}">${formatDate(t.exp)}</span>`:'—'}</td>
