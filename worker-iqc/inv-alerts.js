@@ -105,7 +105,9 @@ export function computeAlerts(tabs, today = todayTH()) {
     const critical = avgDaily > 0 && (total <= 0 || coverDays <= leadDays);
     const belowReorder = reorderAt > 0 && total <= reorderAt;
     const alreadyCovered = coverIncoming !== null && coverIncoming > triggerDays;
-    if ((critical || belowReorder) && !alreadyCovered) {
+    // ข้ามรายการที่ยังไม่เคยมีประวัติรับเข้า/เบิกเลย (ยังไม่ได้อัปเดตสต็อก) ไม่งั้นเตือนว่า "เหลือ 0" ทั้งที่เป็นแค่ยังไม่ได้กรอก
+    const hasHistory = Object.keys(s.lots).length > 0;
+    if (hasHistory && (critical || belowReorder) && !alreadyCovered) {
       const needQty = avgDaily > 0 ? Math.max(0, avgDaily * (leadDays + 60) - total - onOrder) : 0;
       const parts = [`เหลือ ${fmt(Math.max(total, 0))} ${unit}`.trim()];
       if (reorderAt > 0) parts.push(`จุดสั่งซื้อ ${fmt(reorderAt)}`);
