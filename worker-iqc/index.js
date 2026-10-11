@@ -28,12 +28,20 @@
      GET  /api/inv[?tab=TXN]                              → { ok, initialized, data: { TAB: [rows] } }
      POST /api/inv  { tab, upsert:[rows], delete:[ids] }  → row-level changes (safe with several users)
      POST /api/inv/import { data: { TAB: [rows] } }       → one-time copy from Google Sheets; marks the store initialized
+     POST /api/inv/extract  (multipart form, field "image")
+       → { ok, data:{ doc_number, doc_date, supplier_name, note, items:[{product_name, category,
+            quantity, unit, unit_price, total_price, lot, exp_date, due_date}] } }
+       Reads a photo/screenshot of a PO or goods-receipt note with Workers AI (vision model, then a
+       text model to structure it as JSON). Does not write to D1 — the page fills its existing PO /
+       receive form with the result for the user to check and edit before they press save.
    Google Sheets / Drive stay as backup only (written from the page through Apps Script).
 
    The API key is embedded in the public page source so every computer works
    without typing it, so it is not a real secret. The Origin allow-list only stops
    other websites' scripts; a non-browser client can still send any Origin.
    ============================================================================ */
+
+import { extractPurchaseDoc } from './inv-extract.js';
 
 const ALLOWED_ORIGINS = [
   'https://looktor103-collab.github.io',
@@ -76,7 +84,7 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/inv', '/api/inv/import', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/inv', '/api/inv/import', '/api/inv/extract', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
@@ -84,6 +92,7 @@ export default {
       if (route === '/api/inv' && m === 'GET') return await invGet(url, env.DB);
       if (route === '/api/inv' && m === 'POST') return await invSave(request, env.DB);
       if (route === '/api/inv/import' && m === 'POST') return await invImport(request, env.DB);
+      if (route === '/api/inv/extract' && m === 'POST') return await invExtract(request, env);
       if (route === '/api/iqc' && m === 'GET') return await handleGet(url, env.DB);
       if (route === '/api/iqc' && m === 'POST') return await handlePost(request, env.DB);
       if (route === '/api/maintenance' && m === 'GET') return await maintenanceGet(url, env.DB);
@@ -170,9 +179,17 @@ async function maintenanceSave(request, db) {
 /* ── Inventory ─────────────────────────────────────────────────────────────
    The page keeps its sheet-shaped data model (tabs of row objects with an id), so each
    row is stored as JSON. Saves send only the rows that changed, so two people saving at
-   the same time no longer overwrite each other's rows (Google Sheets rewrote whole tabs). */
-const INV_TABS = ['overview', 'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
-  'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS'];
+   the same time no longer overwrite each other's rows (Google Sheets rewrote whole tabs).
+
+   The monthly order-plan used to live in 12 year-less tabs (JAN..DEC), so every January
+   collided with the previous year's January. It's now one tab per Buddhist year —
+   PLAN_2569, PLAN_2570, ... — holding all 12 months' rows (each row carries a `month`
+   field). PLAN_<year> isn't in a fixed list (new years shouldn't need a code change), so
+   it's matched by pattern instead; invGet's no-tab case discovers whichever PLAN_<year>
+   tabs actually have rows straight from the table. */
+const INV_FIXED_TABS = ['overview', 'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS'];
+const INV_PLAN_TAB_RE = /^PLAN_\d{4}$/;
+function isInvTab(tab) { return INV_FIXED_TABS.includes(tab) || INV_PLAN_TAB_RE.test(tab); }
 const INV_MAX_IMPORT_BYTES = 10_000_000;
 const INV_MAX_ROW_BYTES = 50_000;
 const INV_UPSERT = `INSERT INTO inv_rows (tab, id, data, updated_at) VALUES (?, ?, ?, ?)
@@ -199,21 +216,24 @@ async function readJson(request, maxBytes) {
 
 async function invGet(url, db) {
   const tab = url.searchParams.get('tab');
-  if (tab && !INV_TABS.includes(tab)) return json({ ok: false, error: 'unknown tab' }, 400);
+  if (tab && !isInvTab(tab)) return json({ ok: false, error: 'unknown tab' }, 400);
   const meta = await db.prepare(`SELECT value FROM inv_meta WHERE key = 'migrated_at'`).first();
   const q = tab
     ? db.prepare('SELECT tab, data FROM inv_rows WHERE tab = ? ORDER BY rowid').bind(tab)
     : db.prepare('SELECT tab, data FROM inv_rows ORDER BY rowid');
   const { results } = await q.all();
   const data = {};
-  (tab ? [tab] : INV_TABS).forEach(t => { data[t] = []; });
-  results.forEach(r => { if (data[r.tab]) data[r.tab].push(JSON.parse(r.data)); });
+  // no tab = everything: start from the fixed tabs (always present, even empty) and let
+  // whatever PLAN_<year> tabs actually have rows show up on their own — no year list to maintain.
+  if (!tab) INV_FIXED_TABS.forEach(t => { data[t] = []; });
+  else data[tab] = [];
+  results.forEach(r => { if (!tab || r.tab === tab) (data[r.tab] || (data[r.tab] = [])).push(JSON.parse(r.data)); });
   return json({ ok: true, initialized: !!meta, migratedAt: meta ? meta.value : null, data });
 }
 
 async function invSave(request, db) {
   const body = await readJson(request, MAX_BODY_BYTES);
-  if (!INV_TABS.includes(body.tab)) return json({ ok: false, error: 'unknown tab' }, 400);
+  if (!isInvTab(body.tab)) return json({ ok: false, error: 'unknown tab' }, 400);
   const now = new Date().toISOString();
   const up = (Array.isArray(body.upsert) ? body.upsert : []).map(invRow);
   const del = (Array.isArray(body.delete) ? body.delete : []).map(id => str(id, 120)).filter(Boolean);
@@ -231,7 +251,8 @@ async function invImport(request, db) {
   const now = new Date().toISOString();
   const counts = {};
   const stmts = [];
-  for (const tab of INV_TABS) {
+  for (const tab of Object.keys(body.data)) {
+    if (!isInvTab(tab)) continue;
     const rows = (Array.isArray(body.data[tab]) ? body.data[tab] : []).map(invRow);
     counts[tab] = rows.length;
     rows.forEach(r => stmts.push(db.prepare(INV_UPSERT).bind(tab, r.id, r.data, now)));
@@ -241,6 +262,22 @@ async function invImport(request, db) {
   ).bind(now));
   await invBatch(db, stmts);
   return json({ ok: true, counts });
+}
+
+const INV_MAX_IMAGE_BYTES = 8_000_000;
+
+async function invExtract(request, env) {
+  const form = await request.formData();
+  const file = form.get('image');
+  if (!file || typeof file === 'string' || !file.size) return json({ ok: false, error: 'กรุณาแนบภาพเอกสาร' }, 400);
+  if (file.size > INV_MAX_IMAGE_BYTES) return json({ ok: false, error: 'ภาพใหญ่เกิน 8 MB กรุณาถ่าย/แคปใหม่ให้ไฟล์เล็กลง' }, 413);
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const data = await extractPurchaseDoc(bytes, env);
+    return json({ ok: true, data });
+  } catch (err) {
+    return json({ ok: false, error: String((err && err.message) || err) }, 502);
+  }
 }
 
 /* ── EQA ─────────────────────────────────────────────────────────────────── */

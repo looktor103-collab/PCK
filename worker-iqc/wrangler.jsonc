@@ -13,5 +13,6 @@
   ],
   "kv_namespaces": [
     { "binding": "EQA_PDF", "id": "297fde7989c44a578385c1e4a57578cb" }
-  ]
+  ],
+  "ai": { "binding": "AI" }
 }
