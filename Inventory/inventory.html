@@ -2335,6 +2335,13 @@ function head(cols){ return `<tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>`;
 
 /* ─────────── STOCK ENGINE ─────────── */
 function itemKey(v){ return String(v==null?'':v).replace(/\s+/g,' ').trim().toLowerCase(); }
+/** บรรทัดรองใต้ชื่อรายการ: รหัส · Cat. No. จากทะเบียน — ช่วยแยกชื่อที่คล้ายกัน */
+function itemTag(name){
+  const m=itemMaster(name); if(!m) return '';
+  let p=[m.code, m.catNo?('Cat. '+m.catNo):''].filter(Boolean);
+  if(!p.length) p=[m.vendor, m.unit].filter(Boolean); // ยังไม่ใส่รหัส → แสดงบริษัท/หน่วยแทน
+  return p.length?`<div style="font-size:11px;color:var(--text3)">${esc(p.join(' · '))}</div>`:'';
+}
 function itemMaster(name){
   const key=itemKey(name);
   return getData('ITEMS').find(i => itemKey(i.name)===key) || null;
@@ -2760,7 +2767,7 @@ function renderDash(){
 
   const orderRows=need.slice(0,6).map(s=>`
     <div class="act-row"><div>
-      <div class="an"><span class="dot ${s.urgency==='critical'?'dot-crit':'dot-warn'}"></span>${esc(s.name)}</div>
+      <div class="an"><span class="dot ${s.urgency==='critical'?'dot-crit':'dot-warn'}"></span>${esc(s.name)}${itemTag(s.name)}</div>
       <div class="am">${esc(s.category||'—')}${s.coverDays!==null?` · พอใช้อีก ${Math.floor(s.coverDays)} วัน · รอของ ${s.leadDays} วัน`:''}${s.onOrder?` · สั่งแล้ว ${fmt(s.onOrder)}`:''}</div>
     </div><div class="act-val ${s.urgency==='critical'?'stk-out':'stk-low'}">ควรสั่ง ${fmt(Math.ceil(s.needQty||s.suggest||0))}</div></div>`);
 
@@ -2799,7 +2806,7 @@ function renderDash(){
     <tr>
       <td style="white-space:nowrap">${formatDate(t.date)}</td>
       <td>${txnBadge(t.type)}</td>
-      <td><span class="item-cell">${esc(t.item)}</span> ${catChip(t.category)}</td>
+      <td><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)} ${catChip(t.category)}</td>
       <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
       <td class="${txnDelta(t)>=0?'qty-in':'qty-out'}">${txnDelta(t)>=0?'+':''}${fmt(txnDelta(t))} ${esc(t.unit||'')}</td>
       <td>${esc(t.person||'—')}</td>
@@ -2921,7 +2928,7 @@ function renderStock(){
       const open = !!state.stock.open[s.name];
       const main = `<tr>
         <td class="col-num">${s.lots.length?`<button class="lot-toggle" onclick="toggleLots(${JSON.stringify(s.name).replace(/"/g,'&quot;')})">${open?'▼':'▶'}</button>`:''}</td>
-        <td><span class="item-cell">${esc(s.name)}</span>${s.tests?`<div style="font-size:11px;color:var(--text3)">${fmt(s.tests)} เทสต์/${esc(s.unit||'หน่วย')} · คงเหลือ ≈ ${fmt(s.total*s.tests)} เทสต์</div>`:''}</td>
+        <td><span class="item-cell">${esc(s.name)}</span>${itemTag(s.name)}${s.tests?`<div style="font-size:11px;color:var(--text3)">${fmt(s.tests)} เทสต์/${esc(s.unit||'หน่วย')} · คงเหลือ ≈ ${fmt(s.total*s.tests)} เทสต์</div>`:''}</td>
         <td>${catChip(s.category)}</td>
         <td class="${stkCls}" style="text-align:right;white-space:nowrap">${fmt(s.total)} <span style="font-weight:400;color:var(--text3)">${esc(s.unit||'')}</span></td>
         <td style="text-align:right;white-space:nowrap">${s.onOrder?`<span class="qty-in" title="สั่งแล้วรอของ">+${fmt(s.onOrder)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
@@ -3006,7 +3013,7 @@ function renderTxn(type){
         return `<tr>
           <td class="col-num">${i+1}</td>
           <td style="white-space:nowrap">${formatDate(t.date)}</td>
-          <td><span class="item-cell">${esc(t.item)}</span></td>
+          <td><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)}</td>
           <td>${catChip(t.category)}</td>
           <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
           <td>${t.exp?`<span class="${expClass(t.exp)}">${formatDate(t.exp)}</span>`:'—'}</td>
@@ -3024,7 +3031,7 @@ function renderTxn(type){
         <td class="col-num">${i+1}</td>
         <td style="white-space:nowrap">${formatDate(t.date)}</td>
         <td>${txnBadge(t.type)}</td>
-        <td><span class="item-cell">${esc(t.item)}</span></td>
+        <td><span class="item-cell">${esc(t.item)}</span>${itemTag(t.item)}</td>
         <td>${catChip(t.category)}</td>
         <td>${t.lot?`<span class="lot-tag">${esc(t.lot)}</span>`:'—'}</td>
         <td class="${d>=0?'qty-in':'qty-out'}" style="text-align:right">${d>=0?'+':''}${fmt(d)} ${esc(t.unit||'')}</td>
@@ -4944,7 +4951,7 @@ function renderReport(){
       const need = Math.ceil(s.needQty||s.suggest||0);
       return `<tr>
         <td>${urgencyBadge(s.urgency)}</td>
-        <td><span class="item-cell">${esc(s.name)}</span></td>
+        <td><span class="item-cell">${esc(s.name)}</span>${itemTag(s.name)}</td>
         <td>${catChip(s.category)}</td>
         <td style="text-align:right;white-space:nowrap" class="${s.total<=0?'stk-out':''}">${fmt(s.total)} ${esc(s.unit||'')}</td>
         <td style="text-align:right">${s.onOrder?`<span class="qty-in">+${fmt(s.onOrder)}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
@@ -5011,7 +5018,7 @@ function renderReport(){
       const pctTxt = s.pct===null ? '—'
         : `<span class="${s.pct>15?'stk-out':s.pct<-15?'stk-caution':'stk-ok'}">${s.pct>0?'+':''}${fmt(s.pct,0)}%</span>`;
       return `<tr>
-        <td><span class="item-cell">${esc(s.name)}</span></td>
+        <td><span class="item-cell">${esc(s.name)}</span>${itemTag(s.name)}</td>
         <td>${catChip(s.category)}</td>
         <td style="text-align:right">${s.planned>0?fmt(s.planned,1):'<span style="color:var(--text3)">—</span>'}</td>
         <td style="text-align:right;font-weight:600">${fmt(s.actualPerMonth,1)}</td>
