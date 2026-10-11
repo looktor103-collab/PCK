@@ -8,6 +8,7 @@ const DEFAULT_LEAD_DAYS = 30;
 const NEAR_EXP_DAYS = 60;
 const RESEND_AFTER_DAYS = 3;     // รายการเดิมที่ยังค้างอยู่ จะเตือนซ้ำทุกกี่วัน
 const MAX_LINES = 25;
+const RECENT_DAYS = 30;          // เตือนเฉพาะรายการที่มีการรับเข้า/เบิกออก/ปรับยอดภายในกี่วันล่าสุด (สต็อกที่ยังไม่ได้อัปเดตจะไม่ถูกเตือน)
 const APP_URL = 'https://splab-pck.looktor103.workers.dev/Inventory/inventory';
 
 const num = v => { const n = parseFloat(v); return Number.isNaN(n) ? 0 : n; };
@@ -68,7 +69,9 @@ export function computeAlerts(tabs, today = todayTH()) {
   tabs.TXN.forEach(t => {
     const name = normName(t.item); if (!name) return;
     const lot = String(t.lot ?? '').trim() || '(ไม่ระบุ Lot)';
-    const s = stock[name] || (stock[name] = { name, unit: t.unit || '', lots: {} });
+    const s = stock[name] || (stock[name] = { name, unit: t.unit || '', lots: {}, last: '' });
+    const td = toISO(t.date) || String(t.ts || '').slice(0, 10);
+    if (td && td > s.last) s.last = td;
     if (t.unit && !s.unit) s.unit = t.unit;
     const L = s.lots[lot] || (s.lots[lot] = { lot, exp: '', qty: 0 });
     L.qty += txnDelta(t);
@@ -106,8 +109,10 @@ export function computeAlerts(tabs, today = todayTH()) {
     const belowReorder = reorderAt > 0 && total <= reorderAt;
     const alreadyCovered = coverIncoming !== null && coverIncoming > triggerDays;
     // ข้ามรายการที่ยังไม่เคยมีประวัติรับเข้า/เบิกเลย (ยังไม่ได้อัปเดตสต็อก) ไม่งั้นเตือนว่า "เหลือ 0" ทั้งที่เป็นแค่ยังไม่ได้กรอก
-    const hasHistory = Object.keys(s.lots).length > 0;
-    if (hasHistory && (critical || belowReorder) && !alreadyCovered) {
+    // เตือนเฉพาะรายการที่ถูกอัปเดตล่าสุด (ภายใน RECENT_DAYS วัน)
+    const recent = !!s.last && dayDiff(today, s.last) <= RECENT_DAYS;
+    if (!recent) return;
+    if ((critical || belowReorder) && !alreadyCovered) {
       const needQty = avgDaily > 0 ? Math.max(0, avgDaily * (leadDays + 60) - total - onOrder) : 0;
       const parts = [`เหลือ ${fmt(Math.max(total, 0))} ${unit}`.trim()];
       if (reorderAt > 0) parts.push(`จุดสั่งซื้อ ${fmt(reorderAt)}`);
