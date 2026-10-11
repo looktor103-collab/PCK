@@ -3375,12 +3375,7 @@ async function purgeOrphanStock(){
   txn.forEach(t=>{ const k=itemKey(t.item); if(k && !itemMaster(t.item)) orphanNames[k]=t.item; });
   const names = Object.keys(orphanNames).map(k=>orphanNames[k]);
   if(!names.length){ showToast('ไม่มีรายการค้างที่ต้องล้าง','info'); return; }
-  if(!confirm('รายการต่อไปนี้ไม่มีในทะเบียนสินค้าแล้ว จะลบประวัติรับเข้า/เบิกออกของรายการเหล่านี้ทั้งหมด:
-
-• '+names.join('
-• ')+'
-
-ยืนยันลบ?')) return;
+  if(!confirm('รายการต่อไปนี้ไม่มีในทะเบียนสินค้าแล้ว จะลบประวัติรับเข้า/เบิกออกของรายการเหล่านี้ทั้งหมด:\n\n• '+names.join('\n• ')+'\n\nยืนยันลบ?')) return;
   const after = txn.filter(t=>!(itemKey(t.item) && !itemMaster(t.item)));
   saveLocal('TXN', after);
   renderAll();
