@@ -221,6 +221,7 @@ tr.lot-row td:first-child{padding-left:32px}
 .sb-overdue{background:var(--red-bg);color:var(--red-txt);border:1px solid #f4a0b0}
 .sb-ship   {background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--purple-mid)}
 .sb-none   {background:#f0eded;color:#8a8a9a;border:1px solid #ddd}
+.sb-late   {background:#fde4e4;color:#b42318;border:1px solid #f3b4b4}
 .sb-in     {background:var(--mint);color:var(--mint-dark);border:1px solid #90c8a8}
 .sb-out    {background:var(--rose-light);color:var(--rose-dark);border:1px solid var(--rose-mid)}
 .sb-adj    {background:var(--purple-light);color:var(--purple-dark);border:1px solid var(--purple-mid)}
@@ -929,6 +930,29 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
     <div class="table-card">
       <div class="table-scroll"><table class="inv-table"><thead id="supHead"></thead><tbody id="supBody"></tbody></table></div>
       <div class="table-footer" id="supFooter"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ BORROW (ยืมของ) ══════════ -->
+  <div class="mod-pane" id="mod-borrow" style="display:none">
+    <div class="mod-title"><h2>🤝 ยืม / คืนของ</h2></div>
+    <div class="mod-sub">บันทึกการยืมน้ำยา/วัสดุระหว่างหน่วยงาน — “ยืมเข้า” = เรายืมมาใช้ · “ให้ยืม” = เราให้หน่วยงานอื่นยืม · กด “คืน” เมื่อมีการคืนของ</div>
+    <div class="toolbar">
+      <div class="search-wrap"><span class="search-icon">🔍</span>
+        <input type="text" id="borSearch" placeholder="ค้นหารายการ / หน่วยงาน..." oninput="borFilter('q',this.value)">
+      </div>
+      <select class="filter-sel" onchange="borFilter('dir',this.value)">
+        <option value="">ยืมเข้า/ให้ยืม ทั้งหมด</option><option>ยืมเข้า</option><option>ให้ยืม</option>
+      </select>
+      <select class="filter-sel" onchange="borFilter('st',this.value)">
+        <option value="">สถานะทั้งหมด</option><option>ยืมอยู่</option><option>คืนบางส่วน</option><option>คืนแล้ว</option><option>เกินกำหนด</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <button class="btn btn-gold" onclick="openBorrow()">＋ บันทึกการยืม</button>
+    </div>
+    <div class="table-card">
+      <div class="table-scroll"><table class="inv-table"><thead id="borHead"></thead><tbody id="borBody"></tbody></table></div>
+      <div class="table-footer" id="borFooter"></div>
     </div>
   </div>
 </div>
@@ -1758,6 +1782,43 @@ function healthCheck() {
   </div>
 </div>
 
+<!-- ═══════ BORROW MODAL ═══════ -->
+<div class="overlay" id="borOverlay">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-head">
+      <span class="modal-title" id="borTitle">🤝 บันทึกการยืม</span>
+      <button class="modal-close" onclick="closeBorrow()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="field"><label>ประเภท *</label>
+          <select id="bw_dir"><option>ยืมเข้า</option><option>ให้ยืม</option></select></div>
+        <div class="field"><label>วันที่ยืม *</label><input type="date" id="bw_date"></div>
+      </div>
+      <div class="fgrid g1">
+        <div class="field"><label>รายการน้ำยา / วัสดุ *</label><input type="text" id="bw_item" list="itemList" placeholder="ชื่อรายการ"></div>
+        <div class="field"><label>หน่วยงาน / บริษัทที่ยืม-ให้ยืม *</label><input type="text" id="bw_party" placeholder="เช่น รพ.บ้านลาด / ห้อง Lab ชีวเคมี"></div>
+      </div>
+      <div class="fgrid g3">
+        <div class="field"><label>จำนวน *</label><input type="number" min="0" step="0.01" id="bw_qty"></div>
+        <div class="field"><label>หน่วย</label><input type="text" id="bw_unit" list="unitList"></div>
+        <div class="field"><label>กำหนดคืน</label><input type="date" id="bw_due"></div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>Lot No.</label><input type="text" id="bw_lot"></div>
+        <div class="field"><label>วันหมดอายุ</label><input type="date" id="bw_exp"></div>
+      </div>
+      <div class="fgrid g1">
+        <div class="field"><label>หมายเหตุ</label><input type="text" id="bw_note"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeBorrow()">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveBorrow()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- PRINT AREA -->
 <div id="printArea"></div>
 
@@ -1798,6 +1859,7 @@ const MODULES = [
   { key:'po',    label:'ใบสั่งซื้อ/ค้างรับ',   icon:'🛒' },
   { key:'report',label:'รายงาน/วิเคราะห์',     icon:'📈' },
   { key:'sup',   label:'บริษัทคู่ค้า',        icon:'🏢' },
+  { key:'borrow',label:'ยืมของ',             icon:'🤝' },
   { key:'plan',  label:'แผนสั่งซื้อรายเดือน', icon:'📅' },
   { key:'items', label:'ทะเบียนสินค้า',      icon:'🏷️' },
 ];
@@ -1818,7 +1880,7 @@ const MONTHS = [
 ];
 /* แผนสั่งซื้อรายเดือนเคยเก็บเป็น 12 ชีตไม่มีปี (JAN..DEC) ปีใหม่มาแล้วทับของเก่า —
    ตอนนี้เก็บเป็น 1 ชีตต่อปี พ.ศ. (PLAN_2569, PLAN_2570, ...) แต่ละแถวมี field "month" (1-12) */
-const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS'];
+const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS','BORROWS'];
 const ALL_TABS   = ['overview'].concat(DATA_TABS); // ใช้โดยโฟลว์ย้ายข้อมูลครั้งแรก (เสร็จไปแล้ว) เท่านั้น
 const PO_STATUS  = ['ร่าง','สั่งซื้อแล้ว','รับบางส่วน','รับครบแล้ว','ยกเลิก'];
 function planTab(year){ return 'PLAN_'+year; }
@@ -1941,7 +2003,7 @@ const DEFAULT_DATA = {
   ],
   JUN:[],JUL:[],AUG:[],SEP:[],OCT:[],NOV:[],DEC:[],
   ITEMS:[], TXN:[], BILLS:[],
-  SUPPLIERS:[], PO_HEADERS:[], PO_ITEMS:[], PO_RECEIPTS:[]
+  SUPPLIERS:[], PO_HEADERS:[], PO_ITEMS:[], PO_RECEIPTS:[], BORROWS:[]
 };
 
 /* รายการตั้งต้นสำหรับสร้างทะเบียนอัตโนมัติ */
@@ -1990,6 +2052,7 @@ let state = {
   poEdit:{ id:null, lines:[] },
   poRecv:{ id:null },
   supEdit:{ id:null },
+  bor:{ q:'', dir:'', st:'' }, borEditId:null,
   itemEditId:null,
 };
 
@@ -2493,12 +2556,14 @@ function renderModNav(){
     out:   getData('TXN').filter(t=>t.type==='OUT').length,
     bills: getData('BILLS').length,
     items: getData('ITEMS').length,
+    borrow: getData('BORROWS').filter(b=>borStatus(b)!=='คืนแล้ว').length,
     dash:  alertCount,
     report: mustOrderNow().length,
   };
   document.getElementById('modNav').innerHTML = MODULES.map(m => {
     const c = counts[m.key];
-    const warn = ((m.key==='dash' && alertCount>0) || (m.key==='report' && counts.report>0)) ? ' warn' : '';
+    const warn = ((m.key==='dash' && alertCount>0) || (m.key==='report' && counts.report>0)
+                 || (m.key==='borrow' && getData('BORROWS').some(b=>borStatus(b)==='เกินกำหนด'))) ? ' warn' : '';
     const badge = (c!==undefined && c>0) ? `<span class="mod-badge${warn}">${c}</span>` : '';
     return `<span class="mod-item ${state.module===m.key?'active':''}" onclick="switchModule('${m.key}')">${m.label}${badge}</span>`;
   }).join('');
@@ -2515,6 +2580,7 @@ function renderAll(){
   if(state.module==='bills') renderBills();
   if(state.module==='po')    renderPO();
   if(state.module==='sup')   renderSuppliers();
+  if(state.module==='borrow') renderBorrow();
   if(state.module==='report') renderReport();
   if(state.module==='plan')  { renderTabs(); renderStats(); renderTable(); }
   if(state.module==='items') renderItems();
@@ -3643,8 +3709,18 @@ async function saveBill(post, alsoPrint){
 }
 
 /* ═══════════════ PRINT ═══════════════ */
-function printBill(id){
-  const b = getData('BILLS').find(x=>x.id===id);
+/* พิมพ์ใบสั่งซื้อ (PO) ด้วยรูปแบบเดียวกับใบขอซื้อ */
+function printPO(poId){
+  const h = getData('PO_HEADERS').find(x=>x.id===poId);
+  if(!h){ showToast('ไม่พบใบสั่งซื้อ','error'); return; }
+  const ls = getData('PO_ITEMS').filter(l=>l.po_id===poId).map(l=>({
+    item:l.product_name, lot:'', exp:l.exp_date||'', qty:l.quantity, unit:l.unit, price:l.unit_price }));
+  const total = ls.reduce((s,l)=>s+num(l.qty)*num(l.price),0);
+  printBill(null, { type:'PR', docNo:h.po_number, vendor:h.supplier_name, date:h.po_date,
+    status:h.status, lines:ls, total, note:h.note||'', person1:'', person2:'', ref:'' });
+}
+function printBill(id, billObj){
+  const b = billObj || getData('BILLS').find(x=>x.id===id);
   if(!b){ showToast('ไม่พบเอกสาร','error'); return; }
   const D = DOCTYPE[b.type] || DOCTYPE.REQ;
   const isReq = b.type==='REQ';
@@ -3666,7 +3742,7 @@ function printBill(id){
     : b.type==='GRN'
       ? [['ผู้ส่งของ',''],['ผู้ตรวจรับ',b.person1],['หัวหน้างาน / ผู้ตรวจสอบ',b.person2]]
       : [['ผู้ขอซื้อ',b.person1],['หัวหน้างาน',b.person2],['ผู้อนุมัติ','']];
-  document.getElementById('printArea').innerHTML = `
+  const docHtml = `
     <div class="doc-paper">
       <div class="doc-head">
         <div class="doc-org">โรงพยาบาลพระจอมเกล้า จังหวัดเพชรบุรี</div>
@@ -3701,7 +3777,56 @@ function printBill(id){
       </div>
       <div class="doc-foot">เอกสารนี้ออกจากระบบ Molecular Inventory System v3.1 — ${esc(b.docNo)} · พิมพ์ ${new Date().toLocaleString('th-TH')}</div>
     </div>`;
-  window.print();
+  printInFrame(docHtml, b.docNo);
+}
+
+/* พิมพ์ผ่าน iframe แยกต่างหาก — ไม่ขึ้นกับ CSS/overlay ของหน้าหลัก จึง Save as PDF ได้เสถียร */
+const PRINT_CSS = `
+@page{size:A4;margin:10mm}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#fff}
+body{font-family:'Sarabun','Tahoma',sans-serif;font-size:13px;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.doc-paper{background:#fff;color:#000;width:auto;margin:0;padding:0}
+.doc-head{text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:12px}
+.doc-org{font-size:16px;font-weight:700}
+.doc-unit{font-size:13px}
+.doc-name{font-size:15px;font-weight:700;margin-top:8px;letter-spacing:1px}
+.doc-meta{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:10px;gap:12px}
+.doc-meta div{line-height:1.9}
+.doc-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px}
+.doc-table th,.doc-table td{border:1px solid #333;padding:5px 7px}
+.doc-table th{background:#f0f0f0;font-weight:700;text-align:center;font-size:11.5px}
+.doc-table td.c{text-align:center}
+.doc-table td.r{text-align:right}
+.doc-table tr{page-break-inside:avoid}
+.doc-sign{display:flex;justify-content:space-between;gap:20px;margin-top:26px;font-size:12px;text-align:center;page-break-inside:avoid}
+.doc-sign > div{flex:1}
+.doc-sign .line{border-bottom:1px dotted #333;height:34px;margin-bottom:4px}
+.doc-note{font-size:11.5px;margin-bottom:10px;white-space:pre-wrap}
+.doc-foot{font-size:10.5px;color:#555;text-align:center;margin-top:16px;border-top:1px solid #ccc;padding-top:6px}
+`;
+function printInFrame(bodyHtml, title){
+  document.querySelectorAll('iframe.print-frame').forEach(f=>f.remove());
+  const fr = document.createElement('iframe');
+  fr.className = 'print-frame';
+  fr.setAttribute('aria-hidden','true');
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(fr);
+  const d = fr.contentWindow.document;
+  d.open();
+  d.write(`<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><title>${esc(title||'document')}</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+<style>${PRINT_CSS}</style></head><body>${bodyHtml}</body></html>`);
+  d.close();
+  let done = false;
+  const go = ()=>{
+    if(done) return; done = true;
+    try{ fr.contentWindow.focus(); fr.contentWindow.print(); }
+    catch(e){ showToast('พิมพ์ไม่สำเร็จ: '+e.message,'error'); }
+    setTimeout(()=>fr.remove(), 60000);
+  };
+  const fonts = d.fonts && d.fonts.ready ? d.fonts.ready : Promise.resolve();
+  Promise.race([fonts, new Promise(r=>setTimeout(r,1500))]).then(()=>setTimeout(go,100));
 }
 
 /* ═══════════════ DELETE ═══════════════ */
@@ -3712,6 +3837,7 @@ function askDelete(kind,id,label){
                 item:['🏷️','ลบรายการในทะเบียน?','รายการรับเข้า/เบิกออก/ปรับยอดของสินค้านี้จะถูกลบออกจากคลังด้วย'],
                 po:['🛒','ลบใบสั่งซื้อนี้?','รายการที่รับเข้าคลังไปแล้วจะยังอยู่ ต้องไปลบที่เมนูรับเข้าเอง'],
                 sup:['🏢','ลบบริษัทนี้?','ใบสั่งซื้อเดิมยังเก็บชื่อบริษัทไว้'],
+                borrow:['🤝','ลบรายการยืมนี้?','ลบประวัติการยืม/คืนรายการนี้ (ไม่กระทบสต็อก)'],
                 plan:['🗑️','ลบรายการนี้?','ลบออกจากแผนสั่งซื้อรายเดือน'] };
   const [icon,msg,sub] = map[kind] || map.plan;
   document.getElementById('delIcon').textContent = icon;
@@ -3744,8 +3870,14 @@ async function confirmDelete(){
     const ids = new Set(getData('PO_ITEMS').filter(l=>l.po_id===d.id).map(l=>l.id));
     saveLocal('PO_ITEMS', getData('PO_ITEMS').filter(l=>l.po_id!==d.id));
     saveLocal('PO_RECEIPTS', getData('PO_RECEIPTS').filter(r=>!ids.has(r.item_id)));
+    const planTabs = syncPlanFromPO(d.id, null, []);
     closeConfirm(); renderAll(); showToast('🗑️ ลบใบสั่งซื้อแล้ว','info');
-    await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS'); await syncTab('PO_RECEIPTS'); return;
+    await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS'); await syncTab('PO_RECEIPTS');
+    for(const t of planTabs) await syncTab(t); return;
+  }
+  if(d.kind==='borrow'){
+    saveLocal('BORROWS', getData('BORROWS').filter(x=>x.id!==d.id));
+    closeConfirm(); renderAll(); showToast('🗑️ ลบรายการยืมแล้ว','info'); await syncTab('BORROWS'); return;
   }
   if(d.kind==='sup'){
     saveLocal('SUPPLIERS', getData('SUPPLIERS').filter(x=>x.id!==d.id));
@@ -4403,6 +4535,93 @@ async function saveSupplier(){
   await syncTab('SUPPLIERS');
 }
 
+/* ─────────── BORROW (ยืม/คืนของ) ─────────── */
+function borStatus(b){
+  const q = num(b.qty), r = num(b.returned_qty);
+  if(q>0 && r>=q) return 'คืนแล้ว';
+  if(b.due_date && b.due_date < today()) return 'เกินกำหนด';
+  return r>0 ? 'คืนบางส่วน' : 'ยืมอยู่';
+}
+function borFilter(k,v){ state.bor[k]=v; renderBorrow(); }
+function renderBorrow(){
+  let rows = getData('BORROWS');
+  const f = state.bor, q = (f.q||'').toLowerCase();
+  if(q)     rows = rows.filter(b=>((b.item||'')+(b.party||'')+(b.lot||'')+(b.note||'')).toLowerCase().includes(q));
+  if(f.dir) rows = rows.filter(b=>b.direction===f.dir);
+  if(f.st)  rows = rows.filter(b=>borStatus(b)===f.st);
+  rows = [...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  document.getElementById('borHead').innerHTML = head(['#','ประเภท','วันที่ยืม','รายการ','หน่วยงาน','ยืม','คืนแล้ว','ค้างคืน','กำหนดคืน','สถานะ','']);
+  const body = document.getElementById('borBody');
+  if(!rows.length){
+    body.innerHTML = emptyRow(11,'ยังไม่มีรายการยืม','กด “＋ บันทึกการยืม” เพื่อบันทึกการยืม/ให้ยืมน้ำยา');
+  } else {
+    body.innerHTML = rows.map((b,i)=>{
+      const st = borStatus(b), rem = Math.max(0, num(b.qty)-num(b.returned_qty));
+      const cls = st==='คืนแล้ว'?'sb-done':st==='เกินกำหนด'?'sb-late':st==='คืนบางส่วน'?'sb-ship':'sb-none';
+      return `<tr>
+        <td class="col-num">${i+1}</td>
+        <td>${b.direction==='ให้ยืม'?'📤 ให้ยืม':'📥 ยืมเข้า'}</td>
+        <td style="white-space:nowrap">${b.date?formatDate(b.date):'—'}</td>
+        <td><span class="item-cell">${esc(b.item)}</span>${b.lot?`<div style="font-size:11px;color:var(--text3)">Lot ${esc(b.lot)}</div>`:''}</td>
+        <td>${esc(b.party||'—')}</td>
+        <td style="text-align:center;font-weight:600">${fmt(b.qty)} ${esc(b.unit||'')}</td>
+        <td style="text-align:center">${fmt(b.returned_qty||0)}</td>
+        <td style="text-align:center" class="${rem>0?'qty-out':''}">${fmt(rem)}</td>
+        <td style="white-space:nowrap">${b.due_date?formatDate(b.due_date):'—'}</td>
+        <td><span class="sbadge ${cls}">${st}</span></td>
+        <td><div class="act-btns">
+          ${rem>0?`<button class="btn btn-mint btn-sm" title="บันทึกการคืน" onclick="returnBorrow('${b.id}')">↩️ คืน</button>`:''}
+          <button class="btn btn-outline btn-sm btn-icon" title="แก้ไข" onclick="openBorrow('${b.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('borrow','${b.id}','${esc(b.item)}')">🗑️</button>
+        </div></td></tr>`;
+    }).join('');
+  }
+  const open = getData('BORROWS').filter(b=>borStatus(b)!=='คืนแล้ว').length;
+  document.getElementById('borFooter').innerHTML =
+    `<span>🤝 ทั้งหมด <strong>${getData('BORROWS').length}</strong> รายการ · ยังไม่คืนครบ <strong>${open}</strong></span>
+     <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 Sync</button>`;
+}
+function openBorrow(id){
+  state.borEditId = id || null;
+  const b = id ? getData('BORROWS').find(x=>x.id===id) : null;
+  document.getElementById('borTitle').textContent = b ? '🤝 แก้ไขรายการยืม' : '🤝 บันทึกการยืม';
+  const v=(k,val)=>{ document.getElementById(k).value = val==null?'':val; };
+  v('bw_dir', b?b.direction:'ยืมเข้า'); v('bw_date', b?b.date:today());
+  v('bw_item', b&&b.item); v('bw_party', b&&b.party); v('bw_qty', b&&b.qty);
+  v('bw_unit', b&&b.unit); v('bw_due', b&&b.due_date); v('bw_lot', b&&b.lot);
+  v('bw_exp', b&&b.exp); v('bw_note', b&&b.note);
+  document.getElementById('borOverlay').classList.add('open');
+}
+function closeBorrow(){ document.getElementById('borOverlay').classList.remove('open'); }
+async function saveBorrow(){
+  const g = k=>(document.getElementById(k).value||'').trim();
+  const item = normName(g('bw_item')), party = g('bw_party'), qty = num(g('bw_qty'));
+  if(!item || !party || qty<=0){ showToast('กรุณากรอก รายการ / หน่วยงาน / จำนวน ให้ครบ','error'); return; }
+  const data = getData('BORROWS');
+  const old = state.borEditId ? data.find(x=>x.id===state.borEditId) : null;
+  const row = Object.assign({ returned_qty:'', return_date:'' }, old||{}, {
+    id: old ? old.id : genId('bw'), direction:g('bw_dir'), date:g('bw_date')||today(),
+    item, party, qty, unit:g('bw_unit'), due_date:g('bw_due'), lot:g('bw_lot'), exp:g('bw_exp'), note:g('bw_note') });
+  row.status = borStatus(row);
+  if(old) data[data.indexOf(old)] = row; else data.push(row);
+  saveLocal('BORROWS', data);
+  state.borEditId = null; closeBorrow(); renderAll();
+  showToast('💾 บันทึกการยืมแล้ว','success');
+  await syncTab('BORROWS');
+}
+async function returnBorrow(id){
+  const data = getData('BORROWS'); const b = data.find(x=>x.id===id); if(!b) return;
+  const rem = Math.max(0, num(b.qty)-num(b.returned_qty));
+  const ans = prompt(`คืน "${b.item}" (${b.party})\nค้างคืน ${fmt(rem)} ${b.unit||''}\n\nจำนวนที่คืนครั้งนี้:`, String(rem));
+  if(ans===null) return;
+  const n = num(ans);
+  if(n<=0 || n>rem+0.0001){ showToast(`จำนวนไม่ถูกต้อง (คืนได้ 0–${fmt(rem)})`,'error'); return; }
+  b.returned_qty = num(b.returned_qty)+n; b.return_date = today(); b.status = borStatus(b);
+  saveLocal('BORROWS', data); renderAll();
+  showToast(`↩️ บันทึกการคืน ${fmt(n)} แล้ว`,'success');
+  await syncTab('BORROWS');
+}
+
 /* ─────────── PO HELPERS ─────────── */
 function receiptMap(){
   const m={};
@@ -4668,6 +4887,35 @@ function updatePOTotal(){
   const t = state.poEdit.lines.reduce((s,l)=>s+num(l.quantity)*num(l.unit_price),0);
   document.getElementById('poLineTotal').textContent = `รวมทั้งสิ้น ${fmt(t,2)} บาท`;
 }
+/** ซิงก์รายการใบสั่งซื้อ (PO) เข้าแผนสั่งซื้อรายเดือน — คืนค่ารายชื่อแท็บเดือนที่เปลี่ยน */
+const PO_TO_PLAN_STATUS = { 'สั่งซื้อแล้ว':'สั่งซื้อแล้ว', 'รับบางส่วน':'ค้างส่ง', 'รับครบแล้ว':'นำส่งแล้ว' };
+function syncPlanFromPO(poId, head, lines){
+  const changed = new Set();
+  const mine = r => String(r.id||'').startsWith('po_'+poId+'__');
+  // ลบแถวเดิมของ PO นี้ในทุกชีตแผนรายปีที่รู้จัก (กันซ้ำ/กรณีเปลี่ยนเดือน)
+  knownPlanTabs().forEach(t=>{
+    const cur = getData(t);
+    if(cur.some(mine)){ saveLocal(t, cur.filter(r=>!mine(r))); changed.add(t); }
+  });
+  if(head && PO_TO_PLAN_STATUS[head.status]){
+    // สั่งซื้อล่วงหน้า: PO เดือนนี้ → แผนของเดือนถัดไป (ธ.ค. → ม.ค. ปีถัดไป) — ชีตแผนเก็บเป็นปี พ.ศ.
+    const y = parseInt(String(head.po_date||'').slice(0,4),10);
+    const mn = parseInt(String(head.po_date||'').slice(5,7),10);
+    if(y && mn){
+      const nextMonth = (mn%12)+1;
+      const be = (mn===12 ? y+1 : y) + 543;
+      const t = planTab(be);
+      const cur = getData(t);
+      lines.forEach(l=>cur.push({
+        id:'po_'+poId+'__'+l.id, month:nextMonth, priority:'', orderDate:head.po_date||'', category:l.category||'',
+        status:PO_TO_PLAN_STATUS[head.status], item:l.product_name, qty:String(l.quantity),
+        po:head.po_number, cost:'', exp:l.exp_date||'', dueDate:l.due_date||'', contact:head.supplier_name||'',
+        rd:'', note:head.note||'' }));
+      saveLocal(t, cur); changed.add(t);
+    }
+  }
+  return [...changed];
+}
 async function savePO(){
   const lines = state.poEdit.lines.filter(l=>normName(l.product_name) && num(l.quantity)>0);
   if(!lines.length){ showToast('กรุณากรอกรายการอย่างน้อย 1 บรรทัด','error'); return; }
@@ -4706,10 +4954,13 @@ async function savePO(){
     autoRegisterItem(l.product_name, { category:l.category, unit:l.unit, vendor:row.supplier_name, price:l.unit_price, location:'' });
   });
   saveLocal('PO_ITEMS', keep);
+  const planTabs = syncPlanFromPO(id, row, lines);
   state.poEdit={id:null,lines:[]};
   closePO(); renderAll();
   showToast(`💾 บันทึก ${row.po_number} แล้ว`,'success');
+  setTimeout(()=>printPO(id), 300); // เปิดหน้าต่างพิมพ์ → เลือก Save as PDF ได้ทันที
   await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS');
+  for(const t of planTabs) await syncTab(t);
 }
 /** สร้างใบสั่งซื้อจากรายการที่ระบบบอกว่าถึงเวลาสั่ง (Reorder Alert) */
 function poFromReorder(){
@@ -4894,9 +5145,11 @@ async function saveRecv(){
   const heads = getData('PO_HEADERS');
   const hi = heads.findIndex(x=>x.id===poId);
   if(hi>=0){ heads[hi].status = poComputedStatus(Object.assign({},heads[hi],{status:'สั่งซื้อแล้ว'}), receiptMap()); saveLocal('PO_HEADERS', heads); }
+  const planTabs = hi>=0 ? syncPlanFromPO(poId, heads[hi], poLines(poId)) : [];
   closeRecv(); renderAll();
   showToast(`✅ รับของ ${picked.length} รายการ เข้าสต็อกแล้ว`,'success');
   await syncTab('PO_RECEIPTS'); await syncTab('TXN'); await syncTab('PO_HEADERS');
+  for(const t of planTabs) await syncTab(t);
 }
 
 /* ═══════════════════════════════════════════════════════════

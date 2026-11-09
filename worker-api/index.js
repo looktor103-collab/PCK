@@ -21,6 +21,7 @@
 const ALL_TABS = [
   'overview','JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC',
   'ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS',
+  'BORROWS',
 ];
 
 function json(obj, status) {
