@@ -4724,6 +4724,7 @@ function renderPO(){
         <td>${poStatusBadge(p._st)}</td>
         <td><div class="act-btns">
           ${done?'':`<button class="btn btn-mint btn-sm btn-icon" title="รับของ" onclick="openRecv('${p.id}')">📥</button>`}
+          <button class="btn btn-sky btn-sm" title="พิมพ์ / บันทึกเป็น PDF" onclick="printPO('${p.id}')">🖨️ PDF</button>
           <button class="btn btn-outline btn-sm btn-icon" title="แก้ไข" onclick="openPO('${p.id}')">✏️</button>
           <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('po','${p.id}','${esc(p.po_number)}')">🗑️</button>
         </div></td></tr>`;
