@@ -1118,7 +1118,8 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
     <div class="modal-body">
       <div class="tab-indicator" id="billDocNo">เลขที่ —</div>
       <div class="fgrid g3">
-        <div class="field"><label>วันที่เอกสาร *</label><input type="date" id="b_date"></div>
+        <div class="field"><label>วันที่เอกสาร * <span style="font-weight:400;color:var(--text-3,#888)">(ย้อนหลังได้)</span></label><input type="date" id="b_date" onchange="onBillDateChange()"></div>
+        <div class="field"><label>เลขที่เอกสาร <span style="font-weight:400;color:var(--text-3,#888)">(แก้ได้ เช่นเลขจากใบเดิม)</span></label><input type="text" id="b_docNo" oninput="this.dataset.auto='0'"></div>
         <div class="field" id="b_deptWrap"><label>หน่วยงาน / งานที่เบิก</label><input type="text" id="b_dept" placeholder="เช่น งาน Molecular"></div>
         <div class="field" id="b_vendorWrap" style="display:none"><label>บริษัท / ผู้ขาย</label><input type="text" id="b_vendor" list="vendorList" placeholder="เช่น Roche Diagnostics"></div>
       </div>
@@ -2519,6 +2520,23 @@ function lotBalanceFrom(stock, itemName, lot){
 function lotBalance(itemName, lot){
   return lotBalanceFrom(buildStock(), itemName, lot);
 }
+/** ยอดที่ "ตัดออกได้" ของ item+lot ณ วันที่ asOf — รองรับการลงย้อนหลัง
+    = ยอดคงเหลือ ณ สิ้นวันนั้น แต่ไม่เกินยอดต่ำสุดของวันถัดๆ ไป (กันการตัดย้อนหลังแล้วทำให้ยอดหลังจากนั้นติดลบ)
+    excludeIds = id ของ TXN ที่ไม่นับ (ตอนแก้ไขรายการเดิม) */
+function lotAvailableAsOf(itemName, lot, asOf, excludeIds){
+  const name = (itemName||'').trim();
+  const key  = (lot||'').trim() || '(ไม่ระบุ Lot)';
+  const D = asOf || today();
+  const ex = excludeIds || [];
+  const rows = getData('TXN').filter(t =>
+    (t.item||'').trim()===name && ((t.lot||'').trim() || '(ไม่ระบุ Lot)')===key && ex.indexOf(t.id)<0);
+  let bal = 0;
+  rows.forEach(t => { if((t.date||'') <= D) bal += txnDelta(t); });
+  let avail = bal, run = bal;
+  rows.filter(t => (t.date||'') > D).sort((a,b)=>(a.date||'')<(b.date||'')?-1:1)
+      .forEach(t => { run += txnDelta(t); if(run < avail) avail = run; });
+  return { asOf:bal, avail:avail, limitedByLater: avail < bal - 0.0001 };
+}
 function stockAlerts(){
   const st = buildStock();
   const out=[], low=[], exp=[], expd=[];
@@ -3383,13 +3401,11 @@ async function saveMove(){
   }
   const isMinus = (M==='OUT') || (M==='ADJ' && qty<0);
   if(isMinus){
-    let bal = lotBalance(item, lot);
-    if(state.move.id){
-      const old = getData('TXN').find(t=>t.id===state.move.id);
-      if(old && (old.item||'').trim()===item) bal -= txnDelta(old);
-    }
-    if(qtyRaw > bal + 0.0001){
-      if(!confirm(`ยอดคงเหลือของ Lot นี้มีเพียง ${fmt(bal)} แต่กำลังตัดออก ${fmt(qtyRaw)}\nยืนยันบันทึกต่อหรือไม่?`)) return;
+    const mDate = document.getElementById('m_date').value || today();
+    const r = lotAvailableAsOf(item, lot, mDate, state.move.id ? [state.move.id] : []);
+    if(qtyRaw > r.avail + 0.0001){
+      const why = r.limitedByLater ? ` (ยอด ณ ${mDate} = ${fmt(r.asOf)} แต่ต้องเหลือพอสำหรับรายการหลังจากนั้นด้วย)` : ` ณ วันที่ ${mDate}`;
+      if(!confirm(`ยอดคงเหลือของ Lot นี้ตัดได้เพียง ${fmt(r.avail)}${why} แต่กำลังตัดออก ${fmt(qtyRaw)}\nยืนยันบันทึกต่อหรือไม่?`)) return;
     }
   }
   const row = {
@@ -3533,14 +3549,21 @@ async function saveItemMaster(){
 }
 
 /* ═══════════════ BILL MODAL ═══════════════ */
-function nextDocNo(type){
+function nextDocNo(type, dateStr){
   const D = DOCTYPE[type] || DOCTYPE.REQ;
-  const be = (new Date().getFullYear()+543);
+  const yr = parseInt((dateStr||'').slice(0,4),10) || new Date().getFullYear();   // ปีตามวันที่เอกสาร (รองรับย้อนหลัง)
+  const be = yr+543;
   const pre = `${D.prefix}-${be}-`;
   const n = getData('BILLS').filter(b=>(b.docNo||'').startsWith(pre))
               .map(b=>parseInt((b.docNo||'').slice(pre.length),10)||0);
   const next = (n.length?Math.max.apply(null,n):0) + 1;
   return pre + String(next).padStart(4,'0');
+}
+/** เปลี่ยนวันที่เอกสาร → ถ้าเลขที่ยังเป็นเลขอัตโนมัติ ให้ออกเลขใหม่ตามปีของวันที่นั้น */
+function onBillDateChange(){
+  const el = document.getElementById('b_docNo');
+  if(!el || el.dataset.auto!=='1') return;
+  el.value = nextDocNo(state.billEdit.type, document.getElementById('b_date').value);
 }
 function openBill(type, id){
   const b = id ? getData('BILLS').find(x=>x.id===id) : null;
@@ -3557,8 +3580,11 @@ function openBill(type, id){
   document.querySelectorAll('.priceCol').forEach(el=>{ el.style.display = isReq ? 'none' : ''; });
   const v=(k,val)=>{ const el=document.getElementById(k); if(el) el.value = val==null?'':val; };
   v('b_date', b?b.date:today()); v('b_dept', b&&b.dept); v('b_vendor', b&&b.vendor);
+  v('b_docNo', b ? b.docNo : nextDocNo(T, today()));
+  document.getElementById('b_docNo').dataset.auto = b ? '0' : '1';
   v('b_person1', b&&b.person1); v('b_person2', b&&b.person2); v('b_ref', b&&b.ref); v('b_note', b&&b.note);
   const posted = b && b.status==='ยืนยันแล้ว';
+  document.getElementById('b_docNo').disabled = !!posted;
   document.getElementById('billPostHint').innerHTML = posted
     ? '🔒 เอกสารนี้ <b>ยืนยันแล้ว</b> — ตัด/เพิ่มสต็อกเรียบร้อย แก้ไขไม่ได้ (หากผิดให้ลบเอกสารแล้วสร้างใหม่ ระบบจะคืนสต็อกให้)'
     : (T==='PR' ? 'ℹ️ ใบขอซื้อไม่กระทบสต็อก ใช้สำหรับส่งจัดซื้อเท่านั้น'
@@ -3643,15 +3669,28 @@ async function saveBill(post, alsoPrint){
   if(!lines.length){ showToast('กรุณากรอกรายการอย่างน้อย 1 บรรทัด','error'); return; }
   const bills = getData('BILLS');
   const existing = state.billEdit.id ? bills.find(b=>b.id===state.billEdit.id) : null;
+  const dateIn = document.getElementById('b_date').value || today();
+  const docNoIn = (document.getElementById('b_docNo').value||'').trim()
+                  || (existing ? existing.docNo : nextDocNo(T, dateIn));
+  if(bills.some(b=>b.docNo===docNoIn && b.id!==(existing&&existing.id))){
+    showToast('เลขที่เอกสาร '+docNoIn+' ซ้ำกับเอกสารที่มีอยู่แล้ว กรุณาเปลี่ยน','error'); return;
+  }
   if(existing && existing.status==='ยืนยันแล้ว'){ showToast('เอกสารยืนยันแล้ว แก้ไขไม่ได้','error'); return; }
   if(post && T!=='PR'){
     // ตรวจสต็อกก่อนตัด
     if(T==='REQ'){
-      const stock = buildStock();   // คำนวณครั้งเดียวแทนการเรียกซ้ำต่อบรรทัด (และซ้ำอีกตอนสร้างข้อความ)
-      const bad = lines.filter(l => num(l.qty) > lotBalanceFrom(stock, l.item, l.lot) + 0.0001);
+      // ตรวจตามวันที่เอกสาร (ลงย้อนหลังได้) — รวมจำนวนของ item+lot เดียวกันหลายบรรทัดก่อนเทียบ
+      const sums = {};
+      lines.forEach(l=>{ const k=(l.item||'').trim()+'\u0001'+((l.lot||'').trim()); sums[k]=(sums[k]||0)+num(l.qty); });
+      const bad = [];
+      Object.keys(sums).forEach(k=>{
+        const [it,lt] = k.split('\u0001');
+        const r = lotAvailableAsOf(it, lt, dateIn, existing ? getData('TXN').filter(t=>t.billId===existing.id).map(t=>t.id) : []);
+        if(sums[k] > r.avail + 0.0001) bad.push({it,lt,need:sums[k],r});
+      });
       if(bad.length){
-        const msg = bad.map(l=>`• ${l.item} (Lot ${l.lot||'-'}) ขอ ${fmt(l.qty)} มี ${fmt(lotBalanceFrom(stock, l.item, l.lot))}`).join('\n');
-        if(!confirm('รายการต่อไปนี้สต็อกไม่พอ:\n'+msg+'\n\nยืนยันตัดสต็อกต่อหรือไม่?')) return;
+        const msg = bad.map(b=>`• ${b.it} (Lot ${b.lt||'-'}) ขอ ${fmt(b.need)} ตัดได้ ${fmt(b.r.avail)}${b.r.limitedByLater?' (มีรายการหลังวันที่นี้ที่ต้องใช้ด้วย)':''}`).join('\n');
+        if(!confirm(`รายการต่อไปนี้สต็อกไม่พอ ณ วันที่ ${dateIn}:\n`+msg+'\n\nยืนยันตัดสต็อกต่อหรือไม่?')) return;
       }
     }
     if(T==='GRN'){
@@ -3661,7 +3700,7 @@ async function saveBill(post, alsoPrint){
   }
   const bill = {
     id: state.billEdit.id || genId('bl'),
-    docNo: existing ? existing.docNo : nextDocNo(T),
+    docNo: docNoIn,
     type: T,
     date: document.getElementById('b_date').value || today(),
     dept: (document.getElementById('b_dept').value||'').trim(),
