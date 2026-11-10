@@ -205,6 +205,17 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);fon
 .card-head{padding:.85rem 1.2rem;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#fff8e0,white);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .card-head h3{font-size:13px;font-weight:700;color:var(--gold-dark)}
 /* LOT ROWS */
+.stock-catbar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.scat-chip{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;border:1.5px solid var(--border,#e3e3e3);background:#fff;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;color:var(--text2,#444);line-height:1.2}
+.scat-chip:hover{background:#f7f7f7}
+.scat-chip.active{color:#fff;border-color:transparent}
+.scat-chip .scat-n{font-weight:700;opacity:.8;font-size:12px}
+.scat-chip .scat-warn{background:#d93a3a;color:#fff;border-radius:9px;padding:0 6px;font-size:11px;font-weight:700}
+tr.cat-group td{padding:9px 12px;font-weight:700;font-size:13.5px;cursor:pointer;user-select:none;border-top:6px solid #fff}
+tr.cat-group .cg-sum{font-weight:600;font-size:12px;margin-left:10px;opacity:.9}
+tr.cat-group .cg-bad{display:inline-block;background:#d93a3a;color:#fff;border-radius:9px;padding:0 7px;margin-left:6px;font-size:11.5px}
+tr.cat-group .cg-low{display:inline-block;background:#e58a1f;color:#fff;border-radius:9px;padding:0 7px;margin-left:6px;font-size:11.5px}
+tr.cat-group .cg-exp{display:inline-block;background:#7a4fc2;color:#fff;border-radius:9px;padding:0 7px;margin-left:6px;font-size:11.5px}
 .lot-toggle{cursor:pointer;user-select:none;color:var(--rose-dark);font-weight:700;font-size:12px;background:none;border:none;font-family:'Sarabun',sans-serif}
 tr.lot-row td{background:#fdf8f9 !important;font-size:12px;color:var(--text2);border-bottom:1px dashed var(--border)}
 tr.lot-row td:first-child{padding-left:32px}
@@ -706,6 +717,7 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       <button class="btn btn-outline btn-sm" onclick="exportExcel()">📤 Export</button>
     </div>
     <div class="stat-strip" id="stockStats"></div>
+    <div class="stock-catbar" id="stockCatBar"></div>
     <div class="table-card">
       <div class="table-scroll">
         <table class="inv-table"><thead id="stockHead"></thead><tbody id="stockBody"></tbody></table>
@@ -2042,7 +2054,7 @@ let state = {
   tab:'overview', year:(new Date().getFullYear()+543), search:'', catFilter:'', statusFilter:'', itemFilter:'',
   sortCol:'', sortDir:1, editId:null, editTab:null,
   del:null,                       // {kind, id}
-  stock:{ q:'', cat:'', stat:'', open:{} },
+  stock:{ q:'', cat:'', stat:'', open:{}, collapsed:{} },
   txn:{ IN:{q:'',cat:'',month:''}, OUT:{q:'',cat:'',purpose:'',month:''} },
   bill:{ q:'', type:'', status:'' },
   item:{ q:'', cat:'' },
@@ -2987,6 +2999,12 @@ function openPOLines(){
 
 /* ═══════════════ STOCK ═══════════════ */
 function stockFilter(k,v){ state.stock[k]=v; renderStock(); }
+function pickStockCat(c){
+  state.stock.cat = (state.stock.cat===c) ? '' : c;
+  const sel = document.getElementById('stockCat'); if(sel) sel.value = state.stock.cat;
+  renderStock();
+}
+function toggleCatGroup(c){ state.stock.collapsed[c] = !state.stock.collapsed[c]; renderStock(); }
 function toggleLots(name){
   state.stock.open[name] = !state.stock.open[name];
   renderStock();
@@ -3016,7 +3034,7 @@ function renderStock(){
   const body = document.getElementById('stockBody');
   if(!rows.length){ body.innerHTML = emptyRow(11,'ไม่พบรายการ','ลองล้างตัวกรอง หรือบันทึกรับเข้าก่อน'); }
   else {
-    body.innerHTML = rows.map(s=>{
+    const rowHtml = s=>{
       const pct = s.max>0 ? Math.min(100, s.total/s.max*100) : (s.total>0?100:0);
       const barCls = s.status==='out'?'sbar-out':s.status==='low'?'sbar-low':'sbar-ok';
       const stkCls = s.status==='out'?'stk-out':s.status==='low'?'stk-low':'stk-ok';
@@ -3053,8 +3071,37 @@ function renderStock(){
         </tr>`;
       }).join('');
       return main + lotRows;
+    };
+    /* จัดกลุ่มตามหมวดหมู่ (เรียงตามลำดับใน CATEGORIES) พร้อมหัวกลุ่มที่พับ/ขยายได้ */
+    const groups = {};
+    rows.forEach(s=>{ const c = s.category || 'อื่นๆ'; (groups[c] = groups[c] || []).push(s); });
+    const order = CATEGORIES.concat(Object.keys(groups).filter(c=>CATEGORIES.indexOf(c)<0));
+    body.innerHTML = order.filter(c=>groups[c]).map(c=>{
+      const g = groups[c], col = catColor(c);
+      const nOut = g.filter(s=>s.total<=0).length;
+      const nLow = g.filter(s=>s.status==='low').length;
+      const nExp = g.filter(s=>s.hasExpIssue).length;
+      const closed = !!f.collapsed[c];
+      const cq = JSON.stringify(c).replace(/"/g,'&quot;');
+      const gHead = `<tr class="cat-group" onclick="toggleCatGroup(${cq})">
+        <td colspan="11" style="background:${col}26;box-shadow:inset 6px 0 0 ${col};color:${col}">
+          ${closed?'▶':'▼'} ${esc(c)} <span class="cg-sum">${g.length} รายการ</span>
+          ${nOut?`<span class="cg-bad">หมด ${nOut}</span>`:''}${nLow?`<span class="cg-low">ต่ำ ${nLow}</span>`:''}${nExp?`<span class="cg-exp">ใกล้หมดอายุ ${nExp}</span>`:''}
+        </td></tr>`;
+      return gHead + (closed ? '' : g.map(rowHtml).join(''));
     }).join('');
   }
+  /* แถบเลือกหมวดหมู่ (นับจากทั้งคลัง) — กดเพื่อกรอง กดซ้ำเพื่อดูทั้งหมด */
+  const cnt = {};
+  all.forEach(s=>{ const c=s.category||'อื่นๆ'; const o = cnt[c] = cnt[c] || {n:0,warn:0}; o.n++; if(s.total<=0||s.status==='low'||s.hasExpIssue) o.warn++; });
+  const catOrder = CATEGORIES.concat(Object.keys(cnt).filter(c=>CATEGORIES.indexOf(c)<0)).filter(c=>cnt[c]);
+  const chip = (val,label,n,warn,col)=>{
+    const act = (f.cat||'')===val;
+    return `<button class="scat-chip${act?' active':''}" style="${act?`background:${col}`:`border-color:${col}66;color:${col}`}" onclick="pickStockCat(${JSON.stringify(val).replace(/"/g,'&quot;')})">${esc(label)} <span class="scat-n">${n}</span>${warn?`<span class="scat-warn" title="หมด/ต่ำ/ใกล้หมดอายุ">${warn}</span>`:''}</button>`;
+  };
+  document.getElementById('stockCatBar').innerHTML =
+    chip('','ทั้งหมด',all.length,all.filter(s=>s.total<=0||s.status==='low'||s.hasExpIssue).length,'#555')
+    + catOrder.map(c=>chip(c,c,cnt[c].n,cnt[c].warn,catColor(c))).join('');
   document.getElementById('stockFooter').innerHTML =
     `<span>📦 แสดง <strong>${rows.length}</strong> จาก ${all.length} รายการ · คลิก ▶ เพื่อดู Lot</span>
      <div style="display:flex;gap:8px">
