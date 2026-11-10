@@ -1224,10 +1224,14 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
         </div>
       </div>
       <div class="sec-div">📑 สัญญา / e-bidding</div>
-      <div class="fgrid">
+      <div class="fgrid g3">
         <div class="field"><label>เลขที่สัญญา / e-bidding</label><input type="text" id="i_contractNo" placeholder="เช่น เลขที่โครงการ / สัญญา"></div>
-        <div class="field"><label>ราคาตามสัญญา (บาท/หน่วย)</label><input type="number" id="i_contractPrice" min="0" step="0.01" placeholder="0.00"></div>
+        <div class="field"><label>บริษัทคิดเงินตาม</label>
+          <select id="i_contractBasis"><option value="unit">ต่อหน่วยนับ (กล่อง/ชิ้น)</option><option value="test">ต่อเทสต์ (ตามจำนวน test ที่ใช้จริง)</option></select>
+        </div>
+        <div class="field"><label>ราคาตามสัญญา (บาท ต่อหน่วยที่คิดเงิน)</label><input type="number" id="i_contractPrice" min="0" step="0.01" placeholder="0.00"></div>
       </div>
+      <div class="avail-box">ถ้าเลือก "ต่อเทสต์" ต้องกรอก <b>เทสต์/หน่วย</b> ด้านบนด้วย — ระบบจะคิดมูลค่า = จำนวนเบิกใช้ × เทสต์/หน่วย × ราคาต่อเทสต์</div>
       <div class="sec-div">📈 ข้อมูลวางแผนการสั่งซื้อ</div>
       <div class="fgrid g3">
         <div class="field"><label>Lead time (วันรอของ)</label><input type="number" id="i_lead" min="0" step="1" placeholder="เช่น 30"></div>
@@ -1549,7 +1553,7 @@ function onOpen() {
 function setupSystem() {
   const ss = ss_();
   const sheetsConfig = {
-    'ITEMS':       ['id','code','name','category','unit','testsPerUnit','minQty','maxQty','storage','location','vendor','catNo','price','active','note','lead_time','safety_stock','planned_monthly_usage','contract_no','contract_price'],
+    'ITEMS':       ['id','code','name','category','unit','testsPerUnit','minQty','maxQty','storage','location','vendor','catNo','price','active','note','lead_time','safety_stock','planned_monthly_usage','contract_no','contract_price','contract_basis'],
     'TXN':         ['id','date','type','item','category','qty','unit','price','person','vendor','purpose','docNo','reason','lot','exp','location','note','po','billId','ts'],
     'BILLS':       ['id','type','docNo','date','dept','vendor','person1','person2','ref','note','status','total','lines','ts'],
     'SUPPLIERS':   ['id','supplier_name','phone','email'],
@@ -3560,7 +3564,7 @@ function openItem(id, prefill){
   v('i_min',it&&it.minQty); v('i_max',it&&it.maxQty); v('i_storage',it&&it.storage);
   v('i_location',it&&it.location); v('i_vendor',it&&it.vendor); v('i_price',it&&it.price);
   v('i_active',it?(it.active||'1'):'1'); v('i_note',it&&it.note);
-  v('i_contractNo',it&&it.contract_no); v('i_contractPrice',it&&it.contract_price);
+  v('i_contractNo',it&&it.contract_no); v('i_contractBasis',(it&&it.contract_basis)||'unit'); v('i_contractPrice',it&&it.contract_price);
   v('i_lead',it&&it.lead_time); v('i_safety',it&&it.safety_stock); v('i_usage',it&&it.planned_monthly_usage);
   document.getElementById('itemOverlay').classList.add('open');
   setTimeout(()=>{ const el=document.getElementById(id?'i_code':'i_name'); if(el) el.focus(); },120);
@@ -3587,6 +3591,7 @@ async function saveItemMaster(){
     note:(document.getElementById('i_note').value||'').trim(),
     contract_no:(document.getElementById('i_contractNo').value||'').trim(),
     contract_price:document.getElementById('i_contractPrice').value,
+    contract_basis:document.getElementById('i_contractBasis').value,
     lead_time:document.getElementById('i_lead').value,
     safety_stock:document.getElementById('i_safety').value,
     planned_monthly_usage:document.getElementById('i_usage').value,
@@ -4508,8 +4513,8 @@ function buildWorkbook(){
     i+1,l.item,l.lot,l.exp,l.qty,l.unit,l.price,num(l.qty)*num(l.price),b.note])));
   add('BILLS',[['เลขที่เอกสาร','ประเภท','วันที่','สถานะ','หน่วยงาน','บริษัท','ผู้เบิก/ตรวจรับ','ผู้อนุมัติ','อ้างอิง','ลำดับ','รายการ','Lot','EXP','จำนวน','หน่วย','ราคา/หน่วย','จำนวนเงิน','หมายเหตุ'], ...billRows]);
   // ทะเบียน
-  add('ITEMS',[['รหัส','ชื่อรายการ','หมวดหมู่','Cat.No','หน่วย','เทสต์/หน่วย','Min','Max','Lead time (วัน)','Safety stock','ใช้เฉลี่ย/เดือน','จัดเก็บ','ที่เก็บ','บริษัท','ราคา','เลขที่สัญญา/e-bidding','ราคาตามสัญญา','สถานะ','หมายเหตุ'],
-    ...getData('ITEMS').map(i=>[i.code,i.name,i.category,i.catNo,i.unit,i.testsPerUnit,i.minQty,i.maxQty,i.lead_time,i.safety_stock,i.planned_monthly_usage,i.storage,i.location,i.vendor,i.price,i.contract_no,i.contract_price,i.active==='0'?'ยกเลิกใช้':'ใช้งาน',i.note])]);
+  add('ITEMS',[['รหัส','ชื่อรายการ','หมวดหมู่','Cat.No','หน่วย','เทสต์/หน่วย','Min','Max','Lead time (วัน)','Safety stock','ใช้เฉลี่ย/เดือน','จัดเก็บ','ที่เก็บ','บริษัท','ราคา','เลขที่สัญญา/e-bidding','ราคาตามสัญญา','คิดเงินตาม (unit/test)','สถานะ','หมายเหตุ'],
+    ...getData('ITEMS').map(i=>[i.code,i.name,i.category,i.catNo,i.unit,i.testsPerUnit,i.minQty,i.maxQty,i.lead_time,i.safety_stock,i.planned_monthly_usage,i.storage,i.location,i.vendor,i.price,i.contract_no,i.contract_price,i.contract_basis,i.active==='0'?'ยกเลิกใช้':'ใช้งาน',i.note])]);
   const stX=buildStock(), cmX=consumptionMap(), planX=planQtyByItem();
   add('REORDER_ALERT',[['สถานะ','รายการ','หมวดหมู่','คงเหลือ','หน่วย','ค้างรับ','ใช้เฉลี่ย/วัน','พอใช้อีก (วัน)','คาดว่าหมดวันที่','Lead time (วัน)','ต้องสั่งเมื่อเหลือ ≤ (วัน)','ควรสั่ง','ที่มาของอัตรา'],
     ...stX.map(s=>[(URGENCY[s.urgency]||URGENCY.nodata).label,s.name,s.category,s.total,s.unit,s.onOrder,
@@ -5475,16 +5480,22 @@ function renderVendorMonthly(){
     const m = itemMaster(n) || {};
     const v = (m.vendor||'').trim() || '(ไม่ระบุบริษัท)';
     const cp = num(m.contract_price), lp = num(m.price);
+    const perTest = (m.contract_basis==='test') && cp>0;
+    const tpu = num(m.testsPerUnit);
     const price = cp>0 ? cp : lp;
+    const tests = tpu>0 ? byItem[n].out*tpu : 0;
+    // คิดต่อเทสต์: จำนวนเทสต์ที่ใช้ × ราคาต่อเทสต์ (ถ้ายังไม่ระบุ เทสต์/หน่วย คิดมูลค่าไม่ได้)
+    const value = perTest ? (tpu>0 ? tests*cp : 0) : byItem[n].out*price;
     (groups[v] = groups[v] || []).push({ name:n, unit:m.unit||'', contractNo:m.contract_no||'',
-      out:byItem[n].out, inn:byItem[n].inn, price, fromContract: cp>0, value: byItem[n].out*price });
+      out:byItem[n].out, inn:byItem[n].inn, price, fromContract: cp>0, perTest, tpu, tests,
+      noTpu: perTest && !(tpu>0), value });
   });
   document.getElementById('repVendorHead').innerHTML = head(
-    ['รายการ','เลขที่สัญญา / e-bidding','หน่วย','เบิกใช้','รับเข้า','ราคา/หน่วย','มูลค่าเบิกใช้ (บาท)']);
+    ['รายการ','เลขที่สัญญา / e-bidding','หน่วย','เบิกใช้','เทสต์ที่ใช้','รับเข้า','ราคา','มูลค่าเบิกใช้ (บาท)']);
   const body = document.getElementById('repVendorBody');
   const vendors = Object.keys(groups).sort((a,b)=>a.localeCompare(b,'th'));
   if(!vendors.length){
-    body.innerHTML = emptyRow(7,'ไม่มีรายการเบิกในเดือนนี้','เลือกเดือนอื่น หรือบันทึกการเบิกออกก่อน');
+    body.innerHTML = emptyRow(8,'ไม่มีรายการเบิกในเดือนนี้','เลือกเดือนอื่น หรือบันทึกการเบิกออกก่อน');
     document.getElementById('repVendorFoot').innerHTML = '';
     return;
   }
@@ -5493,20 +5504,21 @@ function renderVendorMonthly(){
     const g = groups[v].sort((a,b)=>a.name.localeCompare(b.name,'th'));
     const sub = g.reduce((x,r)=>x+r.value,0); grand += sub;
     const rows = g.map(r=>{
-      if(!(r.price>0) && r.out>0) noPrice++;
+      if((!(r.price>0) || r.noTpu) && r.out>0) noPrice++;
       return `<tr>
       <td><span class="item-cell">${esc(r.name)}</span></td>
       <td>${r.contractNo?esc(r.contractNo):'<span style="color:var(--text3)">—</span>'}</td>
       <td>${esc(r.unit)}</td>
       <td style="text-align:right" class="${r.out?'qty-out':''}">${r.out?fmt(r.out):'—'}</td>
+      <td style="text-align:right">${r.tests?fmt(r.tests):(r.perTest&&r.out?'<span class="stk-low" title="ยังไม่ได้กรอก เทสต์/หน่วย ในทะเบียนสินค้า">ไม่มีเทสต์/หน่วย</span>':'—')}</td>
       <td style="text-align:right" class="${r.inn?'qty-in':''}">${r.inn?fmt(r.inn):'—'}</td>
-      <td style="text-align:right">${r.price>0?fmt(r.price,2)+(r.fromContract?'':' <span title="ใช้ราคาทั่วไปในทะเบียน เพราะยังไม่ได้กรอกราคาตามสัญญา" style="color:var(--text3)">*</span>'):'<span class="stk-low">ไม่มีราคา</span>'}</td>
-      <td style="text-align:right;font-weight:600">${r.price>0&&r.out?fmt(r.value,2):'—'}</td>
+      <td style="text-align:right">${r.price>0?fmt(r.price,2)+(r.perTest?' <span style="color:var(--text3)">/เทสต์</span>':'')+(r.fromContract?'':' <span title="ใช้ราคาทั่วไปในทะเบียน เพราะยังไม่ได้กรอกราคาตามสัญญา" style="color:var(--text3)">*</span>'):'<span class="stk-low">ไม่มีราคา</span>'}</td>
+      <td style="text-align:right;font-weight:600">${r.value>0&&r.out?fmt(r.value,2):'—'}</td>
     </tr>`; }).join('');
-    return `<tr class="cat-group"><td colspan="7" style="background:#f3f0ea;font-weight:700;cursor:default">🏢 ${esc(v)} <span class="cg-sum">${g.length} รายการ · รวม ${fmt(sub,2)} บาท</span></td></tr>${rows}`;
-  }).join('') + `<tr><td colspan="6" style="text-align:right;font-weight:700">รวมทุกบริษัท</td><td style="text-align:right;font-weight:700">${fmt(grand,2)}</td></tr>`;
+    return `<tr class="cat-group"><td colspan="8" style="background:#f3f0ea;font-weight:700;cursor:default">🏢 ${esc(v)} <span class="cg-sum">${g.length} รายการ · รวม ${fmt(sub,2)} บาท</span></td></tr>${rows}`;
+  }).join('') + `<tr><td colspan="7" style="text-align:right;font-weight:700">รวมทุกบริษัท</td><td style="text-align:right;font-weight:700">${fmt(grand,2)}</td></tr>`;
   document.getElementById('repVendorFoot').innerHTML =
-    `<span>🧾 มูลค่า = จำนวนเบิกใช้ × ราคาตามสัญญา (ถ้าไม่มีใช้ราคาในทะเบียน <b>*</b>)${noPrice?` · <span class="stk-low">${noPrice} รายการยังไม่มีราคา</span>`:''} · บริษัทมาจากช่อง "บริษัท / ผู้ขาย" ในทะเบียนสินค้า</span>`;
+    `<span>🧾 มูลค่า = จำนวนเบิกใช้ × ราคาตามสัญญา (คิดต่อเทสต์ = เบิกใช้ × เทสต์/หน่วย × ราคา/เทสต์; ถ้าไม่มีราคาสัญญาใช้ราคาในทะเบียน <b>*</b>)${noPrice?` · <span class="stk-low">${noPrice} รายการยังคิดมูลค่าไม่ได้ (ไม่มีราคาหรือเทสต์/หน่วย)</span>`:''} · บริษัทมาจากช่อง "บริษัท / ผู้ขาย" ในทะเบียนสินค้า</span>`;
 }
 
 /* ═══════════════ CLOCK + INIT ═══════════════ */
