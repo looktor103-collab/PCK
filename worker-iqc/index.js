@@ -42,7 +42,7 @@
    ============================================================================ */
 
 import { extractPurchaseDoc } from './inv-extract.js';
-import { runInvAlerts } from './inv-alerts.js';
+import { runInvAlerts, runMonthlyOrderReminder } from './inv-alerts.js';
 
 const ALLOWED_ORIGINS = [
   'https://looktor103-collab.github.io',
@@ -83,6 +83,7 @@ export default {
   // cron ทุกเช้า 08:00 เวลาไทย (01:00 UTC) — ส่งแจ้งเตือนน้ำยาเข้า LINE
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runInvAlerts(env).catch(e => console.error('inv alerts failed:', e.message)));
+    ctx.waitUntil(runMonthlyOrderReminder(env).catch(e => console.error('monthly order reminder failed:', e.message)));
   },
 
   async fetch(request, env) {
@@ -90,7 +91,7 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/inv', '/api/inv/import', '/api/inv/extract', '/api/inv/alert-test', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/inv', '/api/inv/import', '/api/inv/extract', '/api/inv/alert-test', '/api/inv/monthly-test', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
@@ -100,6 +101,8 @@ export default {
       if (route === '/api/inv/import' && m === 'POST') return await invImport(request, env.DB);
       if (route === '/api/inv/extract' && m === 'POST') return await invExtract(request, env);
       // ทดสอบแจ้งเตือน LINE: ?dry=1 = ดูข้อความโดยไม่ส่ง · ?force=1 = ส่งทุกรายการโดยไม่สนการกันเตือนซ้ำ
+      if (route === '/api/inv/monthly-test' && m === 'GET')
+        return json(await runMonthlyOrderReminder(env, { dry: url.searchParams.get('dry') === '1', force: url.searchParams.get('force') === '1' }));
       if (route === '/api/inv/alert-test' && m === 'GET')
         return json(await runInvAlerts(env, { dry: url.searchParams.get('dry') === '1', force: url.searchParams.get('force') === '1' }));
       if (route === '/api/iqc' && m === 'GET') return await handleGet(url, env.DB);
@@ -196,7 +199,7 @@ async function maintenanceSave(request, db) {
    field). PLAN_<year> isn't in a fixed list (new years shouldn't need a code change), so
    it's matched by pattern instead; invGet's no-tab case discovers whichever PLAN_<year>
    tabs actually have rows straight from the table. */
-const INV_FIXED_TABS = ['overview', 'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS'];
+const INV_FIXED_TABS = ['overview', 'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS', 'VENDOR_INVOICES', 'CLAIMS'];
 const INV_PLAN_TAB_RE = /^PLAN_\d{4}$/;
 function isInvTab(tab) { return INV_FIXED_TABS.includes(tab) || INV_PLAN_TAB_RE.test(tab); }
 const INV_MAX_IMPORT_BYTES = 10_000_000;

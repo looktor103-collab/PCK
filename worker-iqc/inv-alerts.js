@@ -181,3 +181,52 @@ export async function runInvAlerts(env, { force = false, dry = false } = {}) {
   ).bind(JSON.stringify(next)).run();
   return { ok: true, total: alerts.length, sent: due.length, message };
 }
+
+/* ═══ แจ้งเตือนสั่งน้ำยาประจำเดือน (LINE) ═══
+   ส่งเดือนละครั้ง ตั้งแต่วันที่ monthly_order_day (ค่าเริ่มต้น 1, ตั้งได้ที่ inv_meta) เป็นต้นไป
+   จนกว่าจะมีใบสั่งซื้อลงวันที่ในเดือนนั้น (ถือว่าสั่งแล้ว) — ส่งแล้วจะไม่ส่งซ้ำในเดือนเดียวกัน */
+const TH_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+async function metaGet(db, key) {
+  const r = await db.prepare(`SELECT value FROM inv_meta WHERE key = ?`).bind(key).first();
+  return r ? r.value : null;
+}
+
+/** options: { force } ส่งแม้ยังไม่ถึงวันที่/ส่งไปแล้ว · { dry } ไม่ส่งจริง */
+export async function runMonthlyOrderReminder(env, { force = false, dry = false } = {}) {
+  const today = todayTH();
+  const ym = today.slice(0, 7), day = +today.slice(8, 10), monthNo = +today.slice(5, 7);
+  const beYear = +today.slice(0, 4) + 543;
+  const reminderDay = Math.min(28, Math.max(1, parseInt(await metaGet(env.DB, 'monthly_order_day'), 10) || 1));
+
+  if (!force) {
+    if (day < reminderDay) return { ok: true, sent: 0, reason: 'not-yet' };
+    if ((await metaGet(env.DB, 'monthly_order_sent')) === ym) return { ok: true, sent: 0, reason: 'already-sent' };
+  }
+  const tabs = await loadTabs(env.DB);
+  if (!force && tabs.PO_HEADERS.some(p => p.status !== 'ยกเลิก' && toISO(p.po_date).slice(0, 7) === ym))
+    return { ok: true, sent: 0, reason: 'po-exists' };
+
+  const { results } = await env.DB.prepare(`SELECT data FROM inv_rows WHERE tab = ?`).bind('PLAN_' + beYear).all();
+  const plan = results.map(r => { try { return JSON.parse(r.data); } catch { return null; } })
+    .filter(r => r && Number(r.month) === monthNo && normName(r.item) && num(r.qty) > 0);
+  const low = computeAlerts(tabs, today).filter(a => a.kind === 'order');
+
+  const lines = [`🔔 ถึงรอบสั่งน้ำยาประจำเดือน ${TH_MONTHS[monthNo - 1]} ${beYear}`];
+  if (plan.length) {
+    lines.push('', `📅 ตามแผนเดือนนี้ (${plan.length})`);
+    plan.slice(0, MAX_LINES).forEach(r => lines.push(`• ${normName(r.item)} × ${r.qty}`));
+    if (plan.length > MAX_LINES) lines.push(`…และอีก ${plan.length - MAX_LINES} รายการ`);
+  } else lines.push('', 'ยังไม่มีรายการในแผนเดือนนี้ — ตรวจสต็อกแล้วสั่งตามความเหมาะสม');
+  if (low.length) lines.push('', `🛒 ต่ำกว่าจุดสั่งซื้อ ${low.length} รายการ (ดูรายละเอียดในแจ้งเตือนรายวัน)`);
+  lines.push('', APP_URL);
+  const message = lines.join('\n').slice(0, 4900);
+
+  if (dry) return { ok: true, sent: 0, message };
+  if (!env.LINE_CHANNEL_ACCESS_TOKEN || !env.LINE_USER_ID) throw new Error('ยังไม่ได้ตั้งค่า LINE_CHANNEL_ACCESS_TOKEN / LINE_USER_ID');
+  await linePush(env, message);
+  await env.DB.prepare(
+    `INSERT INTO inv_meta (key, value) VALUES ('monthly_order_sent', ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value`
+  ).bind(ym).run();
+  return { ok: true, sent: 1, message };
+}

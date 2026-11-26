@@ -672,6 +672,7 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       </div>
     </div>
 
+    <div id="monthlyOrderAlert"></div>
     <div class="act-grid" id="dashAlerts"></div>
 
     <div class="panel">
@@ -852,6 +853,53 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
   </div>
 
 
+  <!-- ══════════ CONTRACT / E-BIDDING ══════════ -->
+  <div class="mod-pane" id="mod-contract" style="display:none">
+    <div class="mod-title"><h2>📑 สัญญา / e-bidding และบิลเรียกเก็บ</h2></div>
+    <div class="mod-sub">กรอกเลขที่สัญญา วิธีคิดเงิน (ต่อหน่วย/ต่อเทสต์) และราคาตามสัญญาของแต่ละรายการ — แล้วดูยอดใช้ต่อเดือนต่อบริษัทพร้อมมูลค่า เพื่อตรวจกับบิลที่บริษัทเรียกเก็บ</div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>📝 ข้อมูลสัญญาของแต่ละรายการ <span style="font-weight:400;font-size:12px;color:var(--text2)">(พิมพ์แล้วบันทึกอัตโนมัติเมื่อคลิกออกจากช่อง)</span></h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" class="filter-sel" id="ctSearch" placeholder="🔍 ค้นหารายการ / บริษัท" oninput="contractFilter('q',this.value)" style="min-width:190px">
+          <select class="filter-sel" id="ctVendor" onchange="contractFilter('vendor',this.value)"><option value="">ทุกบริษัท</option></select>
+          <select class="filter-sel" id="ctFill" onchange="contractFilter('fill',this.value)">
+            <option value="">ทุกรายการ</option><option value="no">ยังไม่กรอกสัญญา/ราคา</option><option value="yes">กรอกแล้ว</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="ctHead"></thead><tbody id="ctBody"></tbody></table></div>
+      <div class="table-footer" id="ctFoot"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>🧾 ใบแจ้งหนี้จากบริษัท (สำเนาบิล)</h3>
+        <button class="btn btn-gold btn-sm" onclick="openInvoice()">＋ บันทึกใบแจ้งหนี้</button>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="vinvHead"></thead><tbody id="vinvBody"></tbody></table></div>
+      <div class="table-footer" id="vinvFoot"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>⚖️ เทียบใบแจ้งหนี้ กับยอดใช้จริงในระบบ (ตามเดือนที่เลือกด้านล่าง)</h3>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="vcmpHead"></thead><tbody id="vcmpBody"></tbody></table></div>
+      <div class="table-footer" id="vcmpFoot"></div>
+    </div>
+
+    <div class="table-card">
+      <div class="card-head">
+        <h3>🧾 ยอดใช้ต่อเดือนต่อบริษัท พร้อมมูลค่า (ใช้ตรวจบิลของบริษัท)</h3>
+        <select class="filter-sel" id="repVMonth" onchange="contractFilter('vmonth',this.value)" style="max-width:200px"></select>
+      </div>
+      <div class="table-scroll"><table class="inv-table"><thead id="repVendorHead"></thead><tbody id="repVendorBody"></tbody></table></div>
+      <div class="table-footer" id="repVendorFoot"></div>
+    </div>
+  </div>
+
   <!-- ══════════ REPORTS ══════════ -->
   <div class="mod-pane" id="mod-report" style="display:none">
     <div class="mod-title"><h2>📈 รายงานและการวิเคราะห์</h2></div>
@@ -878,15 +926,6 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
       </div>
       <div class="table-scroll"><table class="inv-table"><thead id="repReorderHead"></thead><tbody id="repReorderBody"></tbody></table></div>
       <div class="table-footer" id="repReorderFoot"></div>
-    </div>
-
-    <div class="table-card">
-      <div class="card-head">
-        <h3>🧾 ยอดใช้ต่อเดือนต่อบริษัท พร้อมมูลค่า (ใช้ตรวจบิลของบริษัท)</h3>
-        <select class="filter-sel" id="repVMonth" onchange="reportFilter('vmonth',this.value)" style="max-width:200px"></select>
-      </div>
-      <div class="table-scroll"><table class="inv-table"><thead id="repVendorHead"></thead><tbody id="repVendorBody"></tbody></table></div>
-      <div class="table-footer" id="repVendorFoot"></div>
     </div>
 
     <div class="table-card">
@@ -974,6 +1013,29 @@ input[list]{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3
     <div class="table-card">
       <div class="table-scroll"><table class="inv-table"><thead id="borHead"></thead><tbody id="borBody"></tbody></table></div>
       <div class="table-footer" id="borFooter"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ CLAIM (เคลมน้ำยา) ══════════ -->
+  <div class="mod-pane" id="mod-claim" style="display:none">
+    <div class="mod-title"><h2>🩹 บันทึกการเคลมน้ำยา</h2></div>
+    <div class="mod-sub">บันทึกน้ำยาที่เสียหายเป็น “จำนวน test” เพื่อเคลมกับบริษัท — ติดตามสถานะและจำนวน test ที่ได้รับชดเชย (ไม่กระทบยอดสต็อก ถ้าต้องตัดของเสียออกจากคลังให้บันทึกที่เมนูเบิกออก/ปรับยอด)</div>
+    <div class="stat-strip" id="clmKpi"></div>
+    <div class="toolbar">
+      <div class="search-wrap"><span class="search-icon">🔍</span>
+        <input type="text" id="clmSearch" placeholder="ค้นหารายการ / Lot / บริษัท / เลขที่เคลม..." oninput="clmFilter('q',this.value)">
+      </div>
+      <select class="filter-sel" onchange="clmFilter('cause',this.value)" id="clmCauseSel"></select>
+      <select class="filter-sel" onchange="clmFilter('st',this.value)">
+        <option value="">สถานะทั้งหมด</option>
+        <option>รอส่งเคลม</option><option>ส่งเคลมแล้ว</option><option>ได้รับชดเชยแล้ว</option><option>ปฏิเสธ</option>
+      </select>
+      <span class="toolbar-spacer"></span>
+      <button class="btn btn-gold" onclick="openClaim()">＋ บันทึกการเคลม</button>
+    </div>
+    <div class="table-card">
+      <div class="table-scroll"><table class="inv-table"><thead id="clmHead"></thead><tbody id="clmBody"></tbody></table></div>
+      <div class="table-footer" id="clmFooter"></div>
     </div>
   </div>
 </div>
@@ -1813,6 +1875,53 @@ function healthCheck() {
   </div>
 </div>
 
+<!-- ═══════ CLAIM MODAL ═══════ -->
+<div class="overlay" id="clmOverlay">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-head">
+      <span class="modal-title" id="clmTitle">🩹 บันทึกการเคลมน้ำยา</span>
+      <button class="modal-close" onclick="closeClaim()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fgrid">
+        <div class="field"><label>วันที่พบความเสียหาย *</label><input type="date" id="cl_date"></div>
+        <div class="field"><label>สาเหตุ *</label><select id="cl_cause"></select></div>
+      </div>
+      <div class="fgrid g1">
+        <div class="field"><label>รายการน้ำยา *</label><input type="text" id="cl_item" list="itemList" placeholder="ชื่อรายการ" oninput="clmHint()"></div>
+      </div>
+      <div class="fgrid g3">
+        <div class="field"><label>Lot No.</label><input type="text" id="cl_lot"></div>
+        <div class="field"><label>วันหมดอายุ</label><input type="date" id="cl_exp"></div>
+        <div class="field"><label>บริษัท</label><input type="text" id="cl_vendor"></div>
+      </div>
+      <div class="fgrid g3">
+        <div class="field"><label>จำนวน test ที่เสียหาย *</label><input type="number" min="0" step="1" id="cl_tests" oninput="clmHint()"></div>
+        <div class="field"><label>จำนวนหน่วยที่เสีย (ขวด/กล่อง)</label><input type="number" min="0" step="0.01" id="cl_units"></div>
+        <div class="field"><label>มูลค่าโดยประมาณ (บาท)</label><input type="number" min="0" step="0.01" id="cl_value" oninput="this.dataset.auto='0'"></div>
+      </div>
+      <div id="cl_hint" style="font-size:11.5px;color:var(--text3);margin:-4px 0 8px"></div>
+      <div class="fgrid">
+        <div class="field"><label>สถานะ</label>
+          <select id="cl_status"><option>รอส่งเคลม</option><option>ส่งเคลมแล้ว</option><option>ได้รับชดเชยแล้ว</option><option>ปฏิเสธ</option></select></div>
+        <div class="field"><label>เลขที่เอกสารเคลม</label><input type="text" id="cl_no"></div>
+      </div>
+      <div class="fgrid">
+        <div class="field"><label>วันที่ส่งเคลม</label><input type="date" id="cl_sent"></div>
+        <div class="field"><label>จำนวน test ที่ได้รับชดเชย</label><input type="number" min="0" step="1" id="cl_comp"></div>
+      </div>
+      <div class="fgrid g1">
+        <div class="field"><label>รายละเอียดความเสียหาย / หมายเหตุ</label><input type="text" id="cl_note"></div>
+        <div class="field"><label>ผู้บันทึก</label><input type="text" id="cl_person"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeClaim()">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveClaim()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════ BORROW MODAL ═══════ -->
 <div class="overlay" id="borOverlay">
   <div class="modal-box" style="max-width:600px">
@@ -1855,6 +1964,55 @@ function healthCheck() {
 
 <!-- TOAST + DATALISTS -->
 <div class="toast-wrap" id="toastWrap"></div>
+<!-- ══════════ VENDOR INVOICE MODAL ══════════ -->
+<div class="overlay" id="vinvOverlay">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-head">
+      <span class="modal-title" id="vinvTitle">🧾 บันทึกใบแจ้งหนี้จากบริษัท</span>
+      <button class="modal-close" onclick="closeInvoice()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="avail-box" id="vinvReplaceHint" style="display:none"></div>
+      <div class="fgrid g3">
+        <div class="field"><label>เลขที่ Inv# *</label><input type="text" id="v_no" placeholder="เลขที่ใบแจ้งหนี้"></div>
+        <div class="field"><label>วันที่ใบแจ้งหนี้ *</label><input type="date" id="v_date"></div>
+        <div class="field"><label>ยอดการใช้งานเดือน *</label><input type="month" id="v_month"></div>
+      </div>
+      <div class="fgrid g3">
+        <div class="field"><label>บริษัท *</label><input type="text" id="v_vendor" list="vendorList" placeholder="Roche / BD"></div>
+        <div class="field"><label>สัญญาเลขที่ / e-bidding</label><input type="text" id="v_contract" placeholder="เลขที่สัญญา"></div>
+        <div class="field"><label>VAT (%)</label><input type="number" id="v_vat" min="0" step="0.01" value="7" oninput="vinvTotals()"></div>
+      </div>
+      <div class="sec-div">📋 รายการในใบแจ้งหนี้</div>
+      <div style="overflow-x:auto">
+        <table class="line-table">
+          <thead><tr>
+            <th style="width:30px">#</th>
+            <th style="min-width:200px">รายการ / test *</th>
+            <th style="width:110px">จำนวน test</th>
+            <th style="width:120px">ราคา/test ไม่รวม VAT</th>
+            <th style="width:120px">ราคาขายรวม VAT</th>
+            <th style="width:130px">จำนวนเงิน (บาท)</th>
+            <th style="width:40px"></th>
+          </tr></thead>
+          <tbody id="vinvLines"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px">
+        <button class="btn btn-outline btn-sm" onclick="addInvLine()">＋ เพิ่มบรรทัด</button>
+        <div class="line-total" id="vinvTotal">รวม 0.00 บาท</div>
+      </div>
+      <div class="fgrid g1" style="margin-top:12px">
+        <div class="field"><label>หมายเหตุ</label><textarea id="v_note" placeholder="เช่น ออกใหม่แทนใบเดิมเพราะแก้จำนวน test"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeInvoice()">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="saveInvoice()">💾 บันทึกใบแจ้งหนี้</button>
+    </div>
+  </div>
+</div>
+
 <datalist id="itemList"></datalist>
 <datalist id="unitList">
   <option value="กล่อง"><option value="ขวด"><option value="ชุด"><option value="ชิ้น">
@@ -1891,8 +2049,10 @@ const MODULES = [
   { key:'report',label:'รายงาน/วิเคราะห์',     icon:'📈' },
   { key:'sup',   label:'บริษัทคู่ค้า',        icon:'🏢' },
   { key:'borrow',label:'ยืมของ',             icon:'🤝' },
+  { key:'claim', label:'เคลมน้ำยา',          icon:'🩹' },
   { key:'plan',  label:'แผนสั่งซื้อรายเดือน', icon:'📅' },
   { key:'items', label:'ทะเบียนสินค้า',      icon:'🏷️' },
+  { key:'contract', label:'สัญญา/e-bidding', icon:'📑' },
 ];
 const MONTHS = [
   { key:'overview', label:'ภาพรวม', icon:'📊' },
@@ -1911,7 +2071,7 @@ const MONTHS = [
 ];
 /* แผนสั่งซื้อรายเดือนเคยเก็บเป็น 12 ชีตไม่มีปี (JAN..DEC) ปีใหม่มาแล้วทับของเก่า —
    ตอนนี้เก็บเป็น 1 ชีตต่อปี พ.ศ. (PLAN_2569, PLAN_2570, ...) แต่ละแถวมี field "month" (1-12) */
-const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS','BORROWS'];
+const DATA_TABS  = ['ITEMS','TXN','BILLS','SUPPLIERS','PO_HEADERS','PO_ITEMS','PO_RECEIPTS','BORROWS','VENDOR_INVOICES','CLAIMS'];
 const ALL_TABS   = ['overview'].concat(DATA_TABS); // ใช้โดยโฟลว์ย้ายข้อมูลครั้งแรก (เสร็จไปแล้ว) เท่านั้น
 const PO_STATUS  = ['ร่าง','สั่งซื้อแล้ว','รับบางส่วน','รับครบแล้ว','ยกเลิก'];
 function planTab(year){ return 'PLAN_'+year; }
@@ -2034,7 +2194,7 @@ const DEFAULT_DATA = {
   ],
   JUN:[],JUL:[],AUG:[],SEP:[],OCT:[],NOV:[],DEC:[],
   ITEMS:[], TXN:[], BILLS:[],
-  SUPPLIERS:[], PO_HEADERS:[], PO_ITEMS:[], PO_RECEIPTS:[], BORROWS:[]
+  SUPPLIERS:[], PO_HEADERS:[], PO_ITEMS:[], PO_RECEIPTS:[], BORROWS:[], VENDOR_INVOICES:[], CLAIMS:[]
 };
 
 /* รายการตั้งต้นสำหรับสร้างทะเบียนอัตโนมัติ */
@@ -2080,10 +2240,13 @@ let state = {
   billEdit:{ id:null, type:'REQ', lines:[] },
   po:{ q:'', status:'', supplier:'' },
   report:{ cat:'', item:'', vmonth:'' },
+  contract:{ q:'', vendor:'', fill:'' },
+  invEdit:{ id:null, replaces:'', lines:[] },
   poEdit:{ id:null, lines:[] },
   poRecv:{ id:null },
   supEdit:{ id:null },
   bor:{ q:'', dir:'', st:'' }, borEditId:null,
+  clm:{ q:'', st:'', cause:'' }, clmEditId:null,
   itemEditId:null,
 };
 
@@ -2567,6 +2730,48 @@ function lotAvailableAsOf(itemName, lot, asOf, excludeIds){
       .forEach(t => { run += txnDelta(t); if(run < avail) avail = run; });
   return { asOf:bal, avail:avail, limitedByLater: avail < bal - 0.0001 };
 }
+/* ═══════════════ แจ้งเตือนรอบสั่งซื้อประจำเดือน ═══════════════
+   เตือนทุกเดือน (นอกเหนือจากรายการที่ต่ำกว่าขั้นต่ำ) ตั้งแต่ "วันที่เตือน" เป็นต้นไป
+   จนกว่าจะกด "สั่งแล้ว" หรือสร้างใบสั่งซื้อของเดือนนั้น — ค่าเก็บในเครื่องนี้ */
+const MO_DAY_KEY='inv_monthly_order_day', MO_DONE_KEY='inv_monthly_order_done';
+function moDay(){ try{ const n=parseInt(localStorage.getItem(MO_DAY_KEY),10); return n>=1&&n<=28?n:1; }catch(e){ return 1; } }
+function moDoneYM(){ try{ return localStorage.getItem(MO_DONE_KEY)||''; }catch(e){ return ''; } }
+function monthlyOrderDue(){
+  const d=new Date(), ym=today().slice(0,7);
+  return d.getDate()>=moDay() && moDoneYM()!==ym;
+}
+function monthlyOrderDone(){
+  try{ localStorage.setItem(MO_DONE_KEY, today().slice(0,7)); }catch(e){}
+  showToast('✅ บันทึกว่าสั่งน้ำยาประจำเดือนนี้แล้ว','success'); renderAll();
+}
+function monthlyOrderSetDay(){
+  const v=prompt('ให้เตือนสั่งน้ำยาประจำเดือนทุกวันที่เท่าไรของเดือน? (1-28)', String(moDay()));
+  if(v===null) return;
+  const n=parseInt(v,10);
+  if(!(n>=1&&n<=28)){ showToast('กรอกวันที่ 1-28','error'); return; }
+  try{ localStorage.setItem(MO_DAY_KEY,String(n)); }catch(e){}
+  renderAll();
+}
+function renderMonthlyOrderAlert(){
+  const el=document.getElementById('monthlyOrderAlert'); if(!el) return;
+  if(!monthlyOrderDue()){ el.innerHTML=''; return; }
+  const d=new Date(), mk=MONTHS[d.getMonth()+1], by=d.getFullYear()+543;
+  const plan=readMonthRows(by, mk.key).filter(r=>normName(r.item)&&num(r.qty)>0);
+  const low=mustOrderNow().length;
+  el.innerHTML=`
+    <div class="panel" style="border-left:4px solid #fab219;margin-bottom:1.2rem">
+      <div class="panel-head"><div>
+        <div class="panel-title">🔔 ถึงรอบสั่งน้ำยาประจำเดือน ${esc(mk.mname)} ${by}</div>
+        <div class="panel-desc">แจ้งเตือนทุกเดือน แม้ยังไม่ต่ำกว่าขั้นต่ำ — ${plan.length?`แผนเดือนนี้มี ${plan.length} รายการ`:'ยังไม่มีรายการในแผนเดือนนี้'}${low?` · และมี ${low} รายการที่ถึงเวลาสั่งตามขั้นต่ำ/Lead time`:''}</div>
+      </div></div>
+      <div style="padding:0 1rem 1rem;display:flex;gap:8px;flex-wrap:wrap">
+        ${plan.length?`<button class="btn btn-gold btn-sm" onclick="poFromPlan('${mk.key}',${by})">📅 สร้างใบสั่งซื้อจากแผนเดือนนี้</button>`:''}
+        ${low?`<button class="btn btn-sm" onclick="poFromReorder()">🛒 สร้าง PO จากรายการต่ำกว่าขั้นต่ำ</button>`:''}
+        <button class="btn btn-sm" onclick="monthlyOrderDone()">✅ สั่งแล้ว (ปิดแจ้งเตือนเดือนนี้)</button>
+        <button class="btn btn-sm" onclick="monthlyOrderSetDay()">⚙️ วันที่เตือน: ${moDay()}</button>
+      </div>
+    </div>`;
+}
 function stockAlerts(){
   const st = buildStock();
   const out=[], low=[], exp=[], expd=[];
@@ -2597,7 +2802,7 @@ function switchModule(key){
 }
 function renderModNav(){
   const a = stockAlerts();
-  const alertCount = a.out.length + a.low.length + a.expd.length;
+  const alertCount = a.out.length + a.low.length + a.expd.length + (monthlyOrderDue()?1:0);
   const counts = {
     stock: buildStock().filter(s=>s.total>0).length,
     in:    getData('TXN').filter(t=>t.type==='IN').length,
@@ -2605,6 +2810,7 @@ function renderModNav(){
     bills: getData('BILLS').length,
     items: getData('ITEMS').length,
     borrow: getData('BORROWS').filter(b=>borStatus(b)!=='คืนแล้ว').length,
+    claim: getData('CLAIMS').filter(c=>clmOpen(c)).length,
     dash:  alertCount,
     report: mustOrderNow().length,
   };
@@ -2629,9 +2835,11 @@ function renderAll(){
   if(state.module==='po')    renderPO();
   if(state.module==='sup')   renderSuppliers();
   if(state.module==='borrow') renderBorrow();
+  if(state.module==='claim')  renderClaim();
   if(state.module==='report') renderReport();
   if(state.module==='plan')  { renderTabs(); renderStats(); renderTable(); }
   if(state.module==='items') renderItems();
+  if(state.module==='contract') renderContract();
 }
 function fillCategorySelects(){
   const cats = Array.from(new Set(CATEGORIES.concat(
@@ -2833,6 +3041,7 @@ function renderDash(){
   const openL=openPOLines(), rmD=receiptMap();
   const expSoon=A.exp.length, expired=A.expd.length;
 
+  renderMonthlyOrderAlert();
   document.getElementById('execDate').textContent=formatDateLong(today());
   const heroEl=document.getElementById('execHeroVal');
   heroEl.textContent=need.length;
@@ -3945,7 +4154,9 @@ function askDelete(kind,id,label){
                 item:['🏷️','ลบรายการในทะเบียน?','รายการรับเข้า/เบิกออก/ปรับยอดของสินค้านี้จะถูกลบออกจากคลังด้วย'],
                 po:['🛒','ลบใบสั่งซื้อนี้?','รายการที่รับเข้าคลังไปแล้วจะยังอยู่ ต้องไปลบที่เมนูรับเข้าเอง'],
                 sup:['🏢','ลบบริษัทนี้?','ใบสั่งซื้อเดิมยังเก็บชื่อบริษัทไว้'],
+                claim:['🩹','ลบบันทึกการเคลมนี้?','ลบประวัติการเคลมรายการนี้ (ไม่กระทบสต็อก)'],
                 borrow:['🤝','ลบรายการยืมนี้?','ลบประวัติการยืม/คืนรายการนี้ (ไม่กระทบสต็อก)'],
+                vinv:['🧾','ลบใบแจ้งหนี้นี้?','ลบบันทึกใบแจ้งหนี้ (ไม่กระทบสต็อก) — ถ้าบิลผิดแนะนำให้ใช้ "ยกเลิก" เพื่อเก็บประวัติ'],
                 plan:['🗑️','ลบรายการนี้?','ลบออกจากแผนสั่งซื้อรายเดือน'] };
   const [icon,msg,sub] = map[kind] || map.plan;
   document.getElementById('delIcon').textContent = icon;
@@ -3982,6 +4193,14 @@ async function confirmDelete(){
     closeConfirm(); renderAll(); showToast('🗑️ ลบใบสั่งซื้อแล้ว','info');
     await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS'); await syncTab('PO_RECEIPTS');
     for(const t of planTabs) await syncTab(t); return;
+  }
+  if(d.kind==='vinv'){
+    saveLocal('VENDOR_INVOICES', getData('VENDOR_INVOICES').filter(x=>x.id!==d.id));
+    closeConfirm(); renderAll(); showToast('🗑️ ลบใบแจ้งหนี้แล้ว','info'); await syncTab('VENDOR_INVOICES'); return;
+  }
+  if(d.kind==='claim'){
+    saveLocal('CLAIMS', getData('CLAIMS').filter(x=>x.id!==d.id));
+    closeConfirm(); renderAll(); showToast('🗑️ ลบบันทึกการเคลมแล้ว','info'); await syncTab('CLAIMS'); return;
   }
   if(d.kind==='borrow'){
     saveLocal('BORROWS', getData('BORROWS').filter(x=>x.id!==d.id));
@@ -4730,6 +4949,106 @@ async function returnBorrow(id){
   await syncTab('BORROWS');
 }
 
+/* ─────────── CLAIM (เคลมน้ำยา — นับเป็นจำนวน test ที่เสียหาย) ─────────── */
+const CLM_CAUSES = ['ขนส่ง/แตกหัก','อุณหภูมิผิดปกติ (Cold chain)','คุณภาพผลิตภัณฑ์/QC ไม่ผ่าน','หมดอายุก่อนกำหนด/อายุสั้น','ส่งผิด/ไม่ครบ','อุบัติเหตุในห้องปฏิบัติการ','อื่นๆ'];
+function clmOpen(c){ return c.status==='รอส่งเคลม' || c.status==='ส่งเคลมแล้ว'; }
+function clmFilter(k,v){ state.clm[k]=v; renderClaim(); }
+/** มูลค่า/test จากทะเบียนสินค้า (ราคา ÷ จำนวน test ต่อหน่วย) — คืน 0 ถ้าไม่มีข้อมูล */
+function clmPerTest(name){
+  const m = itemMaster(normName(name)) || {};
+  const t = num(m.testsPerUnit), p = num(m.price);
+  return (t>0 && p>0) ? p/t : 0;
+}
+function clmHint(){
+  const el=document.getElementById('cl_hint'); if(!el) return;
+  const name = normName(document.getElementById('cl_item').value);
+  const m = itemMaster(name) || {};
+  const pt = clmPerTest(name);
+  const tests = num(document.getElementById('cl_tests').value);
+  el.textContent = pt ? `ราคา ≈ ${fmt(pt,2)} บาท/test (1 ${m.unit||'หน่วย'} = ${fmt(m.testsPerUnit)} test)${tests?` → ประมาณ ${fmt(pt*tests,0)} บาท`:''}` : '';
+  const v=document.getElementById('cl_value');
+  if(pt && tests && (!v.value || v.dataset.auto==='1')){ v.value=(pt*tests).toFixed(2); v.dataset.auto='1'; }
+}
+function renderClaim(){
+  const sel=document.getElementById('clmCauseSel');
+  if(sel && !sel.options.length) sel.innerHTML='<option value="">สาเหตุทั้งหมด</option>'+CLM_CAUSES.map(c=>`<option>${esc(c)}</option>`).join('');
+  const all=getData('CLAIMS');
+  let rows=all; const f=state.clm, q=(f.q||'').toLowerCase();
+  if(q) rows=rows.filter(c=>((c.item||'')+(c.lot||'')+(c.vendor||'')+(c.claim_no||'')+(c.note||'')).toLowerCase().includes(q));
+  if(f.st) rows=rows.filter(c=>c.status===f.st);
+  if(f.cause) rows=rows.filter(c=>c.cause===f.cause);
+  rows=[...rows].sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const sum=(arr,k)=>arr.reduce((s,c)=>s+num(c[k]),0);
+  const ym=today().slice(0,7);
+  document.getElementById('clmKpi').innerHTML=[
+    { cls:'sc-rose',  icon:'🧪', val:fmt(sum(all,'damage_tests'),0), lbl:'test เสียหายสะสม' },
+    { cls:'sc-peach', icon:'📅', val:fmt(sum(all.filter(c=>(c.date||'').slice(0,7)===ym),'damage_tests'),0), lbl:'test เสียหายเดือนนี้' },
+    { cls:'sc-gold',  icon:'⏳', val:fmt(sum(all.filter(clmOpen),'damage_tests'),0), lbl:'test ที่รอเคลม/รอผล' },
+    { cls:'sc-mint',  icon:'✅', val:fmt(sum(all,'comp_tests'),0), lbl:'test ที่ได้รับชดเชยแล้ว' },
+  ].map(c=>`<div class="stat-card ${c.cls}"><div class="s-icon">${c.icon}</div><div class="s-val">${c.val}</div><div class="s-lbl">${c.lbl}</div></div>`).join('');
+  document.getElementById('clmHead').innerHTML=head(['#','วันที่','รายการ','สาเหตุ','Test เสียหาย','มูลค่า (บาท)','บริษัท / เลขที่เคลม','สถานะ','ชดเชย (test)','']);
+  const body=document.getElementById('clmBody');
+  if(!rows.length){
+    body.innerHTML=emptyRow(10,'ยังไม่มีบันทึกการเคลม','กด “＋ บันทึกการเคลม” เพื่อบันทึกน้ำยาที่เสียหาย');
+  } else {
+    body.innerHTML=rows.map((c,i)=>{
+      const cls=c.status==='ได้รับชดเชยแล้ว'?'sb-done':c.status==='ปฏิเสธ'?'sb-late':c.status==='ส่งเคลมแล้ว'?'sb-ship':'sb-none';
+      return `<tr>
+        <td class="col-num">${i+1}</td>
+        <td style="white-space:nowrap">${c.date?formatDate(c.date):'—'}</td>
+        <td><span class="item-cell">${esc(c.item)}</span>${c.lot?`<div style="font-size:11px;color:var(--text3)">Lot ${esc(c.lot)}${c.exp?' · Exp '+formatDate(c.exp):''}</div>`:''}${c.note?`<div style="font-size:11px;color:var(--text3)">${esc(c.note)}</div>`:''}</td>
+        <td style="font-size:12px">${esc(c.cause||'—')}</td>
+        <td style="text-align:center;font-weight:700" class="qty-out">${fmt(c.damage_tests||0,0)}${num(c.units)?`<div style="font-size:11px;font-weight:400;color:var(--text3)">${fmt(c.units)} ${esc(c.unit||'หน่วย')}</div>`:''}</td>
+        <td style="text-align:right">${num(c.value)?fmt(c.value,0):'—'}</td>
+        <td style="font-size:12px">${esc(c.vendor||'—')}${c.claim_no?`<div style="font-size:11px;color:var(--text3)">${esc(c.claim_no)}${c.sent_date?' · ส่ง '+formatDate(c.sent_date):''}</div>`:''}</td>
+        <td><span class="sbadge ${cls}">${esc(c.status||'รอส่งเคลม')}</span></td>
+        <td style="text-align:center">${c.comp_tests!==''&&c.comp_tests!=null?fmt(c.comp_tests,0):'—'}</td>
+        <td><div class="act-btns">
+          <button class="btn btn-outline btn-sm btn-icon" title="แก้ไข" onclick="openClaim('${c.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('claim','${c.id}','${esc(c.item)}')">🗑️</button>
+        </div></td></tr>`;
+    }).join('');
+  }
+  document.getElementById('clmFooter').innerHTML=
+    `<span>🩹 แสดง <strong>${rows.length}</strong> จาก ${all.length} รายการ · test เสียหาย <strong>${fmt(sum(rows,'damage_tests'),0)}</strong> · มูลค่า <strong>${fmt(sum(rows,'value'),0)}</strong> บาท</span>
+     <button class="btn btn-sky btn-sm" onclick="syncAll()">🔄 Sync</button>`;
+}
+function openClaim(id){
+  state.clmEditId=id||null;
+  const c=id?getData('CLAIMS').find(x=>x.id===id):null;
+  document.getElementById('clmTitle').textContent=c?'🩹 แก้ไขบันทึกการเคลม':'🩹 บันทึกการเคลมน้ำยา';
+  document.getElementById('cl_cause').innerHTML=CLM_CAUSES.map(x=>`<option>${esc(x)}</option>`).join('');
+  const v=(k,val)=>{ document.getElementById(k).value=val==null?'':val; };
+  v('cl_date',c?c.date:today()); v('cl_cause',c?c.cause:CLM_CAUSES[0]); v('cl_item',c&&c.item);
+  v('cl_lot',c&&c.lot); v('cl_exp',c&&c.exp); v('cl_vendor',c?c.vendor:'');
+  v('cl_tests',c&&c.damage_tests); v('cl_units',c&&c.units); v('cl_value',c&&c.value);
+  document.getElementById('cl_value').dataset.auto = (c&&c.value) ? '0' : '1';
+  v('cl_status',c?c.status:'รอส่งเคลม'); v('cl_no',c&&c.claim_no); v('cl_sent',c&&c.sent_date);
+  v('cl_comp',c&&c.comp_tests); v('cl_note',c&&c.note); v('cl_person',c&&c.person);
+  clmHint();
+  document.getElementById('clmOverlay').classList.add('open');
+}
+function closeClaim(){ document.getElementById('clmOverlay').classList.remove('open'); }
+async function saveClaim(){
+  const g=k=>(document.getElementById(k).value||'').trim();
+  const item=normName(g('cl_item')), tests=num(g('cl_tests'));
+  if(!item || tests<=0){ showToast('กรุณากรอก รายการ และ จำนวน test ที่เสียหาย','error'); return; }
+  const data=getData('CLAIMS');
+  const old=state.clmEditId?data.find(x=>x.id===state.clmEditId):null;
+  const m=itemMaster(item)||{};
+  const row=Object.assign({}, old||{}, {
+    id: old?old.id:genId('cl'), date:g('cl_date')||today(), cause:g('cl_cause'), item,
+    category:m.category||'', lot:g('cl_lot'), exp:g('cl_exp'), vendor:g('cl_vendor')||m.vendor||'',
+    damage_tests:tests, units:g('cl_units'), unit:m.unit||'', value:g('cl_value'),
+    status:g('cl_status')||'รอส่งเคลม', claim_no:g('cl_no'), sent_date:g('cl_sent'),
+    comp_tests:g('cl_comp'), note:g('cl_note'), person:g('cl_person'), ts:new Date().toISOString() });
+  if(old) data[data.indexOf(old)]=row; else data.push(row);
+  saveLocal('CLAIMS',data);
+  state.clmEditId=null; closeClaim(); renderAll();
+  showToast('💾 บันทึกการเคลมแล้ว','success');
+  await syncTab('CLAIMS');
+}
+
 /* ─────────── PO HELPERS ─────────── */
 function receiptMap(){
   const m={};
@@ -5066,6 +5385,7 @@ async function savePO(){
   const planTabs = syncPlanFromPO(id, row, lines);
   state.poEdit={id:null,lines:[]};
   closePO(); renderAll();
+  try{ localStorage.setItem(MO_DONE_KEY, today().slice(0,7)); }catch(e){} // สร้าง PO แล้ว = ปิดแจ้งเตือนรอบเดือนนี้
   showToast(`💾 บันทึก ${row.po_number} แล้ว`,'success');
   setTimeout(()=>printPO(id), 300); // เปิดหน้าต่างพิมพ์ → เลือก Save as PDF ได้ทันที
   await syncTab('PO_HEADERS'); await syncTab('PO_ITEMS');
@@ -5104,15 +5424,20 @@ function poFromReorder(){
   showToast(`🛒 ดึง ${need.length} รายการที่ต้องสั่งมาแล้ว — เลือกบริษัทแล้วบันทึกได้เลย`,'success');
 }
 /** ดึงรายการจากแผนสั่งซื้อรายเดือนมาเป็นใบสั่งซื้อ */
-function poFromPlan(){
+function poFromPlan(keyArg, yearArg){
   const keys = MONTHS.slice(1).map(m=>m.key);
-  const label = MONTHS.slice(1).map((m,i)=>`${i+1}=${m.label}`).join(' ');
-  const pick = prompt('สร้างใบสั่งซื้อจากแผนเดือนไหน?\n'+label+'\n\nพิมพ์ตัวเลข 1-12:', '1');
-  if(!pick) return;
-  const idx = parseInt(pick,10)-1;
-  if(isNaN(idx) || idx<0 || idx>11){ showToast('เลือกเดือนไม่ถูกต้อง','error'); return; }
-  const key = keys[idx];
-  const rows = planRows(key).filter(r=>normName(r.item) && num(r.qty)>0);
+  let idx, key;
+  if(keyArg){ key = keyArg; idx = keys.indexOf(key); }
+  else{
+    const label = MONTHS.slice(1).map((m,i)=>`${i+1}=${m.label}`).join(' ');
+    const pick = prompt('สร้างใบสั่งซื้อจากแผนเดือนไหน?\n'+label+'\n\nพิมพ์ตัวเลข 1-12:', '1');
+    if(!pick) return;
+    idx = parseInt(pick,10)-1;
+    if(isNaN(idx) || idx<0 || idx>11){ showToast('เลือกเดือนไม่ถูกต้อง','error'); return; }
+    key = keys[idx];
+  }
+  const planYear = yearArg || state.year;
+  const rows = readMonthRows(planYear, key).filter(r=>normName(r.item) && num(r.qty)>0);
   if(!rows.length){ showToast('เดือนนี้ไม่มีรายการในแผน','info'); return; }
   openPO();
   state.poEdit.lines = rows.map(r=>{
@@ -5122,7 +5447,7 @@ function poFromPlan(){
       unit_price:m.price||'', total_price:'', exp_date:r.exp||'', due_date:r.dueDate||'',
       rd:r.rd||'', item_note:r.note||'' };
   });
-  document.getElementById('p_source').value = state.year+'|'+key;
+  document.getElementById('p_source').value = planYear+'|'+key;
   document.getElementById('p_date').value = rows[0].orderDate || today();
   renderPOLines();
   showToast(`📅 ดึง ${rows.length} รายการจากแผน ${monthFull(MONTHS[idx+1])} มาแล้ว`,'success');
@@ -5408,8 +5733,6 @@ function renderReport(){
   document.getElementById('repPerfFoot').innerHTML =
     `<span>📊 เบิกจริง/เดือน คำนวณจากยอดเบิกย้อนหลัง ${coverageWindow} วัน × 30 ÷ ${coverageWindow} · ถือว่า "ตรงแผน" เมื่อต่างจากแผนไม่เกิน ±15%</span>`;
 
-  renderVendorMonthly();
-
   // ── ตารางที่ 3: แผน vs รับจริง vs เบิกจริง รายเดือน ──
   const sel = document.getElementById('repItem');
   if(sel){
@@ -5450,6 +5773,249 @@ function renderReport(){
     `<span>📅 ${pick?('เฉพาะ '+esc(pick)):'รวมทุกรายการ'} · "รับ − แผน" ติดลบ = ได้ของน้อยกว่าที่วางแผนสั่งไว้ · คงเหลือสะสม = รับ − เบิก ± ปรับยอด</span>`;
 }
 
+/* ═══════════════ CONTRACT / E-BIDDING TAB ═══════════════ */
+function contractFilter(k,v){ state.contract[k]=v; if(k==='vmonth') state.report.vmonth=v; renderContract(); }
+function renderContract(){
+  const f = state.contract;
+  const items = getData('ITEMS').filter(i=>(i.active||'1')!=='0');
+  // รายชื่อบริษัทในตัวกรอง
+  const vendors = Array.from(new Set(items.map(i=>(i.vendor||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'th'));
+  const vs = document.getElementById('ctVendor');
+  if(vs){ vs.innerHTML = '<option value="">ทุกบริษัท</option>' + vendors.map(v=>`<option>${esc(v)}</option>`).join(''); vs.value = f.vendor; }
+  let rows = items.slice();
+  if(f.q){ const q=f.q.toLowerCase(); rows = rows.filter(i=>((i.name||'')+(i.vendor||'')+(i.contract_no||'')).toLowerCase().includes(q)); }
+  if(f.vendor) rows = rows.filter(i=>(i.vendor||'').trim()===f.vendor);
+  const filled = i => !!((i.contract_no||'').trim() || num(i.contract_price)>0);
+  if(f.fill==='no')  rows = rows.filter(i=>!filled(i));
+  if(f.fill==='yes') rows = rows.filter(filled);
+  const groups = {};
+  rows.forEach(i=>{ const v=(i.vendor||'').trim()||'(ไม่ระบุบริษัท)'; (groups[v]=groups[v]||[]).push(i); });
+  document.getElementById('ctHead').innerHTML = head(
+    ['รายการ','เทสต์/หน่วย','เลขที่สัญญา / e-bidding','บริษัทคิดเงินตาม','ราคาตามสัญญา (บาท)']);
+  const body = document.getElementById('ctBody');
+  const names = Object.keys(groups).sort((a,b)=>a.localeCompare(b,'th'));
+  if(!names.length){ body.innerHTML = emptyRow(5,'ไม่พบรายการ','ลองล้างตัวกรอง หรือเพิ่มสินค้าที่แท็บ ทะเบียนสินค้า'); }
+  else {
+    const inp = (id,field,val,type,extra) => `<input type="${type}" value="${esc(val==null?'':val)}" ${extra||''}
+      onchange="saveContractField('${id}','${field}',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid var(--border,#ddd);border-radius:8px;font-family:inherit;font-size:13px">`;
+    body.innerHTML = names.map(v=>{
+      const g = groups[v].sort((a,b)=>(a.name||'').localeCompare(b.name||'','th'));
+      const head1 = `<tr class="cat-group"><td colspan="5" style="background:#f3f0ea;font-weight:700;cursor:default">🏢 ${esc(v)} <span class="cg-sum">${g.length} รายการ</span></td></tr>`;
+      return head1 + g.map(i=>{
+        const basis = i.contract_basis==='test' ? 'test' : 'unit';
+        return `<tr>
+          <td style="${catCellStyle(i.category)}"><span class="item-cell">${esc(i.name)}</span><div style="font-size:11px;color:var(--text3)">${esc(i.unit||'')}${i.catNo?' · Cat. '+esc(i.catNo):''}</div></td>
+          <td style="width:110px">${inp(i.id,'testsPerUnit',i.testsPerUnit,'number','min="0" step="1" style="text-align:right"')}</td>
+          <td style="min-width:200px">${inp(i.id,'contract_no',i.contract_no,'text','placeholder="เลขที่สัญญา"')}</td>
+          <td style="width:200px"><select onchange="saveContractField('${i.id}','contract_basis',this.value)" style="width:100%;padding:6px 8px;border:1.5px solid var(--border,#ddd);border-radius:8px;font-family:inherit;font-size:13px">
+            <option value="unit"${basis==='unit'?' selected':''}>ต่อหน่วยนับ${i.unit?' ('+esc(i.unit)+')':''}</option>
+            <option value="test"${basis==='test'?' selected':''}>ต่อเทสต์</option></select></td>
+          <td style="width:150px">${inp(i.id,'contract_price',i.contract_price,'number','min="0" step="0.01" placeholder="0.00" style="text-align:right"')}</td>
+        </tr>`;
+      }).join('');
+    }).join('');
+  }
+  const doneN = items.filter(filled).length;
+  document.getElementById('ctFoot').innerHTML =
+    `<span>📑 กรอกสัญญา/ราคาแล้ว <strong>${doneN}</strong> จาก ${items.length} รายการ · ถ้าเลือก "ต่อเทสต์" ต้องมีเทสต์/หน่วย · ชื่อบริษัทแก้ที่แท็บ ทะเบียนสินค้า</span>`;
+  renderInvoices();
+  renderInvoiceCompare();
+  renderVendorMonthly();
+}
+/* ═══════════════ VENDOR INVOICES (สำเนาใบแจ้งหนี้จากบริษัท) ═══════════════ */
+const INV_ACTIVE = 'ใช้งาน', INV_CANCELLED = 'ยกเลิก';
+function invMonthLabel(ym){
+  if(!ym) return '—';
+  const [y,m] = ym.split('-'); const mn = (MONTHS[parseInt(m,10)]||{}).mname || m;
+  return mn+' '+(parseInt(y,10)+543);
+}
+function renderInvoices(){
+  const rows = getData('VENDOR_INVOICES').slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.ts||'').localeCompare(a.ts||''));
+  document.getElementById('vinvHead').innerHTML = head(
+    ['เลขที่ Inv#','วันที่','ใช้งานเดือน','บริษัท','สัญญาเลขที่','จำนวน test','ก่อน VAT','รวม VAT','สถานะ','']);
+  const body = document.getElementById('vinvBody');
+  if(!rows.length){ body.innerHTML = emptyRow(10,'ยังไม่มีใบแจ้งหนี้','กด “＋ บันทึกใบแจ้งหนี้” แล้วกรอกจากสำเนาบิลของบริษัท'); }
+  else body.innerHTML = rows.map(v=>{
+    const cancelled = v.status===INV_CANCELLED;
+    const tests = (v.lines||[]).reduce((x,l)=>x+num(l.tests),0);
+    const st = cancelled
+      ? `<span class="sbadge sb-overdue">ยกเลิก</span>${v.replaced_by?`<div style="font-size:10.5px;color:var(--text3)">แทนที่ด้วย ${esc(v.replaced_by)}</div>`:''}`
+      : `<span class="sbadge sb-done">ใช้งาน</span>${v.replaces?`<div style="font-size:10.5px;color:var(--text3)">แทนใบ ${esc(v.replaces)}</div>`:''}`;
+    return `<tr${cancelled?' style="opacity:.55"':''}>
+      <td><b>${esc(v.invNo)}</b></td><td>${formatDate(v.date)}</td><td>${esc(invMonthLabel(v.month))}</td>
+      <td>${esc(v.vendor||'')}</td><td>${esc(v.contract_no||'')}</td>
+      <td style="text-align:right">${fmt(tests)}</td>
+      <td style="text-align:right">${fmt(v.ex_total,2)}</td><td style="text-align:right;font-weight:600">${fmt(v.total,2)}</td>
+      <td>${st}</td>
+      <td><div class="act-btns">
+        ${cancelled?'':`<button class="btn btn-outline btn-sm" title="แก้ไข" onclick="openInvoice('${v.id}')">✏️</button>
+        <button class="btn btn-rose btn-sm" title="ยกเลิกบิลเก่าและออกบิลใหม่แทน" onclick="reissueInvoice('${v.id}')">♻️ ออกใหม่</button>
+        <button class="btn btn-outline btn-sm" title="ยกเลิกบิลนี้ (เก็บประวัติ)" onclick="cancelInvoice('${v.id}')">🚫</button>`}
+        <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('vinv','${v.id}','${esc(v.invNo)}')">🗑️</button>
+      </div></td></tr>`;
+  }).join('');
+  const act = rows.filter(v=>v.status!==INV_CANCELLED);
+  document.getElementById('vinvFoot').innerHTML =
+    `<span>🧾 ทั้งหมด ${rows.length} ใบ · ใช้งาน <strong>${act.length}</strong> · ยกเลิก ${rows.length-act.length} · ใบที่ยกเลิกจะไม่นับในการเทียบยอด</span>`;
+}
+function openInvoice(id, replaceOfId){
+  const v = id ? getData('VENDOR_INVOICES').find(x=>x.id===id) : null;
+  const old = replaceOfId ? getData('VENDOR_INVOICES').find(x=>x.id===replaceOfId) : null;
+  const src = v || old;
+  state.invEdit = { id: v?v.id:null, replaces: old ? old.id : (v&&v.replaces_id)||'',
+    lines: src ? JSON.parse(JSON.stringify(src.lines||[])) : [] };
+  const set=(k,val)=>{ document.getElementById(k).value = val==null?'':val; };
+  set('v_no', v ? v.invNo : ''); set('v_date', v ? v.date : today());
+  set('v_month', src ? src.month : today().slice(0,7));
+  set('v_vendor', src ? src.vendor : ''); set('v_contract', src ? src.contract_no : '');
+  set('v_vat', src && src.vat_rate!=null && src.vat_rate!=='' ? src.vat_rate : 7);
+  set('v_note', v ? v.note : '');
+  const hint = document.getElementById('vinvReplaceHint');
+  if(old){ hint.style.display=''; hint.innerHTML = `♻️ ออกบิลใหม่แทน <b>${esc(old.invNo)}</b> — เมื่อบันทึก ระบบจะเปลี่ยนใบเดิมเป็น “ยกเลิก” ให้อัตโนมัติ (ข้อมูลรายการคัดลอกมาให้แก้ได้)`; }
+  else if(v && v.replaces){ hint.style.display=''; hint.innerHTML = `♻️ ใบนี้ออกแทนใบ <b>${esc(v.replaces)}</b>`; }
+  else hint.style.display='none';
+  document.getElementById('vinvTitle').textContent = v ? '🧾 แก้ไขใบแจ้งหนี้' : (old ? '♻️ ออกใบแจ้งหนี้ใหม่แทนใบเดิม' : '🧾 บันทึกใบแจ้งหนี้จากบริษัท');
+  if(!state.invEdit.lines.length) state.invEdit.lines.push({ item:'', tests:'', price_ex:'', price_inc:'', amount:'' });
+  renderInvLines();
+  document.getElementById('vinvOverlay').classList.add('open');
+}
+function closeInvoice(){ document.getElementById('vinvOverlay').classList.remove('open'); }
+function addInvLine(){ state.invEdit.lines.push({ item:'', tests:'', price_ex:'', price_inc:'', amount:'' }); renderInvLines(); }
+function delInvLine(i){ state.invEdit.lines.splice(i,1); if(!state.invEdit.lines.length) addInvLine(); else renderInvLines(); }
+function renderInvLines(){
+  const vat = ()=>num(document.getElementById('v_vat').value);
+  document.getElementById('vinvLines').innerHTML = state.invEdit.lines.map((l,i)=>`<tr>
+    <td class="col-num">${i+1}</td>
+    <td><input type="text" list="itemList" value="${esc(l.item)}" oninput="onInvLine(${i},'item',this.value)" placeholder="ชื่อรายการ / test"></td>
+    <td><input type="number" min="0" step="1" value="${esc(l.tests)}" oninput="onInvLine(${i},'tests',this.value)" style="text-align:right"></td>
+    <td><input type="number" min="0" step="0.01" value="${esc(l.price_ex)}" oninput="onInvLine(${i},'price_ex',this.value)" style="text-align:right"></td>
+    <td><input type="number" min="0" step="0.01" id="vi_inc_${i}" value="${esc(l.price_inc)}" oninput="onInvLine(${i},'price_inc',this.value)" style="text-align:right"></td>
+    <td><input type="number" min="0" step="0.01" id="vi_amt_${i}" value="${esc(l.amount)}" oninput="onInvLine(${i},'amount',this.value)" style="text-align:right"></td>
+    <td><button class="btn btn-danger btn-sm btn-icon" onclick="delInvLine(${i})">✕</button></td>
+  </tr>`).join('');
+  vinvTotals();
+}
+/** พิมพ์แล้วคำนวณต่อให้: ราคารวม VAT = ราคาไม่รวม VAT × (1+VAT) · จำนวนเงิน = test × ราคาไม่รวม VAT (แก้ทับเองได้) */
+function onInvLine(i,k,val){
+  const l = state.invEdit.lines[i]; l[k] = val;
+  if(k==='price_ex'){
+    l.price_inc = val==='' ? '' : (num(val)*(1+num(document.getElementById('v_vat').value)/100)).toFixed(2);
+    document.getElementById('vi_inc_'+i).value = l.price_inc;
+  }
+  if(k==='tests' || k==='price_ex'){
+    l.amount = (num(l.tests)*num(l.price_ex)).toFixed(2);
+    document.getElementById('vi_amt_'+i).value = l.amount;
+  }
+  vinvTotals();
+}
+function vinvTotals(){
+  const ex = state.invEdit.lines.reduce((x,l)=>x+num(l.amount),0);
+  const r = num(document.getElementById('v_vat').value)/100;
+  document.getElementById('vinvTotal').innerHTML =
+    `ก่อน VAT ${fmt(ex,2)} · VAT ${fmt(ex*r,2)} · <b>รวมทั้งสิ้น ${fmt(ex*(1+r),2)} บาท</b>`;
+}
+async function saveInvoice(){
+  const g = k => (document.getElementById(k).value||'').trim();
+  const invNo = g('v_no');
+  if(!invNo){ showToast('กรุณากรอกเลขที่ Inv#','error'); return; }
+  if(!g('v_vendor')){ showToast('กรุณากรอกชื่อบริษัท','error'); return; }
+  if(!g('v_month')){ showToast('กรุณาเลือกเดือนที่ใช้งาน','error'); return; }
+  const lines = state.invEdit.lines.filter(l=>(l.item||'').trim() && (num(l.tests)>0 || num(l.amount)>0))
+    .map(l=>({ item:(l.item||'').trim(), tests:num(l.tests), price_ex:num(l.price_ex), price_inc:num(l.price_inc), amount:num(l.amount) }));
+  if(!lines.length){ showToast('กรอกรายการอย่างน้อย 1 บรรทัด','error'); return; }
+  const data = getData('VENDOR_INVOICES');
+  if(data.some(x=>x.invNo===invNo && x.vendor===g('v_vendor') && x.id!==state.invEdit.id && x.status!==INV_CANCELLED)){
+    if(!confirm(`มีใบแจ้งหนี้เลขที่ ${invNo} ของบริษัทนี้อยู่แล้ว\nบันทึกซ้ำหรือไม่?`)) return;
+  }
+  const rate = num(g('v_vat'));
+  const ex = lines.reduce((x,l)=>x+l.amount,0);
+  const oldRef = state.invEdit.replaces ? data.find(x=>x.id===state.invEdit.replaces) : null;
+  const prev = state.invEdit.id ? data.find(x=>x.id===state.invEdit.id) : null;
+  const row = Object.assign({}, prev || {}, {
+    id: state.invEdit.id || genId('vi'), invNo, date: g('v_date')||today(), month: g('v_month'),
+    vendor: g('v_vendor'), contract_no: g('v_contract'), vat_rate: rate,
+    lines, ex_total: Math.round(ex*100)/100, vat: Math.round(ex*rate)/100, total: Math.round(ex*(100+rate))/100,
+    status: (prev && prev.status) || INV_ACTIVE, note: g('v_note'),
+    replaces_id: oldRef ? oldRef.id : (prev && prev.replaces_id) || '',
+    replaces: oldRef ? oldRef.invNo : (prev && prev.replaces) || '',
+    ts: new Date().toISOString(),
+  });
+  if(prev){ data[data.findIndex(x=>x.id===prev.id)] = row; } else data.push(row);
+  if(oldRef){ oldRef.status = INV_CANCELLED; oldRef.replaced_by = invNo; oldRef.cancelled_at = today(); }
+  saveLocal('VENDOR_INVOICES', data);
+  closeInvoice(); renderAll();
+  showToast(oldRef ? `✅ บันทึก ${invNo} และยกเลิกใบเดิม ${oldRef.invNo} แล้ว` : '💾 บันทึกใบแจ้งหนี้แล้ว','success');
+  await syncTab('VENDOR_INVOICES');
+}
+function reissueInvoice(id){ openInvoice(null, id); }
+async function cancelInvoice(id){
+  const data = getData('VENDOR_INVOICES'); const v = data.find(x=>x.id===id); if(!v) return;
+  if(!confirm(`ยกเลิกใบแจ้งหนี้ ${v.invNo}?\nใบที่ยกเลิกจะไม่นับในการเทียบยอด (ยังเก็บประวัติไว้)`)) return;
+  v.status = INV_CANCELLED; v.cancelled_at = today();
+  saveLocal('VENDOR_INVOICES', data); renderAll();
+  showToast('🚫 ยกเลิกใบแจ้งหนี้แล้ว','info');
+  await syncTab('VENDOR_INVOICES');
+}
+/** เทียบใบแจ้งหนี้ (ที่ยังใช้งาน) ของเดือนที่เลือก กับยอดเบิกใช้จริงในระบบ */
+function renderInvoiceCompare(){
+  const ym = state.report.vmonth || today().slice(0,7);
+  const inv = {};
+  getData('VENDOR_INVOICES').filter(v=>v.status!==INV_CANCELLED && v.month===ym).forEach(v=>{
+    (v.lines||[]).forEach(l=>{
+      const n = normName(l.item); if(!n) return;
+      const o = inv[n] = inv[n] || { name:l.item, tests:0, amount:0, nos:[] };
+      o.tests += num(l.tests); o.amount += num(l.amount);
+      if(o.nos.indexOf(v.invNo)<0) o.nos.push(v.invNo);
+    });
+  });
+  const sys = {};
+  getData('TXN').filter(t=>t.type==='OUT' && toISODate(t.date).startsWith(ym)).forEach(t=>{
+    const n = normName(t.item); if(!n) return;
+    sys[n] = (sys[n]||0) + Math.abs(num(t.qty));
+  });
+  const names = Array.from(new Set(Object.keys(inv).concat(Object.keys(sys).filter(n=>inv[n] || (itemMaster(n)||{}).contract_basis==='test'))));
+  document.getElementById('vcmpHead').innerHTML = head(
+    ['รายการ','Inv#','test ตามใบแจ้งหนี้','test ตามระบบ (เบิก×เทสต์/หน่วย)','ผลต่าง test','เงินตามใบแจ้งหนี้ (ก่อน VAT)','เงินตามระบบ','ผลต่างเงิน']);
+  const body = document.getElementById('vcmpBody');
+  if(!names.length){
+    body.innerHTML = emptyRow(8,'ไม่มีข้อมูลเดือน '+invMonthLabel(ym),'บันทึกใบแจ้งหนี้ของเดือนนี้ หรือเลือกเดือนอื่นที่ตัวเลือกด้านล่าง');
+    document.getElementById('vcmpFoot').innerHTML = ''; return;
+  }
+  let dT=0, dM=0, bad=0;
+  body.innerHTML = names.sort((a,b)=>a.localeCompare(b,'th')).map(n=>{
+    const m = itemMaster(n) || {}; const tpu = num(m.testsPerUnit);
+    const out = sys[n]||0, st = tpu>0 ? out*tpu : 0;
+    const cp = num(m.contract_price);
+    const sv = (m.contract_basis==='test' && cp>0) ? st*cp : out*(cp>0?cp:num(m.price));
+    const i = inv[n] || { tests:0, amount:0, nos:[], name:n };
+    const dt = i.tests - st, dm = i.amount - sv;
+    const ok = Math.abs(dt)<0.5 && Math.abs(dm)<0.5;
+    if(!ok) bad++; dT += dt; dM += dm;
+    const c = ok ? 'stk-ok' : 'stk-out';
+    return `<tr>
+      <td><span class="item-cell">${esc(i.name)}</span>${(!inv[n])?'<div style="font-size:11px;color:var(--text3)">ไม่มีในใบแจ้งหนี้</div>':''}</td>
+      <td style="font-size:12px">${esc(i.nos.join(', '))||'—'}</td>
+      <td style="text-align:right">${fmt(i.tests)}</td>
+      <td style="text-align:right">${tpu>0?fmt(st):'<span class="stk-low" title="ยังไม่ได้กรอกเทสต์/หน่วย">—</span>'}</td>
+      <td style="text-align:right" class="${c}">${dt>0?'+':''}${fmt(dt)}</td>
+      <td style="text-align:right">${fmt(i.amount,2)}</td>
+      <td style="text-align:right">${sv>0?fmt(sv,2):'—'}</td>
+      <td style="text-align:right;font-weight:600" class="${c}">${dm>0?'+':''}${fmt(dm,2)}</td>
+    </tr>`;
+  }).join('') + `<tr><td colspan="4" style="text-align:right;font-weight:700">รวมผลต่าง</td><td style="text-align:right;font-weight:700">${dT>0?'+':''}${fmt(dT)}</td><td></td><td></td><td style="text-align:right;font-weight:700">${dM>0?'+':''}${fmt(dM,2)}</td></tr>`;
+  document.getElementById('vcmpFoot').innerHTML =
+    `<span>⚖️ ${esc(invMonthLabel(ym))} · ผลต่างเป็น <b>+</b> = บริษัทเรียกเก็บมากกว่าที่ระบบบันทึกการใช้ · ${bad?`<span class="stk-out">ไม่ตรงกัน ${bad} รายการ</span>`:'<span class="stk-ok">ตรงกันทุกรายการ</span>'}</span>`;
+}
+
+async function saveContractField(id, field, value){
+  const data = getData('ITEMS');
+  const i = data.findIndex(x=>x.id===id); if(i<0) return;
+  data[i] = Object.assign({}, data[i], { [field]: (typeof value==='string' ? value.trim() : value) });
+  saveLocal('ITEMS', data);
+  renderVendorMonthly();   // ไม่วาดตารางกรอกใหม่ เพื่อไม่ให้เคอร์เซอร์หลุดตอนกด Tab ไปช่องถัดไป
+  await syncTab('ITEMS');
+}
+
 /** ยอดเบิกใช้ต่อเดือน แยกตามบริษัท × ราคาตามสัญญา = มูลค่า (เทียบกับบิลที่บริษัทเรียกเก็บ) */
 function renderVendorMonthly(){
   const txn = getData('TXN');
@@ -5470,7 +6036,6 @@ function renderVendorMonthly(){
   txn.forEach(t=>{
     const d = toISODate(t.date); if(!d.startsWith(ym)) return;
     if(t.type!=='OUT' && t.type!=='IN') return;
-    if(state.report.cat){ const m0=itemMaster(t.item)||{}; if((m0.category||t.category)!==state.report.cat) return; }
     const n = normName(t.item); if(!n) return;
     const o = byItem[n] = byItem[n] || { out:0, inn:0 };
     if(t.type==='OUT') o.out += Math.abs(num(t.qty)); else o.inn += Math.abs(num(t.qty));
