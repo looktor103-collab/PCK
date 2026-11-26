@@ -202,7 +202,7 @@ async function maintenanceSave(request, db) {
    field). PLAN_<year> isn't in a fixed list (new years shouldn't need a code change), so
    it's matched by pattern instead; invGet's no-tab case discovers whichever PLAN_<year>
    tabs actually have rows straight from the table. */
-const INV_FIXED_TABS = ['overview', 'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS', 'VENDOR_INVOICES', 'CLAIMS'];
+const INV_FIXED_TABS = ['overview', 'ITEMS', 'TXN', 'BILLS', 'SUPPLIERS', 'PO_HEADERS', 'PO_ITEMS', 'PO_RECEIPTS', 'VENDOR_INVOICES', 'CLAIMS', 'LABOTHER', 'LABOTHER_KINDS'];
 const INV_PLAN_TAB_RE = /^PLAN_\d{4}$/;
 function isInvTab(tab) { return INV_FIXED_TABS.includes(tab) || INV_PLAN_TAB_RE.test(tab); }
 const INV_MAX_IMPORT_BYTES = 10_000_000;
@@ -392,6 +392,7 @@ async function eqaCarSave(request, env) {
 /* ── ไฟล์แนบคลังน้ำยา (หลักฐานการเคลม): PDF / Word / รูปภาพ เก็บใน KV คีย์ invf:<id>
    POST /api/inv/file?name=x.pdf (body = ไฟล์) → { ok, id, name, size, type } · GET ?id=&key= · DELETE ?id= */
 const INV_FILE_MAX = 10 * 1024 * 1024;
+const INV_FILE_MAX_ANY = 20 * 1024 * 1024;
 const INV_FILE_SIGS = [
   ['%PDF-', 'application/pdf'], ['\x89PNG', 'image/png'], ['\xFF\xD8\xFF', 'image/jpeg'], ['GIF8', 'image/gif'],
   ['PK\x03\x04', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'], // .docx
@@ -410,9 +411,10 @@ const INV_FILE_ID_RE = /^[0-9a-f-]{36}$/;
 async function invFileAdd(request, url, env) {
   const buf = await request.arrayBuffer();
   if (!buf.byteLength) return json({ ok: false, error: 'ไฟล์ว่าง' }, 400);
-  if (buf.byteLength > INV_FILE_MAX) return json({ ok: false, error: 'ไฟล์ใหญ่เกิน 10 MB' }, 413);
+  const any = url.searchParams.get('any') === '1'; // รับไฟล์ทุกชนิด (Lab other) — ชนิดที่ไม่รู้จักเก็บเป็น octet-stream และให้ดาวน์โหลดเท่านั้น
+  if (buf.byteLength > (any ? INV_FILE_MAX_ANY : INV_FILE_MAX)) return json({ ok: false, error: `ไฟล์ใหญ่เกิน ${any ? 20 : 10} MB` }, 413);
   const name = str(url.searchParams.get('name'), 200) || 'attachment';
-  const type = invFileType(buf, name);
+  const type = invFileType(buf, name) || (any ? 'application/octet-stream' : null);
   if (!type) return json({ ok: false, error: 'รับเฉพาะไฟล์ PDF, Word (.doc/.docx) หรือรูปภาพ (JPG/PNG/GIF/WEBP)' }, 400);
   const id = crypto.randomUUID();
   await env.EQA_PDF.put('invf:' + id, buf, { metadata: { name, contentType: type } });

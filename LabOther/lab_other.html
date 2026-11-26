@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="/PCK/assets/pck-auth.js?v=2"></script>
+<title>Lab other — MERS · HSV · Measles</title>
+<link rel="icon" type="image/png" sizes="192x192" href="/PCK/assets/icon-192.png">
+<link rel="stylesheet" href="/PCK/assets/pck.css?v=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body{font-family:'Sarabun',Tahoma,sans-serif;background:#fdf8f9;color:#2d2028}
+.lo-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px}
+.lo-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:16px 18px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:transform .15s,box-shadow .15s}
+.lo-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(139,58,82,.12)}
+.lo-card[aria-pressed="true"]{border-color:var(--rose);background:var(--rose-light)}
+.lo-card.add{border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--rose-dark);font-weight:700;min-height:96px}
+.lo-card.all{background:var(--navy-light)}
+.lo-card .t{font-size:18px;font-weight:700}
+.lo-card .d{font-size:12.5px;color:var(--text2);margin:2px 0 8px}
+.lo-card .n{font-size:26px;font-weight:700;color:var(--rose-dark)}
+.lo-card .n small{font-size:12px;font-weight:400;color:var(--text2)}
+.lo-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.lo-bar input[type=search],.lo-bar select{padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font:inherit;background:#fff}
+.lo-bar .sp{flex:1}
+.lo-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--rose);background:var(--rose);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+.lo-btn.o{background:#fff;color:var(--rose-dark)}
+.lo-btn.s{padding:3px 9px;font-size:12.5px}
+.lo-btn.d{border-color:#d9534f;color:#721c24;background:#fff}
+.lo-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:13.5px}
+.lo-table th{background:var(--surface-3);text-align:left;padding:8px 10px;white-space:nowrap}
+.lo-table td{padding:8px 10px;border-top:1px solid var(--border);vertical-align:top}
+.lo-wrap{overflow-x:auto}
+.lo-empty{padding:28px;text-align:center;color:var(--text2);background:#fff;border:1px dashed var(--border2);border-radius:10px}
+.lo-ov{position:fixed;inset:0;background:rgba(45,32,40,.45);display:none;align-items:center;justify-content:center;padding:14px;z-index:50}
+.lo-ov.open{display:flex}
+.lo-box{background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:92vh;overflow:auto;padding:18px 20px}
+.lo-box h3{margin-bottom:10px}
+.lo-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lo-g .w{grid-column:1/-1}
+.lo-f label{display:block;font-size:12.5px;color:var(--text2);margin-bottom:3px}
+.lo-f input,.lo-f select,.lo-f textarea{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font:inherit;background:#fff}
+.lo-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.lo-file{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0}
+.lo-file a{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lo-toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2d2028;color:#fff;padding:9px 16px;border-radius:10px;font-size:13.5px;display:none;z-index:60}
+.lo-note{font-size:12px;color:var(--text2);margin-top:10px}
+@media(max-width:560px){.lo-g{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="labother">
+<div id="pck-shell">
+
+  <div class="lo-cards" id="loCards"></div>
+
+  <div class="lo-bar">
+    <input type="search" id="loQ" placeholder="ค้นหา ชื่อ / HN / รายการส่งตรวจ / สถานที่ส่ง..." oninput="LO.q=this.value;render()" style="min-width:240px">
+    <select onchange="LO.yr=this.value;render()" id="loYr"></select>
+    <span class="sp"></span>
+    <button class="lo-btn o" id="loDelKind" onclick="delKind()" style="display:none">🗑️ ลบการ์ดนี้</button>
+    <button class="lo-btn o" onclick="exportXlsx()" title="ส่งออกทุกประเภท (ตามปีที่เลือก)">⬇️ Excel</button>
+    <button class="lo-btn o" onclick="exportDoc()" title="ส่งออกทุกประเภท (ตามปีที่เลือก)">⬇️ Word</button>
+    <button class="lo-btn" onclick="openRec()">＋ บันทึกตัวอย่างส่งตรวจ</button>
+  </div>
+  <div class="lo-wrap"><table class="lo-table"><thead id="loHead"></thead><tbody id="loBody"></tbody></table></div>
+  <div class="lo-note" id="loFoot"></div>
+</div>
+
+<div class="lo-ov" id="loOv">
+  <div class="lo-box">
+    <h3 id="loTitle">บันทึกตัวอย่างส่งตรวจ</h3>
+    <div class="lo-g">
+      <div class="lo-f w"><label>ประเภท *</label><select id="f_kind"></select></div>
+      <div class="lo-f"><label>วันที่เก็บตัวอย่าง *</label><input type="date" id="f_collect"></div>
+      <div class="lo-f"><label>วันที่ส่งตรวจ</label><input type="date" id="f_send"></div>
+      <div class="lo-f"><label>ชื่อ *</label><input type="text" id="f_fname" autocomplete="off"></div>
+      <div class="lo-f"><label>นามสกุล *</label><input type="text" id="f_lname" autocomplete="off"></div>
+      <div class="lo-f"><label>HN *</label><input type="text" id="f_hn" autocomplete="off"></div>
+      <div class="lo-f"><label>สถานที่ส่งตรวจ</label><input type="text" id="f_place" placeholder="เช่น ศูนย์วิทย์ฯ / กรมควบคุมโรค"></div>
+      <div class="lo-f w"><label>รายการส่งตรวจ *</label><input type="text" id="f_tests" placeholder="เช่น MERS-CoV PCR"></div>
+      <div class="lo-f w"><label>หมายเหตุ</label><textarea id="f_note" rows="2"></textarea></div>
+      <div class="lo-f w"><label>📎 ไฟล์แนบ (PDF, รูปภาพ หรือไฟล์ทุกชนิด — ไม่เกิน 20 MB ต่อไฟล์)</label>
+        <input type="file" id="f_file" multiple onchange="addFiles(this)">
+        <div id="f_files" style="margin-top:6px"></div></div>
+    </div>
+    <div class="lo-foot">
+      <button class="lo-btn o" onclick="closeRec()">ยกเลิก</button>
+      <button class="lo-btn" onclick="saveRec()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+<div class="lo-toast" id="loToast"></div>
+
+<script src="/PCK/assets/pck.js?v=1"></script>
+<script>
+PCK.shell.render({ section:'Lab other', title:'Lab other — MERS · HSV · Measles' });
+
+const API = 'https://splab-iqc-api.looktor103.workers.dev/api/inv';
+const KEY = 'YWKvNwzgKfHgT2Z8DjuCCKlQ2XNa2wzm';
+const TAB = 'LABOTHER', KTAB = 'LABOTHER_KINDS';
+const BASE_KINDS = [
+  { k:'MERS',    d:'MERS-CoV' },
+  { k:'HSV',     d:'Herpes simplex virus' },
+  { k:'Measles', d:'หัด (Measles)' },
+];
+const LO = { rows:[], custom:[], kind:'ALL', q:'', yr:'', editId:null, files:[], newIds:[], goneIds:[] };
+const kinds = () => BASE_KINDS.concat(LO.custom.map(c => ({ k:c.k, d:c.d||'', custom:true, id:c.id })));
+
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+const hdr = () => ({ 'X-API-Key':KEY });
+function toast(m){ const t=$('loToast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>t.style.display='none',2800); }
+function fdate(iso){ if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${+y+543}`; }
+function today(){ const d=new Date(), p=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`; }
+function fileUrl(f){ return `${API}/file?id=${encodeURIComponent(f.id)}&key=${encodeURIComponent(KEY)}`; }
+function fileIcon(f){ const t=f.type||''; return t.startsWith('image/')?'🖼️':t==='application/pdf'?'📄':'📎'; }
+
+async function load(){
+  try{
+    const [r1, r2] = await Promise.all([ fetch(`${API}?tab=${TAB}`, {headers:hdr()}), fetch(`${API}?tab=${KTAB}`, {headers:hdr()}) ]);
+    const j1 = await r1.json(), j2 = await r2.json();
+    if(!j1.ok) throw new Error(j1.error || ('HTTP '+r1.status));
+    LO.rows = (j1.data && j1.data[TAB]) || [];
+    LO.custom = ((j2.ok && j2.data && j2.data[KTAB]) || []).sort((a,b)=>(a.ts||'').localeCompare(b.ts||''));
+  }catch(e){ toast('โหลดข้อมูลไม่สำเร็จ: '+e.message); }
+  render();
+}
+
+function selKind(i){ const ks = kinds(); LO.kind = i < 0 ? 'ALL' : ks[i].k; LO.yr = ''; render(); }
+function visibleRows(kind){
+  let rows = LO.rows.filter(r => kind === 'ALL' || r.kind === kind);
+  if(LO.yr) rows = rows.filter(r => (r.collect_date||'').startsWith(LO.yr));
+  return rows.sort((a,b) => (b.collect_date||'').localeCompare(a.collect_date||'') || (b.ts||'').localeCompare(a.ts||''));
+}
+function render(){
+  const ks = kinds();
+  if(LO.kind !== 'ALL' && !ks.some(x => x.k === LO.kind)) LO.kind = 'ALL';
+  $('loCards').innerHTML =
+    `<button class="lo-card all" aria-pressed="${LO.kind==='ALL'}" onclick="selKind(-1)">
+      <div class="t">ไฟล์หลัก — ทั้งหมด</div><div class="d">รวมทุกประเภท</div><div class="n">${LO.rows.length} <small>ตัวอย่าง</small></div></button>` +
+    ks.map((x,i) => {
+      const n = LO.rows.filter(r => r.kind === x.k).length;
+      return `<button class="lo-card" aria-pressed="${LO.kind===x.k}" onclick="selKind(${i})">
+        <div class="t">${esc(x.k)}</div><div class="d">${esc(x.d)||'&nbsp;'}</div><div class="n">${n} <small>ตัวอย่าง</small></div></button>`;
+    }).join('') +
+    `<button class="lo-card add" onclick="addKind()">＋ เพิ่มการ์ดย่อย (test ใหม่)</button>`;
+
+  const all = LO.kind === 'ALL';
+  const inKind = LO.rows.filter(r => all || r.kind === LO.kind);
+  const years = [...new Set(inKind.map(r => (r.collect_date||'').slice(0,4)).filter(Boolean))].sort().reverse();
+  $('loYr').innerHTML = '<option value="">ทุกปี</option>' + years.map(y => `<option value="${y}" ${LO.yr===y?'selected':''}>${+y+543}</option>`).join('');
+  const cur = ks.find(x => x.k === LO.kind);
+  $('loDelKind').style.display = (cur && cur.custom) ? '' : 'none';
+
+  const q = LO.q.toLowerCase();
+  let rows = visibleRows(LO.kind);
+  if(q) rows = rows.filter(r => [r.kind,r.fname,r.lname,r.hn,r.tests,r.place,r.note].join(' ').toLowerCase().includes(q));
+
+  const cols = ['#'].concat(all ? ['ประเภท'] : [], ['วันที่เก็บ','วันที่ส่งตรวจ','ชื่อ-นามสกุล','HN','รายการส่งตรวจ','สถานที่ส่ง','ไฟล์','']);
+  $('loHead').innerHTML = '<tr>' + cols.map(h => `<th>${h}</th>`).join('') + '</tr>';
+  $('loBody').innerHTML = rows.length ? rows.map((r,i) => `<tr>
+      <td>${i+1}</td>
+      ${all ? `<td><b>${esc(r.kind)}</b></td>` : ''}
+      <td style="white-space:nowrap">${fdate(r.collect_date)}</td>
+      <td style="white-space:nowrap">${fdate(r.send_date)}</td>
+      <td>${esc(r.fname)} ${esc(r.lname)}${r.note ? `<div style="font-size:11.5px;color:var(--text2)">${esc(r.note)}</div>` : ''}</td>
+      <td>${esc(r.hn)}</td>
+      <td>${esc(r.tests)}</td>
+      <td>${esc(r.place||'—')}</td>
+      <td style="white-space:nowrap">${(r.files||[]).map(f => `<a href="${fileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" style="text-decoration:none;font-size:16px">${fileIcon(f)}</a>`).join(' ') || '—'}</td>
+      <td style="white-space:nowrap"><button class="lo-btn o s" onclick="openRec('${r.id}')">✏️</button>
+        <button class="lo-btn d s" onclick="delRec('${r.id}')">🗑️</button></td></tr>`).join('')
+    : `<tr><td colspan="${cols.length}"><div class="lo-empty">ยังไม่มีบันทึก${all ? '' : ' ' + esc(LO.kind)} — กด “＋ บันทึกตัวอย่างส่งตรวจ”</div></td></tr>`;
+  $('loFoot').textContent = `${all ? 'ทั้งหมด' : LO.kind}: แสดง ${rows.length} รายการ`;
+}
+
+/* ── เพิ่ม/ลบการ์ดย่อย ── */
+async function addKind(){
+  let k = prompt('ชื่อการ์ดย่อย / test ใหม่ (เช่น Dengue, Zika, Mpox):');
+  if(k === null) return; k = k.replace(/\s+/g, ' ').trim();
+  if(!k || k.length > 24){ toast('ชื่อต้องไม่ว่างและยาวไม่เกิน 24 ตัวอักษร'); return; }
+  if(k.toLowerCase() === 'all' || kinds().some(x => x.k.toLowerCase() === k.toLowerCase())){ toast('มีการ์ดชื่อนี้อยู่แล้ว'); return; }
+  const d = (prompt('คำอธิบายสั้นๆ (ไม่บังคับ):', '') || '').trim().slice(0, 60);
+  const row = { id:'lk_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), k, d, ts:new Date().toISOString() };
+  try{ await post({ tab:KTAB, upsert:[row] }); LO.custom.push(row); LO.kind = k; LO.yr = ''; render(); toast('➕ เพิ่มการ์ด ' + k + ' แล้ว'); }
+  catch(e){ toast('เพิ่มการ์ดไม่สำเร็จ: ' + e.message); }
+}
+async function delKind(){
+  const c = LO.custom.find(x => x.k === LO.kind); if(!c) return;
+  if(LO.rows.some(r => r.kind === c.k)){ toast('ลบไม่ได้ — การ์ดนี้ยังมีบันทึกอยู่ (ลบบันทึกก่อน)'); return; }
+  if(!confirm(`ลบการ์ด "${c.k}" ?`)) return;
+  try{ await post({ tab:KTAB, delete:[c.id] }); LO.custom = LO.custom.filter(x => x !== c); LO.kind = 'ALL'; render(); toast('🗑️ ลบการ์ดแล้ว'); }
+  catch(e){ toast('ลบไม่สำเร็จ: ' + e.message); }
+}
+
+/* ── ส่งออก Excel / Word (รวมทุกประเภท ตามปีที่เลือก · ไม่ใส่ลิงก์ไฟล์ เพื่อไม่ให้ key หลุด) ── */
+const EXP_COLS = ['ประเภท','วันที่เก็บตัวอย่าง','วันที่ส่งตรวจ','ชื่อ','นามสกุล','HN','รายการส่งตรวจ','สถานที่ส่งตรวจ','หมายเหตุ','ไฟล์แนบ'];
+const expRow = r => [r.kind, fdate(r.collect_date), fdate(r.send_date), r.fname, r.lname, r.hn, r.tests, r.place||'', r.note||'', (r.files||[]).map(f => f.name).join(', ')];
+function stamp(){ return today().replace(/-/g, ''); }
+function saveBlob(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+function exportXlsx(){
+  if(!window.XLSX){ toast('โหลดไลบรารี Excel ไม่ได้ (ต้องต่ออินเทอร์เน็ต)'); return; }
+  const wb = XLSX.utils.book_new(), ks = kinds();
+  const sheet = (name, rows) => {
+    const ws = XLSX.utils.aoa_to_sheet([EXP_COLS].concat(rows.map(expRow)));
+    ws['!cols'] = [10,14,14,14,16,12,26,26,24,30].map(w => ({ wch:w }));
+    XLSX.utils.book_append_sheet(wb, ws, name.replace(/[\[\]:*?\/\\]/g, '_').slice(0, 31));
+  };
+  const sum = XLSX.utils.aoa_to_sheet([['สรุป Lab other' + (LO.yr ? ' ปี ' + (+LO.yr+543) : ''), ''], ['ประเภท','จำนวนตัวอย่าง']]
+    .concat(ks.map(x => [x.k, visibleRows(x.k).length]), [['รวม', visibleRows('ALL').length]]));
+  sum['!cols'] = [{wch:24},{wch:16}]; XLSX.utils.book_append_sheet(wb, sum, 'สรุป');
+  sheet('ทั้งหมด', visibleRows('ALL'));
+  ks.forEach(x => sheet(x.k, visibleRows(x.k)));
+  XLSX.writeFile(wb, `LabOther_${stamp()}.xlsx`);
+  toast('⬇️ ดาวน์โหลด Excel แล้ว');
+}
+function exportDoc(){
+  const ks = kinds(), th = h => `<th>${h}</th>`;
+  const table = rows => rows.length
+    ? `<table><tr>${['#'].concat(EXP_COLS.slice(1)).map(th).join('')}</tr>${rows.map((r,i) => `<tr><td>${i+1}</td>${expRow(r).slice(1).map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</table>`
+    : '<p><i>ไม่มีบันทึก</i></p>';
+  const body = ks.map(x => `<h2>${esc(x.k)}${x.d ? ' — ' + esc(x.d) : ''} (${visibleRows(x.k).length} ตัวอย่าง)</h2>${table(visibleRows(x.k))}`).join('');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Lab other</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
+<style>@page{size:A4 landscape;margin:1.5cm}body{font-family:'TH Sarabun New',Sarabun,Tahoma;font-size:14pt}h1{font-size:20pt}h2{font-size:16pt;margin-top:18pt}
+table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:3pt 5pt;font-size:12pt;vertical-align:top}th{background:#eee}</style></head><body>
+<h1>สรุปตัวอย่างส่งตรวจ Lab other${LO.yr ? ' ปี ' + (+LO.yr+543) : ''}</h1>
+<p>งานอณูชีววิทยา โรงพยาบาลพระจอมเกล้า · ออกรายงาน ${fdate(today())} · รวม ${visibleRows('ALL').length} ตัวอย่าง</p>${body}</body></html>`;
+  saveBlob(new Blob(['﻿', html], { type:'application/msword' }), `LabOther_${stamp()}.doc`);
+  toast('⬇️ ดาวน์โหลด Word แล้ว');
+}
+
+/* ── ไฟล์แนบ ── */
+function renderFiles(){
+  $('f_files').innerHTML = LO.files.map((f,i)=>`<div class="lo-file"><span>${fileIcon(f)}</span>
+    <a href="${fileUrl(f)}" target="_blank" rel="noopener">${esc(f.name)}</a>
+    <span style="color:var(--text2)">${Math.round(f.size/1024)} KB</span>
+    <button class="lo-btn d s" onclick="rmFile(${i})">✕</button></div>`).join('');
+}
+async function addFiles(input){
+  const files=[...input.files]; input.value='';
+  for(const file of files){
+    if(file.size>20*1024*1024){ toast(`${file.name}: ไฟล์ใหญ่เกิน 20 MB`); continue; }
+    try{
+      toast(`⬆️ กำลังอัปโหลด ${file.name}...`);
+      const r = await fetch(`${API}/file?any=1&name=${encodeURIComponent(file.name)}`, { method:'POST', headers:hdr(), body:file });
+      const j = await r.json(); if(!j.ok) throw new Error(j.error||('HTTP '+r.status));
+      LO.files.push({ id:j.id, name:j.name, size:j.size, type:j.type }); LO.newIds.push(j.id); renderFiles();
+    }catch(e){ toast(`แนบ ${file.name} ไม่สำเร็จ: ${e.message}`); }
+  }
+}
+function delFile(id){ return fetch(`${API}/file?id=${encodeURIComponent(id)}`, { method:'DELETE', headers:hdr() }).catch(()=>{}); }
+function rmFile(i){
+  const f=LO.files.splice(i,1)[0]; if(!f) return;
+  if(LO.newIds.includes(f.id)){ delFile(f.id); LO.newIds=LO.newIds.filter(x=>x!==f.id); } else LO.goneIds.push(f.id);
+  renderFiles();
+}
+
+/* ── บันทึก / แก้ไข / ลบ ── */
+function openRec(id){
+  LO.editId = id||null;
+  const r = id ? LO.rows.find(x=>x.id===id) : null;
+  $('loTitle').textContent = r ? 'แก้ไขบันทึก' : 'บันทึกตัวอย่างส่งตรวจ';
+  $('f_kind').innerHTML = kinds().map(x=>`<option value="${esc(x.k)}">${esc(x.k)}${x.d?' — '+esc(x.d):''}</option>`).join('');
+  const v=(k,val)=>{ $(k).value = val==null?'':val; };
+  v('f_kind', r?r.kind:(LO.kind==='ALL'?'MERS':LO.kind)); v('f_collect', r?r.collect_date:today()); v('f_send', r&&r.send_date);
+  v('f_fname', r&&r.fname); v('f_lname', r&&r.lname); v('f_hn', r&&r.hn);
+  v('f_place', r&&r.place); v('f_tests', r&&r.tests); v('f_note', r&&r.note);
+  LO.files = r&&Array.isArray(r.files) ? r.files.map(f=>({...f})) : []; LO.newIds=[]; LO.goneIds=[];
+  renderFiles(); $('loOv').classList.add('open');
+}
+function closeRec(keep){
+  if(!keep) LO.newIds.forEach(delFile);
+  LO.newIds=[]; LO.goneIds=[]; LO.files=[]; $('loOv').classList.remove('open');
+}
+async function post(body){
+  const r = await fetch(API, { method:'POST', headers:{ ...hdr(), 'Content-Type':'application/json' }, body:JSON.stringify(body) });
+  const j = await r.json(); if(!j.ok) throw new Error(j.error||('HTTP '+r.status)); return j;
+}
+async function saveRec(){
+  const g = k => $(k).value.trim();
+  if(!g('f_collect') || !g('f_fname') || !g('f_lname') || !g('f_hn') || !g('f_tests')){
+    toast('กรอกให้ครบ: วันที่เก็บ / ชื่อ / นามสกุล / HN / รายการส่งตรวจ'); return; }
+  const old = LO.editId ? LO.rows.find(x=>x.id===LO.editId) : null;
+  const row = { ...(old||{}), id: old?old.id:'lo_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+    kind:g('f_kind'), collect_date:g('f_collect'), send_date:g('f_send'), fname:g('f_fname'), lname:g('f_lname'),
+    hn:g('f_hn'), tests:g('f_tests'), place:g('f_place'), note:g('f_note'),
+    files:LO.files.map(f=>({...f})), ts:new Date().toISOString() };
+  try{
+    await post({ tab:TAB, upsert:[row] });
+    LO.goneIds.forEach(delFile);
+    if(old) LO.rows[LO.rows.indexOf(old)] = row; else LO.rows.push(row);
+    if(LO.kind !== 'ALL') LO.kind = row.kind; closeRec(true); render(); toast('💾 บันทึกแล้ว');
+  }catch(e){ toast('บันทึกไม่สำเร็จ: '+e.message); }
+}
+async function delRec(id){
+  const r = LO.rows.find(x=>x.id===id); if(!r) return;
+  if(!confirm(`ลบบันทึกของ ${r.fname} ${r.lname} (HN ${r.hn}) และไฟล์แนบทั้งหมด?`)) return;
+  try{
+    await post({ tab:TAB, delete:[id] });
+    (r.files||[]).forEach(f=>delFile(f.id));
+    LO.rows = LO.rows.filter(x=>x.id!==id); render(); toast('🗑️ ลบแล้ว');
+  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message); }
+}
+load();
+</script>
+</body>
+</html>
