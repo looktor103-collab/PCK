@@ -91,7 +91,7 @@ export default {
 
     const url = new URL(request.url);
     const route = url.pathname;
-    if (!['/api/inv', '/api/inv/import', '/api/inv/extract', '/api/inv/alert-test', '/api/inv/monthly-test', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
+    if (!['/api/inv', '/api/inv/import', '/api/inv/extract', '/api/inv/alert-test', '/api/inv/monthly-test', '/api/inv/file', '/api/iqc', '/api/eqa', '/api/eqa/pdf', '/api/eqa/doc', '/api/eqa/car', '/api/maintenance'].includes(route)) return json({ ok: false, error: 'not found' }, 404);
     if (!authorized(request, env, url)) return json({ ok: false, error: 'unauthorized' }, 401);
 
     try {
@@ -101,6 +101,9 @@ export default {
       if (route === '/api/inv/import' && m === 'POST') return await invImport(request, env.DB);
       if (route === '/api/inv/extract' && m === 'POST') return await invExtract(request, env);
       // ทดสอบแจ้งเตือน LINE: ?dry=1 = ดูข้อความโดยไม่ส่ง · ?force=1 = ส่งทุกรายการโดยไม่สนการกันเตือนซ้ำ
+      if (route === '/api/inv/file' && m === 'POST') return await invFileAdd(request, url, env);
+      if (route === '/api/inv/file' && m === 'GET') return await invFileGet(url, env);
+      if (route === '/api/inv/file' && m === 'DELETE') return await invFileDelete(url, env);
       if (route === '/api/inv/monthly-test' && m === 'GET')
         return json(await runMonthlyOrderReminder(env, { dry: url.searchParams.get('dry') === '1', force: url.searchParams.get('force') === '1' }));
       if (route === '/api/inv/alert-test' && m === 'GET')
@@ -384,6 +387,55 @@ async function eqaCarSave(request, env) {
   }
   await env.EQA_PDF.put('doc:' + id, bytes, { metadata: { name, contentType: 'application/pdf' } });
   return json({ ok: true, id });
+}
+
+/* ── ไฟล์แนบคลังน้ำยา (หลักฐานการเคลม): PDF / Word / รูปภาพ เก็บใน KV คีย์ invf:<id>
+   POST /api/inv/file?name=x.pdf (body = ไฟล์) → { ok, id, name, size, type } · GET ?id=&key= · DELETE ?id= */
+const INV_FILE_MAX = 10 * 1024 * 1024;
+const INV_FILE_SIGS = [
+  ['%PDF-', 'application/pdf'], ['\x89PNG', 'image/png'], ['\xFF\xD8\xFF', 'image/jpeg'], ['GIF8', 'image/gif'],
+  ['PK\x03\x04', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'], // .docx
+  ['\xD0\xCF\x11\xE0', 'application/msword'],                                              // .doc
+];
+function invFileType(buf, name) {
+  const head = String.fromCharCode(...new Uint8Array(buf, 0, Math.min(8, buf.byteLength)));
+  for (const [sig, type] of INV_FILE_SIGS) if (head.startsWith(sig)) {
+    if (type.includes('wordprocessingml') && !/\.docx$/i.test(name)) return null; // zip อื่นที่ไม่ใช่ .docx
+    return type;
+  }
+  if (head.startsWith('RIFF') && String.fromCharCode(...new Uint8Array(buf, 8, 4)) === 'WEBP') return 'image/webp';
+  return null;
+}
+const INV_FILE_ID_RE = /^[0-9a-f-]{36}$/;
+async function invFileAdd(request, url, env) {
+  const buf = await request.arrayBuffer();
+  if (!buf.byteLength) return json({ ok: false, error: 'ไฟล์ว่าง' }, 400);
+  if (buf.byteLength > INV_FILE_MAX) return json({ ok: false, error: 'ไฟล์ใหญ่เกิน 10 MB' }, 413);
+  const name = str(url.searchParams.get('name'), 200) || 'attachment';
+  const type = invFileType(buf, name);
+  if (!type) return json({ ok: false, error: 'รับเฉพาะไฟล์ PDF, Word (.doc/.docx) หรือรูปภาพ (JPG/PNG/GIF/WEBP)' }, 400);
+  const id = crypto.randomUUID();
+  await env.EQA_PDF.put('invf:' + id, buf, { metadata: { name, contentType: type } });
+  return json({ ok: true, id, name, size: buf.byteLength, type });
+}
+async function invFileGet(url, env) {
+  const id = str(url.searchParams.get('id'), 40);
+  if (!INV_FILE_ID_RE.test(id)) return json({ ok: false, error: 'id ไม่ถูกต้อง' }, 400);
+  const { value, metadata } = await env.EQA_PDF.getWithMetadata('invf:' + id, { type: 'arrayBuffer' });
+  if (!value) return json({ ok: false, error: 'ไม่พบไฟล์' }, 404);
+  const name = (metadata && metadata.name) || 'attachment';
+  const type = (metadata && metadata.contentType) || 'application/octet-stream';
+  const inline = type === 'application/pdf' || type.startsWith('image/');
+  return new Response(value, { headers: {
+    ...CORS, 'Content-Type': type, 'X-Content-Type-Options': 'nosniff',
+    'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="attachment"; filename*=UTF-8''${encodeURIComponent(name)}`,
+    'Cache-Control': 'private, max-age=300' } });
+}
+async function invFileDelete(url, env) {
+  const id = str(url.searchParams.get('id'), 40);
+  if (!INV_FILE_ID_RE.test(id)) return json({ ok: false, error: 'id ไม่ถูกต้อง' }, 400);
+  await env.EQA_PDF.delete('invf:' + id);
+  return json({ ok: true });
 }
 
 async function eqaDocGet(url, env) {

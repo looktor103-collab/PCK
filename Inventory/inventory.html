@@ -1914,6 +1914,12 @@ function healthCheck() {
         <div class="field"><label>รายละเอียดความเสียหาย / หมายเหตุ</label><input type="text" id="cl_note"></div>
         <div class="field"><label>ผู้บันทึก</label><input type="text" id="cl_person"></div>
       </div>
+      <div class="fgrid g1">
+        <div class="field"><label>📎 เอกสารแนบ / หลักฐาน (PDF, Word, รูปภาพ — ไม่เกิน 10 MB ต่อไฟล์)</label>
+          <input type="file" id="cl_file" multiple accept=".pdf,.doc,.docx,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onchange="clmAddFiles(this)">
+          <div id="cl_files" style="margin-top:6px"></div>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-outline" onclick="closeClaim()">ยกเลิก</button>
@@ -2246,7 +2252,7 @@ let state = {
   poRecv:{ id:null },
   supEdit:{ id:null },
   bor:{ q:'', dir:'', st:'' }, borEditId:null,
-  clm:{ q:'', st:'', cause:'' }, clmEditId:null,
+  clm:{ q:'', st:'', cause:'' }, clmEditId:null, clmFiles:[], clmNew:[], clmGone:[],
   itemEditId:null,
 };
 
@@ -4199,6 +4205,7 @@ async function confirmDelete(){
     closeConfirm(); renderAll(); showToast('🗑️ ลบใบแจ้งหนี้แล้ว','info'); await syncTab('VENDOR_INVOICES'); return;
   }
   if(d.kind==='claim'){
+    const gone=getData('CLAIMS').find(x=>x.id===d.id); ((gone&&gone.files)||[]).forEach(f=>clmDeleteFile(f.id));
     saveLocal('CLAIMS', getData('CLAIMS').filter(x=>x.id!==d.id));
     closeConfirm(); renderAll(); showToast('🗑️ ลบบันทึกการเคลมแล้ว','info'); await syncTab('CLAIMS'); return;
   }
@@ -4969,6 +4976,44 @@ function clmHint(){
   const v=document.getElementById('cl_value');
   if(pt && tests && (!v.value || v.dataset.auto==='1')){ v.value=(pt*tests).toFixed(2); v.dataset.auto='1'; }
 }
+/* ไฟล์แนบ: เก็บที่ Cloudflare KV (Worker /api/inv/file) — แถวเคลมเก็บแค่ {id,name,size,type} */
+function clmFileUrl(f){ return `${INV_API}/file?id=${encodeURIComponent(f.id)}&key=${encodeURIComponent(INV_KEY)}`; }
+function clmFileIcon(f){ const t=f.type||''; return t.startsWith('image/')?'🖼️':t==='application/pdf'?'📄':'📝'; }
+function clmFileLinks(list){
+  return (list||[]).map(f=>`<a href="${clmFileUrl(f)}" target="_blank" rel="noopener" title="${esc(f.name)}" style="text-decoration:none">${clmFileIcon(f)}</a>`).join(' ');
+}
+function clmRenderFiles(){
+  const el=document.getElementById('cl_files'); if(!el) return;
+  el.innerHTML=state.clmFiles.map((f,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0">
+      <span>${clmFileIcon(f)}</span>
+      <a href="${clmFileUrl(f)}" target="_blank" rel="noopener" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</a>
+      <span style="color:var(--text3)">${fmt(f.size/1024,0)} KB</span>
+      <button class="btn btn-danger btn-sm btn-icon" title="เอาออก" onclick="clmRemoveFile(${i})">✕</button>
+    </div>`).join('');
+}
+async function clmAddFiles(input){
+  const files=[...input.files]; input.value='';
+  for(const file of files){
+    if(file.size>10*1024*1024){ showToast(`${file.name}: ไฟล์ใหญ่เกิน 10 MB`,'error'); continue; }
+    try{
+      showToast(`⬆️ กำลังอัปโหลด ${file.name}...`,'info');
+      const res=await fetch(`${INV_API}/file?name=${encodeURIComponent(file.name)}`,{ method:'POST', headers:{ 'X-API-Key':INV_KEY }, body:file });
+      const j=await res.json();
+      if(!j.ok) throw new Error(j.error||('HTTP '+res.status));
+      state.clmFiles.push({ id:j.id, name:j.name, size:j.size, type:j.type });
+      state.clmNew.push(j.id); clmRenderFiles();
+    }catch(e){ showToast(`แนบ ${file.name} ไม่สำเร็จ: ${e.message}`,'error'); }
+  }
+}
+function clmRemoveFile(i){
+  const f=state.clmFiles.splice(i,1)[0]; if(!f) return;
+  if(state.clmNew.includes(f.id)) { clmDeleteFile(f.id); state.clmNew=state.clmNew.filter(x=>x!==f.id); }
+  else state.clmGone.push(f.id);          // ไฟล์ที่บันทึกไว้แล้ว: ลบจริงตอนกดบันทึก
+  clmRenderFiles();
+}
+function clmDeleteFile(id){ return fetch(`${INV_API}/file?id=${encodeURIComponent(id)}`,{ method:'DELETE', headers:{ 'X-API-Key':INV_KEY } }).catch(()=>{}); }
+
 function renderClaim(){
   const sel=document.getElementById('clmCauseSel');
   if(sel && !sel.options.length) sel.innerHTML='<option value="">สาเหตุทั้งหมด</option>'+CLM_CAUSES.map(c=>`<option>${esc(c)}</option>`).join('');
@@ -5004,6 +5049,7 @@ function renderClaim(){
         <td><span class="sbadge ${cls}">${esc(c.status||'รอส่งเคลม')}</span></td>
         <td style="text-align:center">${c.comp_tests!==''&&c.comp_tests!=null?fmt(c.comp_tests,0):'—'}</td>
         <td><div class="act-btns">
+          ${(c.files&&c.files.length)?`<span style="white-space:nowrap;font-size:15px" title="เอกสารแนบ ${c.files.length} ไฟล์">${clmFileLinks(c.files)}</span>`:''}
           <button class="btn btn-outline btn-sm btn-icon" title="แก้ไข" onclick="openClaim('${c.id}')">✏️</button>
           <button class="btn btn-danger btn-sm btn-icon" title="ลบ" onclick="askDelete('claim','${c.id}','${esc(c.item)}')">🗑️</button>
         </div></td></tr>`;
@@ -5025,10 +5071,15 @@ function openClaim(id){
   document.getElementById('cl_value').dataset.auto = (c&&c.value) ? '0' : '1';
   v('cl_status',c?c.status:'รอส่งเคลม'); v('cl_no',c&&c.claim_no); v('cl_sent',c&&c.sent_date);
   v('cl_comp',c&&c.comp_tests); v('cl_note',c&&c.note); v('cl_person',c&&c.person);
-  clmHint();
+  state.clmFiles = (c&&Array.isArray(c.files)) ? c.files.map(f=>({...f})) : []; state.clmNew=[]; state.clmGone=[];
+  clmRenderFiles(); clmHint();
   document.getElementById('clmOverlay').classList.add('open');
 }
-function closeClaim(){ document.getElementById('clmOverlay').classList.remove('open'); }
+function closeClaim(keep){
+  if(!keep) state.clmNew.forEach(clmDeleteFile);   // ยกเลิก: ลบไฟล์ที่เพิ่งอัปโหลดทิ้ง
+  state.clmNew=[]; state.clmGone=[]; state.clmFiles=[];
+  document.getElementById('clmOverlay').classList.remove('open');
+}
 async function saveClaim(){
   const g=k=>(document.getElementById(k).value||'').trim();
   const item=normName(g('cl_item')), tests=num(g('cl_tests'));
@@ -5041,10 +5092,11 @@ async function saveClaim(){
     category:m.category||'', lot:g('cl_lot'), exp:g('cl_exp'), vendor:g('cl_vendor')||m.vendor||'',
     damage_tests:tests, units:g('cl_units'), unit:m.unit||'', value:g('cl_value'),
     status:g('cl_status')||'รอส่งเคลม', claim_no:g('cl_no'), sent_date:g('cl_sent'),
-    comp_tests:g('cl_comp'), note:g('cl_note'), person:g('cl_person'), ts:new Date().toISOString() });
+    comp_tests:g('cl_comp'), note:g('cl_note'), person:g('cl_person'), files:state.clmFiles.map(f=>({...f})), ts:new Date().toISOString() });
   if(old) data[data.indexOf(old)]=row; else data.push(row);
   saveLocal('CLAIMS',data);
-  state.clmEditId=null; closeClaim(); renderAll();
+  state.clmGone.forEach(clmDeleteFile);
+  state.clmEditId=null; closeClaim(true); renderAll();
   showToast('💾 บันทึกการเคลมแล้ว','success');
   await syncTab('CLAIMS');
 }
