@@ -30,7 +30,7 @@ window.PCK = (function () {
     { group: 'เอกสาร', items: [
       { id:'sop', icon:'📄', label:'SOP & Documents', href: BASE + '/sop.html' }
     ]},
-    { group: 'Out lab sender', items: [
+    { group: 'Lab other', items: [
       { id:'labother', icon:'🧪', label:'MERS · HSV · Measles', href: BASE + '/LabOther/lab_other.html' }
     ]}
   ];
