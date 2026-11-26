@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <script src="/PCK/assets/pck-auth.js?v=2"></script>
-<title>Lab other — MERS · HSV · Measles</title>
+<title>Out lab sender — MERS · HSV · Measles</title>
 <link rel="icon" type="image/png" sizes="192x192" href="/PCK/assets/icon-192.png">
 <link rel="stylesheet" href="/PCK/assets/pck.css?v=1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -93,7 +93,7 @@ body{font-family:'Sarabun',Tahoma,sans-serif;background:#fdf8f9;color:#2d2028}
 
 <script src="/PCK/assets/pck.js?v=1"></script>
 <script>
-PCK.shell.render({ section:'Lab other', title:'Lab other — MERS · HSV · Measles' });
+PCK.shell.render({ section:'Out lab sender', title:'Out lab sender — MERS · HSV · Measles' });
 
 const API = 'https://splab-iqc-api.looktor103.workers.dev/api/inv';
 const KEY = 'YWKvNwzgKfHgT2Z8DjuCCKlQ2XNa2wzm';
@@ -206,7 +206,7 @@ function exportXlsx(){
     ws['!cols'] = [10,14,14,14,16,12,26,26,24,30].map(w => ({ wch:w }));
     XLSX.utils.book_append_sheet(wb, ws, name.replace(/[\[\]:*?\/\\]/g, '_').slice(0, 31));
   };
-  const sum = XLSX.utils.aoa_to_sheet([['สรุป Lab other' + (LO.yr ? ' ปี ' + (+LO.yr+543) : ''), ''], ['ประเภท','จำนวนตัวอย่าง']]
+  const sum = XLSX.utils.aoa_to_sheet([['สรุป Out lab sender' + (LO.yr ? ' ปี ' + (+LO.yr+543) : ''), ''], ['ประเภท','จำนวนตัวอย่าง']]
     .concat(ks.map(x => [x.k, visibleRows(x.k).length]), [['รวม', visibleRows('ALL').length]]));
   sum['!cols'] = [{wch:24},{wch:16}]; XLSX.utils.book_append_sheet(wb, sum, 'สรุป');
   sheet('ทั้งหมด', visibleRows('ALL'));
@@ -220,11 +220,11 @@ function exportDoc(){
     ? `<table><tr>${['#'].concat(EXP_COLS.slice(1)).map(th).join('')}</tr>${rows.map((r,i) => `<tr><td>${i+1}</td>${expRow(r).slice(1).map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</table>`
     : '<p><i>ไม่มีบันทึก</i></p>';
   const body = ks.map(x => `<h2>${esc(x.k)}${x.d ? ' — ' + esc(x.d) : ''} (${visibleRows(x.k).length} ตัวอย่าง)</h2>${table(visibleRows(x.k))}`).join('');
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Lab other</title>
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>Out lab sender</title>
 <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View></w:WordDocument></xml><![endif]-->
 <style>@page{size:A4 landscape;margin:1.5cm}body{font-family:'TH Sarabun New',Sarabun,Tahoma;font-size:14pt}h1{font-size:20pt}h2{font-size:16pt;margin-top:18pt}
 table{border-collapse:collapse;width:100%}th,td{border:1px solid #555;padding:3pt 5pt;font-size:12pt;vertical-align:top}th{background:#eee}</style></head><body>
-<h1>สรุปตัวอย่างส่งตรวจ Lab other${LO.yr ? ' ปี ' + (+LO.yr+543) : ''}</h1>
+<h1>สรุปตัวอย่างส่งตรวจ Out lab sender${LO.yr ? ' ปี ' + (+LO.yr+543) : ''}</h1>
 <p>งานอณูชีววิทยา โรงพยาบาลพระจอมเกล้า · ออกรายงาน ${fdate(today())} · รวม ${visibleRows('ALL').length} ตัวอย่าง</p>${body}</body></html>`;
   saveBlob(new Blob(['﻿', html], { type:'application/msword' }), `LabOther_${stamp()}.doc`);
   toast('⬇️ ดาวน์โหลด Word แล้ว');
